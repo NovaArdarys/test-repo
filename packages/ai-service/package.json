@@ -1,0 +1,30 @@
+{
+  "name": "storage-service",
+  "scripts": {
+    "dev": "bun run --hot src/index.ts"
+  },
+  "dependencies": {
+    "amqplib": "^0.10.9",
+    "date-fns": "^4.1.0",
+    "hono": "^4.9.8",
+    "ioredis": "^5.8.0",
+    "lodash": "^4.17.21",
+    "zod": "^4.1.11",
+    "drizzle-kit": "^0.31.4",
+    "axios": "^1.12.2",
+    "http-status": "^2.1.0",
+    "jose": "^6.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "jwk-to-pem": "^2.0.7",
+    "ua-parser-js": "^2.0.6"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/pg": "^8.15.5",
+    "@types/lodash": "^4.17.20",
+    "@types/jsonwebtoken": "^9.0.10",
+    "dotenv": "^17.2.2",
+    "drizzle-orm": "^0.44.5",
+    "pg": "^8.16.3"
+  }
+}

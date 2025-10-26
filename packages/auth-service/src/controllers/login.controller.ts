@@ -1,0 +1,107 @@
+import { loginSchemaType } from "../validator/auth.validator";
+import ApiError from "../utils/ApiError";
+import { catchAsync } from "../utils/catchAsync";
+import { isEmpty } from "lodash";
+import * as HttpStatus from "http-status";
+import { bcryptVerify } from "@/utils/hashing";
+import { generateRefreshToken, generateToken } from "@/utils/jwt";
+import { getUserInfoServiceClient, saveTokenServiceClient } from "@/services/clients/user.service";
+import { publishUserLoggedIn } from "@/messaging/publishers/auth.publisher";
+import { parseDeviceInfo } from "@/utils/device.util";
+import { REDIS_PERMIISONS_KEY_PREFIX, TIMESTAMP_30_DAYS } from "@/constants/config";
+import redis from "@/constants/redis";
+import { getUserRolePermissonsClientService } from "@/services/clients/role.permissions.service";
+import { schools } from "@/db/schemas";
+
+export const loginHandler = catchAsync(async (c) => {
+  const { password, username }: loginSchemaType = await c.req.parseBody();
+
+  const findUser = await getUserInfoServiceClient({ username });
+
+  console.log(findUser.userKitchens, '-----findUser-----', findUser.drivers, findUser.userSchools);
+
+  if (isEmpty(findUser)) {
+    throw new ApiError(HttpStatus.default.UNAUTHORIZED, { message: "Unauthorized" });
+  }
+
+  const verifiedPassword = await bcryptVerify(password, findUser.password);
+  if (!verifiedPassword) {
+    throw new ApiError(HttpStatus.default.UNAUTHORIZED, { message: "Unauthorized" });
+  }
+
+  const roleId = findUser.userRoles?.[0]?.role?.id;
+  if (roleId) {
+    const permissions = await getUserRolePermissonsClientService({ roleId });
+
+    if (permissions) {
+      const redisKey = `${REDIS_PERMIISONS_KEY_PREFIX}${roleId}`;
+
+      await redis.set(
+        redisKey,
+        JSON.stringify(permissions),
+        "PX",
+        TIMESTAMP_30_DAYS
+      );
+      console.log(`Permissions cached for user ${roleId}`);
+    }
+  }
+
+  let context = {
+    school: {},
+    kitchen: {},
+    driver: {},
+  };
+
+  if (findUser.userKitchens?.length > 0) {
+    context.kitchen = {
+      type: 'kitchen',
+      kitchenIds: findUser.userKitchens.map((k: any) => k.kitchenId).slice(0, 5),
+    };
+  } else if (findUser.userSchools?.length > 0) {
+    context.school = {
+      type: 'school',
+      schoolIds: findUser.userSchools.map((s: any) => s.schoolId).slice(0, 5),
+    };
+  } else if (findUser.drivers?.length > 0) {
+    context.driver = {
+      type: 'driver',
+      driverIds: findUser.drivers.map((d: any) => d.id).slice(0, 5),
+    };
+  }
+
+  // Buat payload token
+  const payload = {
+    id: findUser.id,
+    email: findUser.email,
+    roleId: roleId,
+  };
+
+  const accessToken = await generateToken({ ...payload, data: context });
+  const { token, tmpExp } = await generateRefreshToken(payload);
+  const deviceInfo = parseDeviceInfo(c);
+
+  const tokenData = await saveTokenServiceClient(findUser.id, token, tmpExp, deviceInfo.ip, `${deviceInfo.deviceType} | ${deviceInfo.browser} on ${deviceInfo.os}`);
+
+
+  await publishUserLoggedIn({
+    userId: findUser.id,
+    email: findUser.email,
+    tokenId: tokenData.id,
+    ipAddress: deviceInfo.ip,
+    deviceInfo: `${deviceInfo.deviceType} | ${deviceInfo.browser} on ${deviceInfo.os}`,
+    details: {
+      username
+    }
+  });
+
+  return c.json({
+    data: {
+      email: findUser.email,
+      roleName: findUser.userRoles?.[0]?.role?.name,
+      authorization: {
+        token: accessToken,
+        refreshToken: token,
+      },
+    },
+  });
+});

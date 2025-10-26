@@ -1,0 +1,70 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tracking-service
+  namespace: prod
+  labels:
+    app: tracking-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: tracking-service
+  template:
+    metadata:
+      labels:
+        app: tracking-service
+    spec:
+      serviceAccountName: default-sa
+      containers:
+        - name: tracking
+          image: rahvanna/tracking-service:latest
+          ports:
+            - containerPort: 3002
+              name: ws
+          envFrom:
+            - configMapRef:
+                name: common-config
+            - secretRef:
+                name: common-secret
+          env:
+            - name: PORT
+              value: '3002'
+            - name: SERVICE_NAME
+              value: 'tracking-service'
+          resources:
+            requests:
+              cpu: 25m
+              memory: 64Mi
+            limits:
+              cpu: 125m
+              memory: 192Mi
+          # readinessProbe:
+          #   httpGet:
+          #     path: /health
+          #     port: 3002
+          #   initialDelaySeconds: 5
+          #   periodSeconds: 8
+          # livenessProbe:
+          #   httpGet:
+          #     path: /health
+          #     port: 3002
+          #   initialDelaySeconds: 20
+          #   periodSeconds: 20
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tracking-service
+  namespace: prod
+  labels:
+    app: tracking-service
+spec:
+  selector:
+    app: tracking-service
+  ports:
+    - port: 3002
+      targetPort: 3002
+      protocol: TCP
+      name: ws
+  type: ClusterIP

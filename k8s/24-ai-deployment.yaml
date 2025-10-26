@@ -1,0 +1,70 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ai-service
+  namespace: prod
+  labels:
+    app: ai-service
+spec:
+  replicas: 2 # banyaknya replika
+  selector:
+    matchLabels:
+      app: ai-service
+  template:
+    metadata:
+      labels:
+        app: ai-service
+    spec:
+      serviceAccountName: default-sa
+      containers:
+        - name: ai
+          image: rahvanna/ai-service:latest
+          ports:
+            - containerPort: 3004
+              name: http
+          envFrom:
+            - configMapRef:
+                name: common-config
+            - secretRef:
+                name: common-secret
+          env:
+            - name: PORT
+              value: '3004'
+            - name: SERVICE_NAME
+              value: 'ai-service'
+          resources:
+            requests: # minimum CPU (100m) dan memori (64Mi)
+              cpu: 25m
+              memory: 64Mi
+            limits:
+              cpu: 125m
+              memory: 192Mi
+          # readinessProbe:
+          #   httpGet:
+          #     path: /health
+          #     port: 3004
+          #   initialDelaySeconds: 5
+          #   periodSeconds: 10
+          # livenessProbe:
+          #   httpGet:
+          #     path: /health
+          #     port: 3004
+          #   initialDelaySeconds: 15
+          #   periodSeconds: 20
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ai-service
+  namespace: prod
+  labels:
+    app: ai-service
+spec:
+  selector:
+    app: ai-service
+  ports:
+    - port: 3004
+      targetPort: 3004
+      protocol: TCP
+      name: http
+  type: ClusterIP

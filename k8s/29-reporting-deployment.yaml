@@ -1,0 +1,70 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: reporting-service
+  namespace: prod
+  labels:
+    app: reporting-service
+spec:
+  replicas: 2 # banyaknya replika
+  selector:
+    matchLabels:
+      app: reporting-service
+  template:
+    metadata:
+      labels:
+        app: reporting-service
+    spec:
+      serviceAccountName: default-sa
+      containers:
+        - name: reporting
+          image: rahvanna/reporting-service:latest
+          ports:
+            - containerPort: 3009
+              name: http
+          envFrom:
+            - configMapRef:
+                name: common-config
+            - secretRef:
+                name: common-secret
+          env:
+            - name: PORT
+              value: '3009'
+            - name: SERVICE_NAME
+              value: 'reporting-service'
+          resources:
+            requests: # minimum CPU (100m) dan memori (64Mi)
+              cpu: 25m
+              memory: 64Mi
+            limits:
+              cpu: 125m
+              memory: 192Mi
+          # readinessProbe:
+          #   httpGet:
+          #     path: /health
+          #     port: 3009
+          #   initialDelaySeconds: 5
+          #   periodSeconds: 10
+          # livenessProbe:
+          #   httpGet:
+          #     path: /health
+          #     port: 3009
+          #   initialDelaySeconds: 15
+          #   periodSeconds: 20
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: reporting-service
+  namespace: prod
+  labels:
+    app: reporting-service
+spec:
+  selector:
+    app: reporting-service
+  ports:
+    - port: 3009
+      targetPort: 3009
+      protocol: TCP
+      name: http
+  type: ClusterIP

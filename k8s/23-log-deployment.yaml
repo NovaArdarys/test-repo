@@ -1,0 +1,70 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: log-service
+  namespace: prod
+  labels:
+    app: log-service
+spec:
+  replicas: 2 # banyaknya replika
+  selector:
+    matchLabels:
+      app: log-service
+  template:
+    metadata:
+      labels:
+        app: log-service
+    spec:
+      serviceAccountName: default-sa
+      containers:
+        - name: log
+          image: rahvanna/log-service:latest
+          ports:
+            - containerPort: 3003
+              name: http
+          envFrom:
+            - configMapRef:
+                name: common-config
+            - secretRef:
+                name: common-secret
+          env:
+            - name: PORT
+              value: '3003'
+            - name: SERVICE_NAME
+              value: 'log-service'
+          resources:
+            requests: # minimum CPU (100m) dan memori (64Mi)
+              cpu: 25m
+              memory: 64Mi
+            limits:
+              cpu: 125m
+              memory: 192Mi
+          # readinessProbe:
+          #   httpGet:
+          #     path: /health
+          #     port: 3003
+          #   initialDelaySeconds: 5
+          #   periodSeconds: 10
+          # livenessProbe:
+          #   httpGet:
+          #     path: /health
+          #     port: 3003
+          #   initialDelaySeconds: 15
+          #   periodSeconds: 20
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: log-service
+  namespace: prod
+  labels:
+    app: log-service
+spec:
+  selector:
+    app: log-service
+  ports:
+    - port: 3003
+      targetPort: 3003
+      protocol: TCP
+      name: http
+  type: ClusterIP

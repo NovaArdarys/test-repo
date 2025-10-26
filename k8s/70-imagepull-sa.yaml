@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: regcred
+  namespace: prod
+type: kubernetes.io/dockerconfigjson
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: default-sa
+  namespace: prod
+imagePullSecrets:
+  - name: regcred

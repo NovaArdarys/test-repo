@@ -1,0 +1,3 @@
+ALTER TABLE "suppliers_foods" ALTER COLUMN "supplier_id" SET NOT NULL;--> statement-breakpoint
+ALTER TABLE "suppliers_foods" ADD CONSTRAINT "suppliers_foods_supplier_id_suppliers_id_fk" FOREIGN KEY ("supplier_id") REFERENCES "public"."suppliers"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+CREATE UNIQUE INDEX "uq_supplier_fooditem" ON "suppliers_foods" USING btree ("supplier_id","food_item_id");

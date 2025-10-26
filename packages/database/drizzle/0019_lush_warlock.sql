@@ -1,0 +1,1 @@
+ALTER TABLE "menu_plans" ADD COLUMN "name" text;

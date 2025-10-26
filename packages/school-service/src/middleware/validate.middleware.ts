@@ -1,0 +1,50 @@
+import { normalizeArrayKeys } from "@/utils/normalize.data.util";
+import { Context, Next } from "hono";
+import { ZodSchema } from "zod";
+
+/**
+ * @param schema Zod untuk divalidasi.
+ * @param source Sumber data yang akan divalidasi ('body', 'param', atau 'query'). Default adalah 'body'.
+ */
+export const validate =
+  (schema: ZodSchema<any>, source: 'body' | 'param' | 'query' = 'body') =>
+    async (c: Context, next: Next) => {
+
+      try {
+        console.log(await c.req.parseBody(), "-----c.req.parseBody-----");
+        let data: any;
+        switch (source) {
+          case 'param':
+            data = c.req.param();
+            break;
+          case 'query':
+            data = c.req.query();
+            break;
+          case 'body':
+          default:
+            try {
+              const rawData = await c.req.parseBody();
+              data = normalizeArrayKeys(rawData);
+
+            } catch (e) {
+              data = {};
+            }
+            break;
+        }
+
+        const parsed = schema.parse(data);
+
+        c.set("validatedData", parsed);
+        await next();
+      } catch (err: any) {
+
+        const details = err.errors ?? JSON.parse(err.message);
+
+        console.log(details, "----- Validation Error Details ------");
+
+        return c.json({
+          error: 'Validation Error',
+          details: details
+        }, 400);
+      }
+    };

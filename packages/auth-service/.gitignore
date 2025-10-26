@@ -1,0 +1,5 @@
+# deps
+node_modules/
+
+# Ignore semua isi folder keys
+# /src/keys/

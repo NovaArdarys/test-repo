@@ -1,0 +1,1 @@
+ALTER TABLE "user_tokens" ALTER COLUMN "token" SET DATA TYPE varchar(1024);

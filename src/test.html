@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>WS Room Tester</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <style>
+      body {
+        font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+        max-width: 1100px;
+        margin: 18px auto;
+        padding: 12px;
+        color: #111;
+      }
+      h1 {
+        margin-bottom: 6px;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: 1fr 420px;
+        gap: 12px;
+        align-items: start;
+      }
+      .card {
+        border: 1px solid #e6e6e6;
+        border-radius: 8px;
+        padding: 12px;
+        background: #fff;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+      }
+      label {
+        display: block;
+        font-size: 12px;
+        color: #555;
+        margin-top: 8px;
+      }
+      input[type='text'],
+      input[type='url'],
+      textarea {
+        width: 100%;
+        padding: 8px;
+        margin-top: 6px;
+        border-radius: 6px;
+        border: 1px solid #ddd;
+        box-sizing: border-box;
+      }
+      button {
+        padding: 8px 10px;
+        margin: 6px 6px 6px 0;
+        border-radius: 6px;
+        border: 1px solid #bbb;
+        background: #f7f7f7;
+        cursor: pointer;
+      }
+      button.primary {
+        background: #0b74ff;
+        color: white;
+        border-color: #0b66e6;
+      }
+      #log {
+        height: 420px;
+        overflow: auto;
+        background: #0f1720;
+        color: #d1fae5;
+        padding: 8px;
+        border-radius: 6px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, 'Roboto Mono', monospace;
+        font-size: 12px;
+      }
+      .small {
+        font-size: 12px;
+        color: #666;
+      }
+      .rooms-list {
+        margin-top: 8px;
+        font-size: 13px;
+      }
+      .row {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+      .broadcast-list {
+        margin-top: 8px;
+        font-size: 13px;
+        max-height: 200px;
+        overflow: auto;
+      }
+      .broadcast-item {
+        padding: 4px 0;
+        border-bottom: 1px solid #eee;
+        word-break: break-all;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Tracking Service — WebSocket Room Tester</h1>
+    <p class="small">
+      Gunakan ini untuk connect ke endpoint WS server-mu (mis: <code>ws://localhost:3002/ws</code>)
+      lalu subscribe/publish ke room.
+    </p>
+
+    <div class="grid">
+      <div class="card">
+        <h3>Connection</h3>
+        <label>WebSocket URL (contoh: <code>ws://localhost:3002/ws</code>)</label>
+        <input id="wsUrl" type="url" value="ws://localhost:3002/ws" />
+        <label>Initial room (optional) — akan dikirim lewat query param <code>?room=</code></label>
+        <input id="initRoom" type="text" placeholder="delivery:123 or driver:45" />
+        <label>Token (optional) — query param <code>?token=</code></label>
+        <input id="token" type="text" placeholder="JWT token (if any)" />
+
+        <div style="margin-top: 10px">
+          <button id="connectBtn" class="primary">Connect</button>
+          <button id="disconnectBtn">Disconnect</button>
+          <span id="status" class="small" style="margin-left: 8px"
+            >Status: <strong id="connState">Disconnected</strong></span
+          >
+        </div>
+
+        <hr />
+
+        <h3>Room actions</h3>
+        <label>Room to (un)subscribe</label>
+        <div class="row">
+          <input id="roomInput" type="text" placeholder="e.g. delivery:123" />
+          <button id="subscribeBtn">Subscribe</button>
+          <button id="unsubscribeBtn">Unsubscribe</button>
+        </div>
+        <div class="rooms-list card" id="roomsCard" style="padding: 8px">
+          <strong>Subscribed rooms:</strong>
+          <ul id="roomsList"></ul>
+        </div>
+
+        <hr />
+
+        <h3>Publish (via WebSocket)</h3>
+        <label>Channel (e.g. tracking:delivery:location)</label>
+        <input id="pubChannel" type="text" value="tracking:delivery:location" />
+        <label>Payload (JSON)</label>
+        <textarea id="pubPayload" rows="4">
+{ "roomId": "delivery:123", "event": "location:update", "data": {"lat": -6.2, "lng": 106.8} }</textarea
+        >
+        <div style="margin-top: 8px">
+          <button id="wsPublishBtn">Publish via WS</button>
+        </div>
+
+        <hr />
+
+        <h3>Publish (via HTTP POST /publish)</h3>
+        <label>Server base URL (for HTTP publish)</label>
+        <input id="httpBase" type="url" value="http://localhost:3002" />
+        <div style="margin-top: 6px">
+          <button id="httpPublishBtn">POST /publish</button>
+        </div>
+        <p class="small">HTTP body: <code>{ channel, payload }</code></p>
+      </div>
+
+      <div class="card">
+        <h3>Logs</h3>
+        <div style="margin-bottom: 8px">
+          <button id="clearLogBtn">Clear Log</button>
+        </div>
+        <div id="log"></div>
+
+        <hr />
+
+        <h3>Last raw message</h3>
+        <pre
+          id="raw"
+          style="
+            white-space: pre-wrap;
+            background: #f6f8fa;
+            padding: 8px;
+            border-radius: 6px;
+            height: 160px;
+            overflow: auto;
+          "></pre>
+
+        <hr />
+
+        <h3>Broadcasted Messages</h3>
+        <div class="broadcast-list card" id="broadcastCard" style="padding: 8px">
+          <strong>Published messages:</strong>
+          <div id="broadcastList"></div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      let ws = null;
+      const logEl = document.getElementById('log');
+      const rawEl = document.getElementById('raw');
+      const connStateEl = document.getElementById('connState');
+      const roomsListEl = document.getElementById('roomsList');
+      const broadcastListEl = document.getElementById('broadcastList');
+      const roomsSet = new Set();
+      const broadcastHistory = [];
+
+      function log(msg, color = '#d1fae5') {
+        const now = new Date().toISOString();
+        const line = document.createElement('div');
+        line.style.padding = '4px 0';
+        line.style.borderBottom = '1px solid rgba(255,255,255,0.03)';
+        line.innerHTML = `<span style="color:#9ca3af">${now}</span> — <span style="color:${color}">${escapeHtml(
+          msg,
+        )}</span>`;
+        logEl.prepend(line);
+      }
+
+      function escapeHtml(s) {
+        return String(s).replace(
+          /[&<>"']/g,
+          (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]),
+        );
+      }
+
+      function setState(state) {
+        connStateEl.textContent = state;
+      }
+
+      function updateRoomsUI() {
+        roomsListEl.innerHTML = '';
+        for (const r of roomsSet) {
+          const li = document.createElement('li');
+          li.textContent = r;
+          roomsListEl.appendChild(li);
+        }
+      }
+
+      function updateBroadcastUI() {
+        broadcastListEl.innerHTML = '';
+        for (const { channel, payload, timestamp } of broadcastHistory) {
+          const div = document.createElement('div');
+          div.className = 'broadcast-item';
+          div.innerHTML = `<span style="color:#9ca3af">${timestamp}</span> — <strong>${escapeHtml(
+            channel,
+          )}</strong>: ${escapeHtml(JSON.stringify(payload))}`;
+          broadcastListEl.appendChild(div);
+        }
+      }
+
+      document.getElementById('clearLogBtn').addEventListener('click', () => {
+        logEl.innerHTML = '';
+        log('Log cleared', '#f59e0b');
+      });
+
+      document.getElementById('connectBtn').addEventListener('click', () => {
+        const base = document.getElementById('wsUrl').value.trim();
+        const room = document.getElementById('initRoom').value.trim();
+        const token = document.getElementById('token').value.trim();
+        if (!base) return alert('Set WebSocket URL');
+
+        // build query params
+        const url = new URL(base);
+        if (room) url.searchParams.set('room', room);
+        if (token) url.searchParams.set('token', token);
+
+        if (ws) {
+          log('Already connected', '#f59e0b');
+          return;
+        }
+
+        try {
+          ws = new WebSocket(url.toString());
+
+          ws.addEventListener('open', () => {
+            setState('Connected');
+            log('WebSocket open', '#60a5fa');
+            if (room) {
+              roomsSet.add(room);
+              updateRoomsUI();
+            }
+          });
+
+          ws.addEventListener('message', (ev) => {
+            // try parse JSON
+            let text = ev.data;
+            rawEl.textContent = typeof text === 'string' ? text : '[binary]';
+
+            console.log(text, '-----text------');
+
+            try {
+              const j = JSON.parse(
+                typeof text === 'string' ? text : new TextDecoder().decode(text),
+              );
+              log('IN: ' + JSON.stringify(j), '#a7f3d0');
+              // Check if the message is a publish action
+              if (j.action === 'publish' && j.channel && j.payload) {
+                broadcastHistory.push({
+                  channel: j.channel,
+                  payload: j.payload,
+                  timestamp: new Date().toISOString(),
+                });
+                updateBroadcastUI();
+              }
+            } catch (e) {
+              log('IN(raw): ' + text, '#a7f3d0');
+            }
+          });
+
+          ws.addEventListener('close', (ev) => {
+            setState('Disconnected');
+            log('WebSocket closed: code=' + ev.code + ' reason=' + ev.reason, '#f87171');
+            ws = null;
+          });
+
+          ws.addEventListener('error', (ev) => {
+            log('WebSocket error', '#ef4444');
+          });
+        } catch (e) {
+          log('Failed to connect: ' + e, '#ef4444');
+        }
+      });
+
+      document.getElementById('disconnectBtn').addEventListener('click', () => {
+        if (!ws) return log('Not connected', '#f59e0b');
+        ws.close(1000, 'client disconnect');
+        ws = null;
+        setState('Disconnected');
+      });
+
+      document.getElementById('subscribeBtn').addEventListener('click', () => {
+        const room = document.getElementById('roomInput').value.trim();
+        if (!room) return alert('input room');
+        if (!ws || ws.readyState !== WebSocket.OPEN) return alert('WebSocket not connected');
+        const msg = { action: 'subscribe', room };
+        ws.send(JSON.stringify(msg));
+        roomsSet.add(room);
+        updateRoomsUI();
+        log('Sent subscribe ' + room, '#93c5fd');
+      });
+
+      document.getElementById('unsubscribeBtn').addEventListener('click', () => {
+        const room = document.getElementById('roomInput').value.trim();
+        if (!room) return alert('input room');
+        if (!ws || ws.readyState !== WebSocket.OPEN) return alert('WebSocket not connected');
+        const msg = { action: 'unsubscribe', room };
+        ws.send(JSON.stringify(msg));
+        roomsSet.delete(room);
+        updateRoomsUI();
+        log('Sent unsubscribe ' + room, '#fca5a5');
+      });
+
+      document.getElementById('wsPublishBtn').addEventListener('click', () => {
+        const channel = document.getElementById('pubChannel').value.trim();
+        const payloadRaw = document.getElementById('pubPayload').value.trim();
+        if (!channel || !payloadRaw) return alert('channel & payload required');
+        let payload;
+        try {
+          payload = JSON.parse(payloadRaw);
+        } catch (e) {
+          return alert('invalid JSON payload');
+        }
+        if (!ws || ws.readyState !== WebSocket.OPEN) return alert('WebSocket not connected');
+        const msg = { action: 'publish', channel, payload };
+        ws.send(JSON.stringify(msg));
+        broadcastHistory.push({ channel, payload, timestamp: new Date().toISOString() });
+        updateBroadcastUI();
+        log('WS publish → channel=' + channel + ' payload=' + JSON.stringify(payload), '#a78bfa');
+      });
+
+      document.getElementById('httpPublishBtn').addEventListener('click', async () => {
+        const base = document.getElementById('httpBase').value.trim();
+        const channel = document.getElementById('pubChannel').value.trim();
+        const payloadRaw = document.getElementById('pubPayload').value.trim();
+        if (!base || !channel || !payloadRaw) return alert('base, channel & payload required');
+        let payload;
+        try {
+          payload = JSON.parse(payloadRaw);
+        } catch (e) {
+          return alert('invalid JSON payload');
+        }
+
+        try {
+          const res = await fetch(base.replace(/\/$/, '') + '/publish', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ channel, payload }),
+          });
+          const text = await res.text();
+          broadcastHistory.push({ channel, payload, timestamp: new Date().toISOString() });
+          updateBroadcastUI();
+          log('HTTP publish response: ' + res.status + ' ' + text, '#60a5fa');
+        } catch (e) {
+          log('HTTP publish failed: ' + e, '#ef4444');
+        }
+      });
+
+      // optional heartbeat ping every 25s to keep connection alive (server must ignore)
+      let pingInterval = null;
+      function startHeartbeat() {
+        if (pingInterval) return;
+        pingInterval = setInterval(() => {
+          if (ws && ws.readyState === WebSocket.OPEN) {
+            try {
+              ws.send(JSON.stringify({ action: 'ping', ts: Date.now() }));
+            } catch {}
+          }
+        }, 25000);
+      }
+      function stopHeartbeat() {
+        if (pingInterval) {
+          clearInterval(pingInterval);
+          pingInterval = null;
+        }
+      }
+
+      // start heartbeat automatically when page loaded (will only send when connected)
+      startHeartbeat();
+    </script>
+  </body>
+</html>

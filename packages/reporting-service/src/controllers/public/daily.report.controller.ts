@@ -1,0 +1,103 @@
+// src/controllers/dailyReport.controller.ts
+import { Context } from "hono";
+import { catchAsync } from "@/utils/catchAsync";
+import {
+  createDailyReport,
+  getDailyReportsList,
+  getDailyReportById,
+  updateDailyReport,
+  deleteDailyReport,
+  createStepReport,
+  getStepReportsByDailyReport,
+  updateStepReport,
+  deleteStepReport,
+} from "@/services/repositories/daily.report.service";
+import { CreateDailyReportSchemaType, CreateStepReportSchemaType, UpdateDailyReportSchemaType } from "@/validator/daily.report.validator";
+
+const getAuditFields = (c: Context) => ({
+  createdBy: c.get("userId") as string,
+  updatedBy: c.get("userId") as string,
+  kitchenId: c.get("kitchenId") as string[],
+  driverId: c.get("driverId") as string[],
+  schoolId: c.get("schoolId") as string[],
+});
+
+export const listDailyReportsHandler = catchAsync(async (c: Context) => {
+  const query = c.req.query();
+  const audit = getAuditFields(c);
+  const page = parseInt(query.page || '1');
+  const limit = parseInt(query.limit || '10');
+
+  const data = await getDailyReportsList({
+    entityType: query.entityType,
+    entityId: query.entityId,
+    status: query.status,
+    startDate: query.startDate,
+    endDate: query.endDate,
+    kitchenIds: audit.kitchenId,
+    schoolIds: audit.schoolId,
+    page,
+    limit
+  });
+  return c.json(data);
+});
+
+export const getDailyReportHandler = catchAsync(async (c: Context) => {
+  const id = c.req.param("id");
+  const report = await getDailyReportById(id);
+  if (!report) return c.json({ message: "Not found" }, 404);
+  return c.json({ data: report });
+});
+
+export const createDailyReportHandler = catchAsync(async (c: Context) => {
+  const body = await c.req.parseBody() as unknown as CreateDailyReportSchemaType;
+  const audit = getAuditFields(c);
+  const newReport = await createDailyReport({ ...body, ...audit });
+  return c.json({ data: newReport }, 201);
+});
+
+export const updateDailyReportHandler = catchAsync(async (c: Context) => {
+  const id = c.req.param("id");
+  const body = await c.req.parseBody();
+  const updated = await updateDailyReport(id, { ...body, updatedBy: c.get("userId") });
+  return c.json({ data: updated });
+});
+
+export const deleteDailyReportHandler = catchAsync(async (c: Context) => {
+  const id = c.req.param("id");
+  const result = await deleteDailyReport(id);
+  return c.json(result);
+});
+
+export const listStepReportsHandler = catchAsync(async (c: Context) => {
+  const dailyReportId = c.req.param("dailyReportId");
+  const steps = await getStepReportsByDailyReport(dailyReportId);
+  return c.json({ data: steps });
+});
+
+export const createStepReportHandler = catchAsync(async (c: Context) => {
+  const dailyReportId = c.req.param("dailyReportId");
+  const body = await c.req.parseBody() as unknown as CreateStepReportSchemaType;
+  const audit = getAuditFields(c);
+
+  const newStep = await createStepReport({
+    ...body,
+    ...audit,
+    dailyReportId,
+  });
+
+  return c.json({ data: newStep }, 201);
+});
+
+export const updateStepReportHandler = catchAsync(async (c: Context) => {
+  const id = c.req.param("id");
+  const body = await c.req.parseBody();
+  const updated = await updateStepReport(id, { ...body, updatedBy: c.get("userId") });
+  return c.json({ data: updated });
+});
+
+export const deleteStepReportHandler = catchAsync(async (c: Context) => {
+  const id = c.req.param("id");
+  const result = await deleteStepReport(id);
+  return c.json(result);
+});

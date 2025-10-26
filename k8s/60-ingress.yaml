@@ -1,0 +1,130 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: api-ingress
+  namespace: prod
+  annotations:
+    # Annotation untuk Ingress Class
+    kubernetes.io/ingress.class: 'nginx'
+
+    # Anotasi Timeout dan Size Umum
+    nginx.ingress.kubernetes.io/proxy-read-timeout: '3600'
+    nginx.ingress.kubernetes.io/proxy-send-timeout: '3600'
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: '3600'
+    nginx.ingress.kubernetes.io/proxy-body-size: '0'
+
+    # Anotasi Keamanan
+    nginx.ingress.kubernetes.io/enable-modsecurity: 'false'
+
+    # Anotasi Regex dan Rewrite
+    nginx.ingress.kubernetes.io/use-regex: 'true'
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+
+    # Anotasi WebSocket
+    nginx.ingress.kubernetes.io/websocket-services: 'tracking-service'
+
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - api.example.com
+      secretName: tls-secret
+  rules:
+    - http:
+        paths:
+          # --- AUTH SERVICE ---
+          - path: /auth(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: auth-service
+                port:
+                  number: 3000
+          # --- USER SERVICE ---
+          - path: /user(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: user-service
+                port:
+                  number: 3001
+          # --- TRACKING SERVICE (WebSocket) ---
+          - path: /ws(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: tracking-service
+                port:
+                  number: 3002
+          # --- LOG SERVICE ---
+          - path: /log(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: log-service
+                port:
+                  number: 3003
+          # --- Ai SERVICE ---
+          - path: /ai(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: ai-service
+                port:
+                  number: 3004
+          # --- Delivery SERVICE ---
+          - path: /delivery(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: delivery-service
+                port:
+                  number: 3005
+          # --- Kitchen SERVICE ---
+          - path: /kitchen(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: kitchen-service
+                port:
+                  number: 3006
+          # --- Menu SERVICE ---
+          - path: /menu(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: menu-service
+                port:
+                  number: 3007
+          # --- Notification SERVICE ---
+          - path: /notification(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: notification-service
+                port:
+                  number: 3008
+          # --- Reporting SERVICE ---
+          - path: /reporting(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: reporting-service
+                port:
+                  number: 3009
+          # --- School SERVICE ---
+          - path: /school(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: school-service
+                port:
+                  number: 3010
+          # --- Storage SERVICE ---
+          - path: /storage(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: storage-service
+                port:
+                  number: 3011

@@ -1,0 +1,102 @@
+# docker-compose.dev.yml
+services:
+  user_service:
+    image: oven/bun:1
+    working_dir: /app
+    volumes:
+      - ./packages/user-service/src:/app/src
+      - ./packages/user-service/package.json:/app/package.json
+    command: ["bun", "run", "--watch", "src/index.ts"]
+    networks:
+      - app-network
+
+  auth_service:
+    image: oven/bun:1
+    working_dir: /app
+    volumes:
+      - ./packages/auth-service/src:/app/src
+      - ./packages/auth-service/package.json:/app/package.json
+    command: ["bun", "run", "--watch", "src/index.ts"]
+    networks:
+      - app-network
+  tracking-service:
+    image: oven/bun:1
+    working_dir: /app
+    volumes:
+      - ./packages/tracking-service/src:/app/src
+      - ./packages/tracking-service/package.json:/app/package.json
+    command: ["bun", "run", "--watch", "src/index.ts"]
+    networks:
+      - app-network
+  log-service:
+    image: oven/bun:1
+    working_dir: /app
+    volumes:
+      - ./packages/log-service/src:/app/src
+      - ./packages/log-service/package.json:/app/package.json
+    command: ["/bin/sh", "-c"]
+    networks:
+      - app-network
+  ai-service:
+    image: oven/bun:1
+    working_dir: /app
+    volumes:
+      - ./packages/ai-service/src:/app/src
+      - ./packages/ai-service/package.json:/app/package.json
+    command: ["/bin/sh", "-c"]
+    networks:
+      - app-network
+  delivery-service:
+    image: oven/bun:1
+    working_dir: /app
+    volumes:
+      - ./packages/delivery-service/src:/app/src
+      - ./packages/delivery-service/package.json:/app/package.json
+    command: ["/bin/sh", "-c"]
+    networks:
+      - app-network
+  kitchen-service:
+    image: oven/bun:1
+    working_dir: /app
+    volumes:
+      - ./packages/kitchen-service/src:/app/src
+      - ./packages/kitchen-service/package.json:/app/package.json
+    command: ["/bin/sh", "-c"]
+    networks:
+      - app-network
+  menu-service:
+    image: oven/bun:1
+    working_dir: /app
+    volumes:
+      - ./packages/menu-service/src:/app/src
+      - ./packages/menu-service/package.json:/app/package.json
+    command: ["/bin/sh", "-c"]
+    networks:
+      - app-network
+  notification-service:
+    image: oven/bun:1
+    working_dir: /app
+    volumes:
+      - ./packages/notification-service/src:/app/src
+      - ./packages/notification-service/package.json:/app/package.json
+    command: ["/bin/sh", "-c"]
+    networks:
+      - app-network
+  reporting-service:
+    image: oven/bun:1
+    working_dir: /app
+    volumes:
+      - ./packages/reporting-service/src:/app/src
+      - ./packages/reporting-service/package.json:/app/package.json
+    command: ["/bin/sh", "-c"]
+    networks:
+      - app-network
+  school-service:
+    image: oven/bun:1
+    working_dir: /app
+    volumes:
+      - ./packages/school-service/src:/app/src
+      - ./packages/school-service/package.json:/app/package.json
+    command: ["/bin/sh", "-c"]
+    networks:
+      - app-network

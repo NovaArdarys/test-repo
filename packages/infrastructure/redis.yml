@@ -1,0 +1,30 @@
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    hostname: redis
+    command: ['redis-server', '/usr/local/etc/redis/redis.conf']
+    ports:
+      - '${REDIS_HOST_PORT:-6379}:6379'
+    environment:
+      - REDIS_PASS=${REDIS_PASS}
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'AUTH', 'default', '${REDIS_PASS}', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - redis_data:/data
+      - ./redis.conf:/usr/local/etc/redis/redis.conf
+    networks:
+      - app-network
+    restart: always
+
+  redisinsight:
+    image: redis/redisinsight:latest
+    container_name: redisinsight
+    ports:
+      - '${REDIS_MANAGEMENT_HOST_PORT:-5540}:5540'
+    networks:
+      - app-network
+    restart: always

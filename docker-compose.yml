@@ -1,0 +1,42 @@
+# docker-compose.yml
+# version: '3.8'
+include:
+  # redis
+  - ./packages/infrastructure/redis.yml
+  # rabbitmq
+  - ./packages/infrastructure/rabbitmq.yml
+  # miniIO
+  - ./packages/infrastructure/minio.yml
+  # user
+  - ./packages/user-service/docker-compose.yml
+  # auth
+  - ./packages/auth-service/docker-compose.yml
+  # log
+  - ./packages/log-service/docker-compose.yml
+  # tracking
+  - ./packages/tracking-service/docker-compose.yml
+  # ai
+  - ./packages/ai-service/docker-compose.yml
+  # delivery
+  - ./packages/delivery-service/docker-compose.yml
+  # kitchen
+  - ./packages/kitchen-service/docker-compose.yml
+  # menu
+  - ./packages/menu-service/docker-compose.yml
+  # notification
+  - ./packages/notification-service/docker-compose.yml
+  # reporting
+  - ./packages/reporting-service/docker-compose.yml
+  # school
+  - ./packages/school-service/docker-compose.yml
+  # storage
+  - ./packages/storage-service/docker-compose.yml
+
+networks:
+  app-network:
+    name: ${NETWORK_NAME}
+
+volumes:
+  redis_data:
+  rabbitmq_data:
+  minio_data:

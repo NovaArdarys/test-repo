@@ -1,0 +1,29 @@
+services:
+  notification_service:
+    build:
+      context: ../..
+      dockerfile: packages/notification-service/Dockerfile
+    container_name: notification_service
+    env_file:
+      - ../../.env
+      - .env
+    environment:
+      - NODE_ENV=development
+      - SERVICE_INTERNAL_PORT=3008
+      - SERVICE_HOST_PORT=3008
+    ports:
+      - "3008:3008"
+    volumes:
+      - ../..:/app:cached
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3008/api/health  || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+    restart: unless-stopped

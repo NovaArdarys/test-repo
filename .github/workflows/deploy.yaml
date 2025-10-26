@@ -1,0 +1,147 @@
+name: CI/CD Deploy Microservices to K8s
+
+on:
+  push:
+    branches:
+      - development
+  workflow_dispatch:
+
+env:
+  REGISTRY: docker.io
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      # -----------------------------------------------
+      # 0. DOCKER LOGIN
+      # -----------------------------------------------
+      - name: 🐳 Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # -----------------------------------------------
+      # 1. GENERATE UNIQUE TAG AND SET TO ENVIRONMENT
+      # -----------------------------------------------
+      - name: 🏷️ Set Unique Tag
+        id: set_tag
+        run: |
+          UNIQUE_TAG=$(date +%Y%m%d-%H%M%S)
+          echo "UNIQUE_TAG=$UNIQUE_TAG" >> $GITHUB_ENV
+          echo "Generated Tag: $UNIQUE_TAG"
+
+      # -----------------------------------------------
+      # 2. DOCKER BUILD & PUSH (Call Bash Script)
+      # -----------------------------------------------
+      - name: 🧱 Run Build and Push Script
+        run: |
+          echo "Current working directory: $(pwd)"
+          chmod +x ./scripts/build-and-push.sh
+          ./scripts/build-and-push.sh ${{ env.UNIQUE_TAG }}
+
+      # -----------------------------------------------
+      # 3. KUBERNETES DEPLOYMENT PREPARATION
+      # -----------------------------------------------
+
+      - name: ✍️ Replace Image Tag in K8s Manifests
+        run: |
+          USERNAME=${{ secrets.DOCKERHUB_USERNAME }}
+          NEW_TAG=${{ env.UNIQUE_TAG }}
+
+          echo "Replacing image tags in k8s manifests to $NEW_TAG"
+          # Sed ini akan mengubah image tag di semua file YAML di k8s/
+          find k8s/ -type f -name "*.yaml" -exec sed -i "s|image: $USERNAME/\(.*\):latest|image: $USERNAME/\1:$NEW_TAG|g" {} \;
+
+      # -----------------------------------------------
+      # 4. SSH PREREQUISITES (INSTALL & WAIT)
+      # -----------------------------------------------
+      - name: 🛠️ Install sshpass and Prepare Remote
+        run: |
+          # 1. Install sshpass
+          echo "Installing sshpass..."
+          sudo apt-get update && sudo apt-get install -y sshpass
+
+          # 2. Prepare Deployment Directory on Remote Server
+          echo "Preparing deployment directory on remote server..."
+          sshpass -p "${{ secrets.SSH_PASSWORD }}" \
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} \
+          "mkdir -p /home/deploy/deployments"
+
+          # 3. Wait for ingress-nginx (dijalankan di remote server)
+          echo "Waiting for ingress-nginx readiness..."
+          sshpass -p "${{ secrets.SSH_PASSWORD }}" ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} \
+          "sleep 20 && kubectl wait --namespace ingress-nginx --for=condition=ready pod --selector=app.kubernetes.io/component=controller --timeout=90s"
+          echo "Ingress-nginx is ready."
+
+      # -----------------------------------------------
+      # 5. COPY FILES
+      # -----------------------------------------------
+      - name: 📦 Copy Updated Kubernetes Manifests
+        run: |
+          # Copies the locally modified YAML files (termasuk Ingress yang diperbarui)
+          sshpass -p "${{ secrets.SSH_PASSWORD }}" \
+          scp -o StrictHostKeyChecking=no -r k8s/* \
+          ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}:/home/deploy/deployments
+
+      # -----------------------------------------------
+      # 6. DEPLOYMENT MICROSERVICES
+      # -----------------------------------------------
+      - name: 🚀 Deploy Microservices (Apply & Force Reset)
+        run: |
+          sshpass -p "${{ secrets.SSH_PASSWORD }}" ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} << 'EOF'
+            echo "Moving to deployment directory..."
+            cd /home/deploy/deployments
+            
+            # 1. APPLY NEW MANIFESTS (Termasuk semua Deployments, ConfigMap, dan Service)
+            echo "Applying new ConfigMaps, Secrets, and Deployments..."
+            kubectl apply -f secret-common.yaml -n prod
+            kubectl apply -f configmap-common.yaml -n prod
+            kubectl apply -f .
+            
+            # 2. FORCE DELETION OF OLD, RESOURCE-HOGGING PODS
+            echo "Forcing deletion of all old Pods to free up CPU..."
+            kubectl delete pods -n prod --all --force --grace-period=0
+            
+            # 3. VERIFY ROLLOUT
+            echo "Waiting for all Deployments to stabilize with new low-resource config..."
+            sleep 30 
+            kubectl rollout status deployment -n prod
+            
+            echo "Deployment and force rollout completed."
+          EOF
+
+      # -----------------------------------------------
+      # 7. APPLY INGRESS & RESTART NGINX CONTROLLER (FIXED)
+      # -----------------------------------------------
+      - name: 🌐 Apply Ingress and Force NGINX Restart
+        run: |
+          echo "Fetching NGINX Ingress Controller Pod name..."
+          INGRESS_POD=$(sshpass -p "${{ secrets.SSH_PASSWORD }}" ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} \
+            "kubectl get pods -n ingress-nginx -l app.kubernetes.io/component=controller -o jsonpath='{.items[0].metadata.name}'")
+
+          if [ -z "$INGRESS_POD" ]; then
+              echo "Error: NGINX Ingress Controller Pod not found. Aborting restart."
+          fi
+
+          sshpass -p "${{ secrets.SSH_PASSWORD }}" ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} << EOF_INGRESS
+            echo "Applying latest Ingress manifest (60-ingress.yaml)..."
+            kubectl apply -f /home/deploy/deployments/60-ingress.yaml -n prod
+            
+            if [ -n "$INGRESS_POD" ]; then
+                echo "Forcing restart of NGINX Ingress Controller Pod: $INGRESS_POD"
+                kubectl delete pod $INGRESS_POD -n ingress-nginx --force --grace-period=0
+                
+                echo "Waiting for NGINX Controller to be ready again..."
+                kubectl wait --namespace ingress-nginx --for=condition=ready pod --selector=app.kubernetes.io/component=controller --timeout=120s
+            else
+                echo "Cannot force restart: NGINX Ingress Controller Pod name was not found."
+            fi
+
+            echo "NGINX Ingress configuration updated and controller sequence completed."
+          EOF_INGRESS

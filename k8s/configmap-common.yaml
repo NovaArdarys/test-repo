@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: common-config
+  namespace: prod
+data:
+  APP_NAME: 'mbg-backend-microservice'
+
+  # RabbitMQ
+  RABBITMQ_HOST_PORT: '5672'
+  RABBITMQ_MANAGEMENT_HOST_PORT: '15672'
+
+  # Redis
+  REDIS_HOST_PORT: '6380'
+  REDIS_MANAGEMENT_HOST_PORT: '5544'
+
+  # Supabase
+  DB_HOST: 'aws-1-ap-southeast-1.pooler.supabase.com'
+  DB_PORT: '6543'
+  DB_NAME: 'postgres'
+
+  # List Port
+  PORT_AUTH: '3000'
+  PORT_USER: '3001'
+  PORT_TRACKING: '3002'
+
+  # List Service
+  USER_SERVICE: 'http://user-service:3001/api'
+
+  # smtp
+  EMAIL_HOST: 'mail.ptn-techlabs.com'
+  EMAIL_PORT: '587'
+  EMAIL_SECURE: 'false'

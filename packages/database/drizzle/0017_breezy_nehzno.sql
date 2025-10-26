@@ -1,0 +1,1 @@
+DROP TABLE "menus_food" CASCADE;

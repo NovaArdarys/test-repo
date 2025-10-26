@@ -1,0 +1,22 @@
+# pdbs memastikan bahwa setidaknya 1 Pod dari layanan tersebut tetap berjalan selama operasi pemeliharaan
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: user-service-pdb
+  namespace: prod
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: user-service
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: tracking-service-pdb
+  namespace: prod
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: tracking-service

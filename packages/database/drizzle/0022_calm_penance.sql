@@ -1,0 +1,1 @@
+ALTER TABLE "suppliers_food_items" ALTER COLUMN "menu_plan_id" SET NOT NULL;

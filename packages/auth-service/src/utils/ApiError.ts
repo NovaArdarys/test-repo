@@ -1,0 +1,30 @@
+import { type ContentfulStatusCode } from "hono/utils/http-status";
+
+interface ErrorOptions {
+  message: string;
+  isOperational?: boolean;
+  details?: any[];
+  stack?: string;
+}
+
+class ApiError extends Error {
+  statusCode: ContentfulStatusCode;
+  isOperational: boolean;
+  details: any[];
+
+  constructor(statusCode: ContentfulStatusCode, options: ErrorOptions) {
+    super(options.message);
+
+    this.statusCode = statusCode;
+    this.isOperational = options.isOperational ?? false;
+    this.details = options.details ?? [];
+
+    if (options.stack) {
+      this.stack = options.stack;
+    } else {
+      Error.captureStackTrace(this, this.constructor);
+    }
+  }
+}
+
+export default ApiError;
