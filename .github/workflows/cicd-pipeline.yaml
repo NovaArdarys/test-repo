@@ -98,3 +98,4 @@ jobs:
             
             #validate
             kubectl -n ${{ env.NAMESPACE }} rollout status deployment/$DEPLOYMENT_NAME --timeout=300s
+
