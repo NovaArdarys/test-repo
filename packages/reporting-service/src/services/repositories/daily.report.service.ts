@@ -412,13 +412,16 @@ export async function getDailyReportsList(params?: {
 
     const sfiId = row.suppliersFoodItem?.id;
     const foodItemId = row.foodItem?.id;
+    console.log("=============", foodItemId, "=============");
 
-    if (sfiId && report.menuPlan && foodItemId) {
+
+
+    if (sfiId && report.menuPlan) {
       const existingFoodItem = report.menuPlan._foodItemMap.get(sfiId);
 
       if (!existingFoodItem) {
         const newFoodItem = {
-          ...row.foodItem,
+          ...(row.foodItem ?? {}),
           id: sfiId,
           foodId: foodItemId,
           suppliers: [] as Supplier[],
@@ -427,8 +430,12 @@ export async function getDailyReportsList(params?: {
         if (row.supplier) {
           newFoodItem.suppliers.push(row.supplier);
         }
+
         report.menuPlan._foodItemMap.set(sfiId, newFoodItem);
-      } else if (row.supplier && !existingFoodItem.suppliers.some((s: any) => s.id === row?.supplier?.id)) {
+      } else if (
+        row.supplier &&
+        !existingFoodItem.suppliers.some((s: any) => s.id === row?.supplier?.id)
+      ) {
         existingFoodItem.suppliers.push(row.supplier);
       }
     }
@@ -458,7 +465,7 @@ export async function getDailyReportsList(params?: {
 
     if (report.menuPlan) {
       report.menuPlan.foodItems = Array.from(report.menuPlan._foodItemMap.values()).map((foodItem: any) => {
-        const { foodId, ...restFoodItem } = foodItem;
+        const { ...restFoodItem } = foodItem;
         return restFoodItem;
       });
       delete report.menuPlan._foodItemMap;
