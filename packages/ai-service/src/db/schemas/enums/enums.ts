@@ -43,4 +43,5 @@ export const analysisTypeEnum = pgEnum('analysis_type', [
   'cleanliness',        // cek kebersihan dapur
   'mealbox_count',      // hitung jumlah kotak makan
   'food_detection',     // deteksi makanan berdasarkan label
+  'other'
 ]);

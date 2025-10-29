@@ -2,7 +2,7 @@
 import * as amqplib from 'amqplib';
 import { setupAiServiceConsumers } from './ai.consumer';
 
-
+import '@/jobs/worker/food.worker';
 export async function initializeConsumers(channel: amqplib.Channel): Promise<void> {
   try {
     console.log("Initializing all message consumers...");
