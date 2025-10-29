@@ -39,7 +39,7 @@ async function handleStorageEvent(msg: import("amqplib").ConsumeMessage | null, 
         kitchenId: data.entityId,
         menuPlanId: data.menuPlanId,
         status: "PENDING",
-        createdBy: ""
+        createdBy: "00000000-0000-0000-0000-000000000000"
       });
 
       console.log("============= ✅ success ✅ ===========", result);
