@@ -13,7 +13,7 @@ const storageCommittedSchema = z.object({
   menuPlanId: z.string(),
   entityType: entityTypeValidator,
   entityId: z.string(),
-  allStepCompleted: z.preprocess((a) => a === 'true', z.boolean()),
+  allStepCompleted: z.boolean(),
 });
 
 // ===== queue dan route key =====
@@ -29,21 +29,26 @@ async function handleStorageEvent(msg: import("amqplib").ConsumeMessage | null, 
 
   try {
     const parsed = JSON.parse(msg.content.toString());
-    console.log("🪅 =====parsed====== ", parsed);
     const data = storageCommittedSchema.parse(parsed);
+    console.log("🪅 =====parsed====== ", data);
+
+    console.log(data.entityType === "kitchen", "🐉🐉", data.allStepCompleted);
 
     if (data.entityType === "kitchen" && data.allStepCompleted) {
-      await createAutoDelivery({
+      const result = await createAutoDelivery({
         kitchenId: data.entityId,
         menuPlanId: data.menuPlanId,
         status: "PENDING",
         createdBy: ""
       });
+
+      console.log("============= ✅ success ✅ ===========", result);
+
     }
 
     channel.ack(msg);
   } catch (err: any) {
-    console.log(err);
+    console.log(err, "========error========");
     channel.nack(msg, false, false);
   }
 }
