@@ -1,20 +1,35 @@
-import { EXCHANGE_NAME } from "@/constants/config";
 import { getRabbitMQChannel } from "../broker";
+import { EXCHANGES } from "../events/exchanges";
 
+export interface StorageUploadEvent {
+  tempPath: string;
+  targetPath: string;
+  url: string;
+  storageId?: string;
+  entityType?: string;
+  entityId?: string;
+  meta?: Record<string, any>;
+}
 
-export async function publishUserRegistered(data: { userId: string, email: string; }) {
+export async function publishStorageUpload(data: StorageUploadEvent) {
   try {
-    const channel = getRabbitMQChannel();
-    await channel.assertExchange(EXCHANGE_NAME.REPORTING_EVENTS, 'topic', { durable: true });
+    const channel = await getRabbitMQChannel();
 
-    channel.publish(
-      EXCHANGE_NAME.REPORTING_EVENTS,
-      'user.registered',
+    await channel.assertExchange(EXCHANGES.REPORT, "topic", { durable: true });
+
+    const success = channel.publish(
+      EXCHANGES.STORAGE,
+      "delivery.step.commit",
       Buffer.from(JSON.stringify(data)),
       { persistent: true }
     );
-    console.log(`Published UserRegistered event for ID: ${data.userId}`);
-  } catch (error) {
-    console.error("Failed to publish message:", error);
+
+    if (!success) {
+      console.error(`[RABBITMQ] Failed to publish storage upload: ${data.targetPath}`);
+    } else {
+      console.log(`[STORAGE PUBLISH] File queued: ${data.targetPath}`);
+    }
+  } catch (err) {
+    console.error("[STORAGE PUBLISH ERROR]", err);
   }
 }
