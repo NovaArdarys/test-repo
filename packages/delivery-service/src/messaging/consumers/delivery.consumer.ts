@@ -32,10 +32,6 @@ async function handleStorageEvent(msg: import("amqplib").ConsumeMessage | null, 
     console.log("🪅 =====parsed====== ", parsed);
     const data = storageCommittedSchema.parse(parsed);
 
-
-    console.log(data);
-    // createDelivery
-
     if (data.entityType === "kitchen" && data.allStepCompleted) {
       await createAutoDelivery({
         kitchenId: data.entityId,
@@ -44,19 +40,6 @@ async function handleStorageEvent(msg: import("amqplib").ConsumeMessage | null, 
         createdBy: ""
       });
     }
-
-    //   console.log(`[STORAGE EVENT] Updated user_profile ${data.entityId}`);
-    // }
-
-    // if (data.entityType === "profile_supplier") {
-    //   await updateSupplier(data.entityId, {
-    //     storageId: data.storageId,
-    //     imageURL: data.url,
-    //     updatedBy: data.meta?.uploadedBy,
-    //   });
-
-    //   console.log(`[STORAGE EVENT] Updated user_profile ${data.entityId}`);
-    // }
 
     channel.ack(msg);
   } catch (err: any) {
