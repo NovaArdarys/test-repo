@@ -29,14 +29,14 @@ export async function saveStorageRecord(data: StorageCreatePayload): Promise<Sto
         createdAt: new Date(),
         createdBy: data.createdBy ?? null,
       })
-      .onConflictDoUpdate({
-        target: [storage.entityType, storage.entityId],
-        set: {
-          fileName: data.fileName,
-          fileUrl: data.fileUrl,
-          path: data.path,
-        },
-      })
+      // .onConflictDoUpdate({
+      //   target: [storage.entityType, storage.entityId],
+      //   set: {
+      //     fileName: data.fileName,
+      //     fileUrl: data.fileUrl,
+      //     path: data.path,
+      //   },
+      // })
       .returning();
 
     return record;
