@@ -83,7 +83,6 @@ export async function uploadToMinio(
   await minioClient.putObject(bucket, fileName, nodeStream, undefined, {
     "Content-Type": contentType,
   });
-  http://128.199.77.145:9000/
   const endpoint = process.env.MINIO_ENDPOINT || "127.0.0.1";
   const port = process.env.MINIO_PORT || "9000";
   const protocol = process.env.MINIO_USE_SSL === "true" ? "https" : "http";
