@@ -9,10 +9,10 @@ services:
       - .env
     environment:
       - NODE_ENV=development
-      - SERVICE_INTERNAL_PORT=4001
-      - SERVICE_HOST_PORT=4001
+      - SERVICE_INTERNAL_PORT=3011
+      - SERVICE_HOST_PORT=3011
     ports:
-      - "4001:4001"
+      - "3011:3011"
     volumes:
       - ../..:/app:cached
     depends_on:
@@ -21,7 +21,7 @@ services:
     networks:
       - app-network
     healthcheck:
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:4001/api/health  || exit 1"]
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3011/api/health  || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5

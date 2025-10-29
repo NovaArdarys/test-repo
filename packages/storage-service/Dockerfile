@@ -44,8 +44,8 @@ USER bun
 
 # Environment
 ENV NODE_ENV=production
-ENV SERVICE_INTERNAL_PORT=4001
-EXPOSE 4001
+ENV SERVICE_INTERNAL_PORT=3011
+EXPOSE 3011
 
 # Metadata
 LABEL org.opencontainers.image.title="${SERVICE_NAME} Service"
@@ -55,7 +55,7 @@ LABEL org.opencontainers.image.licenses="MIT"
 
 # Healthcheck
 # HEALTHCHECK --interval=30s --timeout=10s --start-period=20s --retries=5 \
-#   CMD wget --no-verbose --tries=1 --spider http://localhost:4001/api/health || exit 1
+#   CMD wget --no-verbose --tries=1 --spider http://localhost:3011/api/health || exit 1
 
 # jalankan service dynamic
 CMD ["bun", "run", "packages/storage-service/src/index.ts"]

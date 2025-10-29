@@ -127,4 +127,4 @@ spec:
               service:
                 name: storage-service
                 port:
-                  number: 4001
+                  number: 3011
