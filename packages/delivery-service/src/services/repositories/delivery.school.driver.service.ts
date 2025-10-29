@@ -92,7 +92,7 @@ export async function createAutoDelivery(data: CreateAutoDeliveryInput) {
           driverId: driver.id,
           startTime: new Date(),
           estimatedDeliveryTime: null,
-          notes: `Auto delivery for menu plan ${data.menuPlanId}`,
+          notes: `Pengiriman untuk ${schools.name}`,
           status: data.status || 'PENDING',
           createdAt: new Date(),
           updatedAt: new Date(),
