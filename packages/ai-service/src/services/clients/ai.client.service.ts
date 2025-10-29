@@ -22,7 +22,7 @@ export function getAITypeFromStepOrder(stepOrder: number) {
     case 2:
       return "cleanliness";
     case 3:
-      return null;
+      return "food";
     case 4:
       return "mealbox";
     default:

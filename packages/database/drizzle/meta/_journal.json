@@ -253,6 +253,34 @@
       "when": 1761770305773,
       "tag": "0035_overconfident_invaders",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1761778478280,
+      "tag": "0036_pink_nebula",
+      "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1761778543875,
+      "tag": "0037_living_mister_sinister",
+      "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1761778565048,
+      "tag": "0038_fat_omega_sentinel",
+      "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1761778640788,
+      "tag": "0039_talented_iron_lad",
+      "breakpoints": true
     }
   ]
 }

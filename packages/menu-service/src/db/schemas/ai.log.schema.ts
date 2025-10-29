@@ -1,12 +1,11 @@
 import { index, jsonb, numeric, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
-import { analysisTypeEnum, entityTypeEnum } from "./enums/enums";
+import { analysisTypeEnum } from "./enums/enums";
 
 export const aiAnalysisLogs = pgTable(
   'ai_analysis_logs',
   {
     id: uuid('id').primaryKey().defaultRandom(),
     entityId: uuid("entity_id"),
-    entityType: entityTypeEnum("entity_type").notNull(),
     analysisType: analysisTypeEnum('analysis_type').notNull(),
     sourceImageUrl: text('source_image_url'),
     outputImageUrl: text('output_image_url'),

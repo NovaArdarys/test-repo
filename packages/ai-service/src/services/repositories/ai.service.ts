@@ -31,7 +31,6 @@ export async function insertAiLog(params: InsertAiLogParams) {
 
   return await db.insert(aiAnalysisLogs).values({
     entityId,
-    entityType,
     analysisType,
     sourceImageUrl: sourceImageUrl ?? null,
     outputImageUrl: outputImageUrl ?? null,
