@@ -18,8 +18,8 @@ async function handleStorageEvent(msg: import("amqplib").ConsumeMessage | null, 
 
   try {
     const parsed = JSON.parse(msg.content.toString());
-    console.log("🪅 =====parsed====== ", parsed);
     const data = storageCommittedSchema.parse(parsed);
+    console.log("🪅 =====parsed====== ", data);
 
     const job = await foodQueue.add('food-detection', data, {
       attempts: 3,
