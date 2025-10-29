@@ -1,10 +1,10 @@
 import { db } from "@/db";
 import { foodItems, kitchens, menuPlans, menuPlanSchoolsKitchen, menuFoodItem, schools, dailyReports, stepReports, drivers, masterSteps, suppliersFoodItems } from "@/db/schemas";
-import { APIPagination } from "@/types/paginations.type";
-import { eq, and, sql, desc, SQLWrapper, InferSelectModel, InferInsertModel, or, inArray, lte, gte } from "drizzle-orm";
+import { eq, and, sql, desc, InferSelectModel, InferInsertModel } from "drizzle-orm";
 import { FoodItem } from "./food.item.service";
 import { MenuPlanSchoolsKitchen } from "./menu.plan.schools.kitchen.service";
 import { isEmpty } from "lodash";
+import { buildPaginatedWhere } from "@/utils/pagination";
 
 export type MenuPlan = InferSelectModel<typeof menuPlans>;
 export type NewMenuPlan = Omit<
@@ -24,58 +24,60 @@ export async function getMenuPlansList({
     startDate,
     endDate,
     kitchenIds = [],
-    entityType = 'kitchen',
     schoolIds = [],
+    entityType = "kitchen",
+    menuPlanName
 }: {
     page: number;
     limit: number;
     villageId?: string;
-    status?: PlanStatus;
+    status?: string;
     isDeleted?: boolean;
     startDate?: string | null;
     endDate?: string | null;
-    kitchenId?: string | null;
     kitchenIds?: string[];
     schoolIds?: string[];
     entityType?: string;
-}): Promise<APIPagination<any>> {
-    const offset = (page - 1) * limit;
+    menuPlanName?: string;
+}) {
 
-    console.log(kitchenIds);
+    const { where, meta } = await buildPaginatedWhere({
+        table: menuPlans,
+        tableName: "menu_plans",
+        base: {
+            isDeleted,
+            villageId,
+            status,
+            planStartDate: { gte: startDate ?? undefined },
+            planEndDate: { lte: endDate ?? undefined },
+            name: menuPlanName ? { ilike: `%${menuPlanName}%` } : undefined,
+        },
+        extra: [
+            !isEmpty(kitchenIds) && entityType === "kitchen"
+                ? sql`${menuPlans.id} IN (
+          SELECT menu_plan_id 
+          FROM menu_plan_schools_kitchen 
+          WHERE kitchen_id = ANY(ARRAY[${sql.raw(
+                    kitchenIds.map((id) => `'${id}'`).join(",")
+                )}]::uuid[])
+        )`
+                : undefined,
+            !isEmpty(schoolIds) && entityType === "school"
+                ? sql`${menuPlans.id} IN (
+          SELECT menu_plan_id 
+          FROM menu_plan_schools_kitchen 
+          WHERE school_id = ANY(ARRAY[${sql.raw(
+                    schoolIds.map((id) => `'${id}'`).join(",")
+                )}]::uuid[])
+        )`
+                : undefined,
+        ],
+        page,
+        limit,
+    });
 
-    const dataPromise = db.query.menuPlans.findMany({
-        where: (table) =>
-            and(
-                eq(table.isDeleted, isDeleted),
-                !isEmpty(kitchenIds) && entityType === 'kitchen'
-                    ? sql`${table.id} IN (
-                    SELECT menu_plan_id 
-                    FROM menu_plan_schools_kitchen 
-                    WHERE kitchen_id = ANY(ARRAY[${sql.raw(
-                        kitchenIds?.map((id) => `'${id}'`).join(",")
-                    )}]::uuid[])
-                )`
-                    : undefined,
-                !isEmpty(schoolIds) && entityType === 'school'
-                    ? sql`${table.id} IN (
-                    SELECT menu_plan_id 
-                    FROM menu_plan_schools_kitchen 
-                    WHERE school_id = ANY(ARRAY[${sql.raw(
-                        schoolIds?.map((id) => `'${id}'`).join(",")
-                    )}]::uuid[])
-                )`
-                    : undefined,
-                ...(villageId ? [eq(table.villageId, villageId)] : []),
-                ...(status ? [eq(table.status, status)] : []),
-                ...(startDate && endDate
-                    ? [
-                        and(
-                            lte(table.planStartDate, endDate),
-                            gte(table.planEndDate, startDate)
-                        )
-                    ]
-                    : [])
-            ),
+    const data = await db.query.menuPlans.findMany({
+        where: () => where,
         columns: {
             id: true,
             name: true,
@@ -111,132 +113,150 @@ export async function getMenuPlansList({
                             id: true,
                             address: true,
                             name: true,
-                            phoneNumber: true
+                            phoneNumber: true,
+                            updatedAt: true
                         }
                     },
                     kitchen: true,
                 }
             },
         },
+        orderBy: (table) => sql`${table.planStartDate} ASC`,
+        offset: (page - 1) * limit,
         limit,
-        offset,
-        orderBy: [desc(menuPlans.planStartDate)],
     });
 
-    const whereParts: string[] = [`is_deleted = ${isDeleted}`];
-    if (villageId) whereParts.push(`village_id = '${villageId}'`);
-    if (status) whereParts.push(`status = '${status}'`);
-    if (startDate && endDate) {
-        whereParts.push(
-            `(plan_start_date <= '${endDate}' AND plan_end_date >= '${startDate}')`
-        );
-    }
-
-
-    const totalResult = await db.execute<{ total: number; }>(sql`
-        SELECT COUNT(*) AS total
-        FROM menu_plans
-        WHERE ${sql.raw(whereParts.join(" AND "))}
-    `);
-
-    const data = await dataPromise;
-    const total = totalResult.rowCount || 0;
-
-    const groupedData = data.map(report => {
-        const foodItemMap = new Map();
-
-        report.suppliersFoodItems.forEach(sfi => {
-            const foodItem = sfi.foodItem;
+    const groupedData = data.map((report) => {
+        const foodItemMap = new Map<string, any>();
+        report.suppliersFoodItems.forEach((sfi) => {
+            const foodItem = { ...sfi.foodItem, id: sfi.id, foodId: sfi.foodItem.id };
             const supplier = sfi.supplier;
+            if (!foodItem) return;
 
-            const foodItemId = foodItem?.id;
-
-            if (foodItemId) {
-                if (!foodItemMap.has(foodItemId)) {
-                    foodItemMap.set(foodItemId, {
-                        ...foodItem,
-                        suppliers: [] as any[],
-                    });
-                }
-
-                if (supplier) {
-                    foodItemMap.get(foodItemId).suppliers.push(supplier);
-                }
-            }
+            const fi = foodItemMap.get(foodItem.id) ?? { ...foodItem, suppliers: [] };
+            if (supplier) fi.suppliers.push(supplier);
+            foodItemMap.set(foodItem.id, fi);
         });
-
-        const groupedFoodItems = Array.from(foodItemMap.values());
 
         const schoolMap = new Map<string, any>();
-        report.menuPlanSchoolsKitchen.forEach(mpsk => {
-            const school = mpsk.school;
-            if (!school?.id) return;
-
-            if (!schoolMap.has(school.id)) {
-                schoolMap.set(school.id, school);
-            }
+        report.menuPlanSchoolsKitchen.forEach((mpsk) => {
+            if (mpsk.school?.id) schoolMap.set(mpsk.school.id, { ...mpsk.school, portion: 0 });
         });
 
-        const groupedSchools = Array.from(schoolMap.values());
+        const { menuPlanSchoolsKitchen, suppliersFoodItems, planEndDate, planStartDate, ...menuPlan } = report;
 
-
-        const { suppliersFoodItems, menuPlanSchoolsKitchen, planStartDate, planEndDate, ...menuPlan } = report;
         return {
             ...menuPlan,
             date: planStartDate,
-            foodItems: groupedFoodItems,
-            schools: groupedSchools,
+            foodItems: Array.from(foodItemMap.values()),
+            schools: Array.from(schoolMap.values()),
         };
     });
 
     return {
         data: groupedData,
-        meta: {
-            page,
-            limit,
-            total,
-            totalPages: Math.ceil(total / limit),
-        },
+        meta,
     };
 }
 
-export async function getMenuPlanById(id: string, kitchenIds?: string[]): Promise<MenuPlan | null> {
+export async function getMenuPlanById(
+    id: string,
+    kitchenIds?: string[]
+): Promise<{ data: any | null; meta: { total: number; page: number; limit: number; }; }> {
+    // Ambil data utama menu plan
     const data = await db.query.menuPlans.findFirst({
-        where: (menuPlans, { eq, and }) => and(eq(menuPlans.id, id), eq(menuPlans.isDeleted, false),),
+        where: (menuPlans, { eq, and }) =>
+            and(eq(menuPlans.id, id), eq(menuPlans.isDeleted, false)),
+        columns: {
+            id: true,
+            name: true,
+            planEndDate: true,
+            planStartDate: true,
+        },
         with: {
-            menuFoodItem: {
+            suppliersFoodItems: {
                 with: {
                     foodItem: {
-                        with: {
-                            suppliers: {
-                                with: {
-                                    supplier: true
-                                }
-                            }
+                        columns: {
+                            id: true,
+                            description: true,
+                            name: true,
+                            type: true
                         }
                     },
+                    supplier: {
+                        columns: {
+                            id: true,
+                            address: true,
+                            name: true,
+                            description: true,
+                            phoneNumber: true
+                        }
+                    }
                 }
             },
-            menuPlanSchoolsKitchen: true,
-
-
-        },
+            menuPlanSchoolsKitchen: {
+                with: {
+                    school: {
+                        columns: {
+                            id: true,
+                            address: true,
+                            name: true,
+                            phoneNumber: true,
+                            updatedAt: true
+                        }
+                    },
+                    kitchen: true
+                }
+            }
+        }
     });
 
-    if (data) {
-        const { menuFoodItem, ...p } = data;
-
-        const formattedData = {
-            ...p,
-            kitchenId: kitchenIds?.[0] ?? null,
-            foodItems: (menuFoodItem as any[]).map(({ foodItem }) => ({ ...foodItem, suppliers: (foodItem.suppliers as any[]).map(({ supplier, menuPlanId }) => ({ ...supplier, menuPlanId })) })),
+    if (!data) {
+        return {
+            data: null,
+            meta: { total: 0, page: 1, limit: 1 }
         };
-
-
-        return formattedData ?? null;
     }
 
-    return null;
+    const foodItemMap = new Map<string, any>();
+    data.suppliersFoodItems.forEach((sfi) => {
+        const foodItem = { ...sfi.foodItem, id: sfi.id, foodId: sfi.foodItem.id };
+        const supplier = sfi.supplier;
+        if (!foodItem) return;
+
+        const fi = foodItemMap.get(foodItem.id) ?? { ...foodItem, suppliers: [] };
+        if (supplier) fi.suppliers.push(supplier);
+        foodItemMap.set(foodItem.id, fi);
+    });
+
+    const schoolMap = new Map<string, any>();
+    data.menuPlanSchoolsKitchen.forEach((mpsk) => {
+        if (mpsk.school?.id)
+            schoolMap.set(mpsk.school.id, {
+                ...mpsk.school,
+                portion: 0,
+            });
+    });
+
+    const { menuPlanSchoolsKitchen, suppliersFoodItems, planEndDate, planStartDate, ...menuPlan } = data;
+
+    const formattedData = {
+        ...menuPlan,
+        date: planStartDate,
+        kitchenId: kitchenIds?.[0] ?? null,
+        foodItems: Array.from(foodItemMap.values()),
+        schools: Array.from(schoolMap.values())
+    };
+
+    return {
+        data: formattedData,
+        meta: {
+            total: 1,
+            page: 1,
+            limit: 1
+        }
+    };
 }
 
 

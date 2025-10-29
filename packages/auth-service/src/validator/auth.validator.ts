@@ -1,10 +1,11 @@
 import { z } from 'zod';
+import { uploadFileSchema } from './global.validator';
 
 const passwordSchema = z.string()
   .min(1, "Password must be at least 1 character long.")
   .regex(/[A-Z]/, "Password must contain at least one uppercase letter.")
-  .regex(/\d/, "Password must contain at least one number.")
-  .regex(/[!@#$%^&*(),.?":{}|<>]/, "Password must contain at least one symbol.");
+  .regex(/\d/, "Password must contain at least one number.");
+// .regex(/[!@#$%^&*(),.?":{}|<>]/, "Password must contain at least one symbol.");
 
 export const loginSchema = z.object({
   username: z.string().min(1),
@@ -23,6 +24,7 @@ export const userDetailSchema = z.object({
 export const registerSchema = z.object({
   email: z.string().min(1),
   password: passwordSchema,
+  file: uploadFileSchema,
   ...userDetailSchema.shape,
 });
 

@@ -27,6 +27,7 @@ export const listDailyReportsHandler = catchAsync(async (c: Context) => {
   const audit = getAuditFields(c);
   const page = parseInt(query.page || '1');
   const limit = parseInt(query.limit || '10');
+  const search = query.search || '';
 
   const data = await getDailyReportsList({
     entityType: query.entityType,
@@ -37,7 +38,8 @@ export const listDailyReportsHandler = catchAsync(async (c: Context) => {
     kitchenIds: audit.kitchenId,
     schoolIds: audit.schoolId,
     page,
-    limit
+    limit,
+    menuPlanName: search
   });
   return c.json(data);
 });

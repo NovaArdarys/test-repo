@@ -1,14 +1,14 @@
 import { getRabbitMQChannel } from "../broker";
+import { EXCHANGES } from "../events/exchanges";
 
-const EXCHANGE_NAME = 'user_events';
 
 export async function publishUserRegistered(data: { userId: string, email: string; }) {
   try {
     const channel = getRabbitMQChannel();
-    await channel.assertExchange(EXCHANGE_NAME, 'topic', { durable: true });
+    await channel.assertExchange(EXCHANGES.USER, 'topic', { durable: true });
 
     channel.publish(
-      EXCHANGE_NAME,
+      EXCHANGES.USER,
       'user.registered',
       Buffer.from(JSON.stringify(data)),
       { persistent: true }

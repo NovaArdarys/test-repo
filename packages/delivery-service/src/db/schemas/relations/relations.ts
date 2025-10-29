@@ -10,6 +10,7 @@ import { deliveries, deliverySchools } from "../delivery.schema";
 import { districts, provinces, regencies, villages } from "../master.schema";
 import { dailyReports, stepReports } from "../reporting.Schema";
 import { masterSteps } from "../stepPlan.schema";
+import { storage } from "../storage.schema";
 
 export const usersRelations = relations(users, ({ one, many }) => ({
   userDetails: one(userDetails, { fields: [users.id], references: [userDetails.userId] }),
@@ -51,10 +52,19 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   createdDeliverySchools: many(deliverySchools, { relationName: 'created_by' }),
 }));
 
+export const storageRelations = relations(storage, ({ many }) => ({
+  userDetails: many(userDetails),
+  dailyReports: many(stepReports),
+  kitchens: many(kitchens),
+  suppliers: many(suppliers),
+  schools: many(schools),
+}));
+
 export const userDetailsRelations = relations(userDetails, ({ one }) => ({
   user: one(users, { fields: [userDetails.userId], references: [users.id] }),
   createdBy: one(users, { fields: [userDetails.createdBy], references: [users.id], relationName: 'created_by' }),
   updatedBy: one(users, { fields: [userDetails.updatedBy], references: [users.id], relationName: 'updated_by' }),
+  storage: one(storage, { fields: [userDetails.storageId], references: [storage.id] }),
 }));
 
 export const userSessionsRelations = relations(userSessions, ({ one }) => ({
@@ -124,6 +134,7 @@ export const menusAppRelations = relations(menusApp, ({ one, many }) => ({
 }));
 
 export const kitchensRelations = relations(kitchens, ({ many, one }) => ({
+  storage: one(storage, { fields: [kitchens.storageId], references: [storage.id] }),
   drivers: many(drivers),
   schools: many(schools),
   userKitchens: many(userKitchens),
@@ -153,6 +164,7 @@ export const driverLocationsRelations = relations(driverLocations, ({ one }) => 
 }));
 
 export const schoolsRelations = relations(schools, ({ many, one }) => ({
+  storage: one(storage, { fields: [schools.storageId], references: [storage.id] }),
   kitchen: one(kitchens, { fields: [schools.kitchenId], references: [kitchens.id] }),
   userSchools: many(userSchools),
   province: one(provinces, { fields: [schools.provinceId], references: [provinces.id] }),
@@ -222,6 +234,7 @@ export const foodItemsRelations = relations(foodItems, ({ many, one }) => ({
 
 
 export const suppliersRelations = relations(suppliers, ({ many, one }) => ({
+  storage: one(storage, { fields: [suppliers.storageId], references: [storage.id] }),
   foodItems: many(suppliersFoodItems),
   foodProducts: many(suppliersProducts),
   kitchen: one(kitchens, { fields: [suppliers.kitchenId], references: [kitchens.id] }),
@@ -325,6 +338,7 @@ export const dailyReportsRelations = relations(dailyReports, ({ many, one }) => 
    ============================== */
 export const stepReportsRelations = relations(stepReports, ({ one }) => ({
   // Relasi ke daily report induknya
+  storage: one(storage, { fields: [stepReports.storageId], references: [storage.id] }),
   dailyReport: one(dailyReports, {
     fields: [stepReports.dailyReportId],
     references: [dailyReports.id],

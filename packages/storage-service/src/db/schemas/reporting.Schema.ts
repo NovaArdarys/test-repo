@@ -11,6 +11,7 @@ import { users } from "./user.schema";
 import { masterSteps } from "./stepPlan.schema";
 import { entityTypeEnum } from "./enums/enums";
 import { menuPlans } from "./food.schema";
+import { storage } from "./storage.schema";
 
 /* ==============================
    1️⃣ DAILY REPORT
@@ -58,6 +59,8 @@ export const stepReports = pgTable("step_reports", {
     .references(() => masterSteps.id, { onDelete: "cascade" }),
   notes: text("notes"),
   isCompleted: boolean("is_completed").default(false),
+  storageId: uuid('storage_id').references(() => storage.id),
+  imageURL: text('image_url'),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   createdBy: uuid("created_by")
     .notNull()

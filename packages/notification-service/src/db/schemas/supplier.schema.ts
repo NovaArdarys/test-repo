@@ -1,6 +1,7 @@
 import { boolean, pgTable, text, timestamp, uniqueIndex, uuid, varchar } from "drizzle-orm/pg-core";
 import { foodItems, menuPlans } from "./food.schema";
 import { users } from "./user.schema";
+import { storage } from "./storage.schema";
 
 export const suppliers = pgTable('suppliers', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -9,6 +10,8 @@ export const suppliers = pgTable('suppliers', {
   phoneNumber: text('phone_number'),
   address: text('address'),
   description: text('description'),
+  storageId: uuid('storage_id').references(() => storage.id),
+  imageURL: text('image_url'),
   isDeleted: boolean('is_deleted').default(false).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   createdBy: uuid('created_by').notNull(),

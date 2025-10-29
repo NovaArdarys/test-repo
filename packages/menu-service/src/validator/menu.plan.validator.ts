@@ -36,6 +36,7 @@ export const listMenuPlansQuerySchema = paginationSchema.extend({
   villageId: z.string().uuid().optional(),
   startDate: z.string().optional(),
   endDate: z.string().optional(),
+  search: z.string().optional(),
   entityType: entityTypeEnum,
   status: z.enum(planStatusEnum.enumValues, {
     error: () => ({ message: `Status not valid: ${planStatusEnum.enumValues.join(', ')}` }),

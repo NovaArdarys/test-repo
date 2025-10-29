@@ -9,8 +9,9 @@ import routesprivate from './routes/private';
 import routespublic from './routes/public';
 import { errorHandler } from '@/middleware/error.middleware';
 import { join } from 'path';
-import { checkBroker } from './messaging/broker';
+import { checkBroker, connectRabbitMQ } from './messaging/broker';
 import { checkDatabase } from '@/db';
+import { initializeConsumers } from './messaging/consumers';
 
 type Variables = JwtVariables;
 
@@ -72,6 +73,26 @@ const app = new Hono<{ Variables: Variables; }>()
   .route('/api', routespublic)
 
   .onError(errorHandler);
+
+async function bootstrap() {
+  try {
+    console.log("Starting application initialization...");
+
+    const channel = await connectRabbitMQ();
+
+    console.log("RabbitMQ connected and ready.");
+
+    await initializeConsumers(channel);
+
+    console.log("All RabbitMQ Consumers are successfully listening.");
+
+  } catch (error) {
+    console.error("🚨 FATAL ERROR: Application setup failed. Exiting...", error);
+    process.exit(1);
+  }
+}
+
+bootstrap();
 
 export default {
   port: 3001,
