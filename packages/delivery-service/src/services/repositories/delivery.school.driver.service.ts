@@ -80,10 +80,26 @@ export async function createAutoDelivery(data: CreateAutoDeliveryInput) {
     });
 
     const deliveriesResult = [];
+    const AVERAGE_SPEED_KMH = 30;
+    const BUFFER_MINUTES = 10;
 
     for (const driver of allDrivers) {
       const assigned = assignments[driver.id];
       if (!assigned.length) continue;
+
+      const totalDistance = assigned.reduce(
+        (sum, s) => sum + (s.distance ?? 0),
+        0
+      );
+
+      const estimatedMinutes = Math.round(
+        (totalDistance / AVERAGE_SPEED_KMH) * 60 + BUFFER_MINUTES
+      );
+
+      const estimatedDeliveryTime = new Date();
+      estimatedDeliveryTime.setMinutes(
+        estimatedDeliveryTime.getMinutes() + estimatedMinutes
+      );
 
       const [newDelivery] = await tx
         .insert(deliveries)
@@ -91,7 +107,7 @@ export async function createAutoDelivery(data: CreateAutoDeliveryInput) {
           kitchenId: data.kitchenId,
           driverId: driver.id,
           startTime: new Date(),
-          estimatedDeliveryTime: null,
+          estimatedDeliveryTime: estimatedDeliveryTime,
           notes: `Pengiriman untuk ${schools.name}`,
           status: data.status || 'PENDING',
           createdAt: new Date(),
