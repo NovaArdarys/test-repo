@@ -32,12 +32,17 @@ export const listDeliveriesHandler = catchAsync(async (c: Context) => {
   const page = parseInt(String(query.page || '1'));
   const limit = parseInt(String(query.limit || '10'));
   const audit = getAuditFields(c);
+  const startDate = query.startDate || null;
+  const endDate = query.endDate || null;
+
   const data = await getDeliveriesList({
     page,
     limit,
     status: query.status,
     kitchenId: audit.kitchenId,
     driverId: query.driverId,
+    startDate,
+    endDate
   });
 
   return c.json({ data: data.data, meta: data.meta }, 200);

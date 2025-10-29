@@ -23,6 +23,8 @@ export async function getDeliveriesList({
   driverId,
   status,
   isDeleted = false,
+  startDate,
+  endDate,
 }: {
   page: number;
   limit: number;
@@ -30,13 +32,33 @@ export async function getDeliveriesList({
   driverId?: string;
   status?: string;
   isDeleted?: boolean;
+  startDate?: string | null;
+  endDate?: string | null;
 }) {
   const offset = (page - 1) * limit;
+  const today = new Date();
+  const defaultStart = new Date(today);
+  defaultStart.setHours(0, 0, 0, 0);
+  const defaultEnd = new Date(today);
+  defaultEnd.setHours(23, 59, 59, 999);
+
+  const start = startDate ? new Date(startDate) : defaultStart;
+  const end = endDate ? new Date(endDate) : defaultEnd;
 
   const conditions: string[] = [`d.is_deleted = ${isDeleted}`];
   if (!isEmpty(kitchenId)) conditions.push(`d.kitchen_id = ANY(ARRAY[${kitchenId?.map((id) => `'${id}'`).join(",")}]::uuid[])`);
   if (driverId) conditions.push(`d.driver_id = '${driverId}'`);
   if (status) conditions.push(`d.status = '${status}'`);
+
+  conditions.push(`
+    EXISTS (
+      SELECT 1
+      FROM delivery_schools ds
+      JOIN menu_plans mp ON ds.menu_plan_id = mp.id
+      WHERE ds.delivery_id = d.id
+      AND mp.plan_start_date BETWEEN '${start.toISOString()}' AND '${end.toISOString()}'
+    )
+  `);
 
   const whereSql = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
 
@@ -98,6 +120,7 @@ export async function getDeliveriesList({
       )
       FROM delivery_schools ds
       JOIN schools s ON ds.school_id = s.id
+      JOIN menu_plans mp ON ds.menu_plan_id = mp.id
       WHERE ds.delivery_id = d.id
       ) AS school
     FROM deliveries d
