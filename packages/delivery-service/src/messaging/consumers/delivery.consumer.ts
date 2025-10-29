@@ -2,6 +2,7 @@ import { z } from "zod";
 import { Channel, ConsumeMessage } from "amqplib";
 import { EXCHANGES } from "../events/exchanges";
 import { entityTypeEnum } from "@/db/schemas";
+import { createAutoDelivery } from "@/services/repositories/delivery.school.driver.service";
 
 const entityTypeValidator = z.enum(entityTypeEnum.enumValues, {
   error: () => ({ message: `Invalid type ${entityTypeEnum.enumValues.join(', ')}` }),
@@ -9,9 +10,10 @@ const entityTypeValidator = z.enum(entityTypeEnum.enumValues, {
 
 
 const storageCommittedSchema = z.object({
-  stepId: z.string(),
-  stepStatus: z.string(),
-  isComplete: entityTypeValidator,
+  menuPlanId: z.string(),
+  entityType: entityTypeValidator,
+  entityId: z.string(),
+  allStepCompleted: z.preprocess((a) => a === 'true', z.boolean()),
 });
 
 // ===== queue dan route key =====
@@ -31,12 +33,17 @@ async function handleStorageEvent(msg: import("amqplib").ConsumeMessage | null, 
     const data = storageCommittedSchema.parse(parsed);
 
 
-    // if (data.entityType === "Delivery") {
-    //   await updateDelivery(data.entityId, {
-    //     storageId: data.storageId,
-    //     imageURL: data.url,
-    //     updatedBy: data.meta?.uploadedBy,
-    //   });
+    console.log(data);
+    // createDelivery
+
+    if (data.entityType === "kitchen" && data.allStepCompleted) {
+      await createAutoDelivery({
+        kitchenId: data.entityId,
+        menuPlanId: data.menuPlanId,
+        status: "PENDING",
+        createdBy: ""
+      });
+    }
 
     //   console.log(`[STORAGE EVENT] Updated user_profile ${data.entityId}`);
     // }

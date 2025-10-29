@@ -163,6 +163,99 @@ export async function getDailyReportById(id: string) {
     })),
   };
 }
+export async function getDailyReportWithoutMaskById(id: string) {
+  const data = await db.query.dailyReports.findFirst({
+    where: eq(dailyReports.id, id),
+    columns: {
+      entityId: true,
+      entityType: true
+    },
+    with: {
+      menuPlan: {
+        columns: {
+          id: true,
+          name: true,
+          planEndDate: true,
+          planStartDate: true,
+        },
+        with: {
+          suppliersFoodItems: {
+            with: {
+              foodItem: {
+                columns: {
+                  id: true,
+                  description: true,
+                  name: true,
+                  type: true,
+                },
+              },
+              supplier: {
+                columns: {
+                  id: true,
+                  address: true,
+                  name: true,
+                  description: true,
+                  phoneNumber: true,
+                },
+              },
+            },
+          },
+        },
+      },
+      steps: {
+        columns: {
+          id: true,
+          isCompleted: true,
+          notes: true,
+          imageURL: true,
+        },
+        with: {
+          step: {
+            columns: {
+              stepKey: true,
+              stepName: true,
+              stepOrder: true,
+            },
+          },
+        },
+      },
+    }
+  });
+
+  const report = data;
+
+  if (!report?.menuPlan) return report;
+
+  const foodItemMap = new Map<string, any>();
+  report.menuPlan.suppliersFoodItems.forEach((sfi) => {
+    const foodItem = { ...sfi.foodItem, id: sfi.id, foodId: sfi.foodItem.id };
+    const supplier = sfi.supplier;
+    if (!foodItem) return;
+
+    const fi = foodItemMap.get(foodItem.id) ?? {
+      ...foodItem,
+      suppliers: [],
+    };
+    if (supplier) fi.suppliers.push(supplier);
+    foodItemMap.set(foodItem.id, fi);
+  });
+
+  const groupedFoodItems = Array.from(foodItemMap.values());
+  const { suppliersFoodItems, planEndDate, planStartDate, ...menuPlan } = report.menuPlan;
+
+  return {
+    ...report,
+    menuPlan: {
+      ...menuPlan,
+      date: planStartDate,
+      foodItems: groupedFoodItems,
+    },
+    steps: report.steps.map(({ step, ...steps }) => ({
+      ...steps,
+      ...step,
+    })),
+  };
+}
 
 export async function getDailyReportsList(params?: {
   entityType?: string;

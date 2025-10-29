@@ -2,16 +2,13 @@ import { getRabbitMQChannel } from "../broker";
 import { EXCHANGES } from "../events/exchanges";
 
 export interface StorageUploadEvent {
-  tempPath: string;
-  targetPath: string;
-  url: string;
-  storageId?: string;
+  menuPlanId: string;
   entityType?: string;
   entityId?: string;
-  meta?: Record<string, any>;
+  allStepCompleted: boolean;
 }
 
-export async function publishStorageUpload(data: StorageUploadEvent) {
+export async function publishStepUpdate(data: StorageUploadEvent) {
   try {
     const channel = await getRabbitMQChannel();
 
@@ -25,9 +22,9 @@ export async function publishStorageUpload(data: StorageUploadEvent) {
     );
 
     if (!success) {
-      console.error(`[RABBITMQ] Failed to publish storage upload: ${data.targetPath}`);
+      console.error(`[RABBITMQ] Failed to publish storage upload: ${data.menuPlanId}`);
     } else {
-      console.log(`[STORAGE PUBLISH] File queued: ${data.targetPath}`);
+      console.log(`[STORAGE PUBLISH] File queued: ${data.menuPlanId}`);
     }
   } catch (err) {
     console.error("[STORAGE PUBLISH ERROR]", err);
