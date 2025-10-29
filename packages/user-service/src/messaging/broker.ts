@@ -1,7 +1,7 @@
 import { connect } from 'amqplib';
 
 import * as amqp from 'amqplib';
-import { EXCHANGE_NAME } from '../constants/config';
+import { EXCHANGES } from './events/exchanges';
 
 interface RabbitMQConnection {
   connection: amqp.Connection | null;
@@ -36,7 +36,7 @@ export async function connectRabbitMQ(): Promise<amqp.Channel> {
     const channel = await connection.createChannel();
     rabbitMQState.channel = channel;
 
-    await channel.assertExchange(EXCHANGE_NAME.USER_EVENTS, 'topic', { durable: true });
+    await channel.assertExchange(EXCHANGES.USER, 'topic', { durable: true });
 
     console.log("RabbitMQ connected and channel created successfully.");
     return channel;

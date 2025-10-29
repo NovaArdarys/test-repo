@@ -1,8 +1,7 @@
 import { commitFileToMinio } from "@/utils/minioClient";
-import { getRabbitMQChannel } from "../broker";
 import { EXCHANGES } from "../events/exchanges";
-import { db } from "@/db"; // pastikan ini path db Drizzle/ORM-mu
 import { linkStorageToEntity } from "@/services/repositories/storage.service";
+import { Channel, ConsumeMessage } from "amqplib";
 
 export interface StorageCommitEvent {
   tempPath: string;
@@ -13,12 +12,11 @@ export interface StorageCommitEvent {
   meta?: Record<string, any>;
 }
 
-export async function startStorageConsumer() {
-  const channel = await getRabbitMQChannel();
+export async function setupStorageConsumer(channel: Channel) {
 
-  await channel.assertExchange(EXCHANGES.storage, "topic", { durable: true });
+  await channel.assertExchange(EXCHANGES.STORAGE, "topic", { durable: true });
   const q = await channel.assertQueue("storage.upload.commit.queue", { durable: true });
-  await channel.bindQueue(q.queue, EXCHANGES.storage, "storage.upload.commit");
+  await channel.bindQueue(q.queue, EXCHANGES.STORAGE, "storage.upload.commit");
 
   console.log("[STORAGE WORKER] Waiting for upload commit events...");
 

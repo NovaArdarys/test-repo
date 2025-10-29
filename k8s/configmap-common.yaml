@@ -28,6 +28,17 @@ data:
   USER_SERVICE: 'http://user-service:3001/api'
 
   # smtp
-  EMAIL_HOST: 'mail.ptn-techlabs.com'
+  EMAIL_HOST: 'smtp.office365.com'
   EMAIL_PORT: '587'
   EMAIL_SECURE: 'false'
+
+  # minio
+  # MINIO_ENDPOINT_SERVER: 'minio'
+  # MINIO_PORT: '9000'
+  # MINIO_CONSOLE_PORT: '9001'
+  MINIO_ENDPOINT_SERVER: '128.199.77.145'
+  MINIO_PORT: '9000'
+  MINIO_CONSOLE_PORT: '9001'
+
+  # frontend
+  FRONTEND_URL: 'https://dev-mbg.midigi.id'

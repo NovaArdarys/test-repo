@@ -12,9 +12,13 @@ export type PermissionType = 'API' | 'WEBSITE' | 'MOBILE';
 
 export const entityTypeEnum = pgEnum("entity_type_enum", [
   "kitchen", // khusus daily report kitchen
+  "kitchen_daily_report", // khusus daily report kitchen
   "driver", // khusus daily report driver
+  "driver_daily_report", // khusus daily report driver
   "school", // khusus daily report school
+  "school_daily_report", // khusus daily report school
   "profile", // entah ini untuk profile kitchen, school, atau user
+  "profile_supplier", // entah ini untuk profile kitchen, school, atau user
   "incidentReport", // ini kalau ada laporan kejadian di suatu hari
   "other"
 ]);
@@ -30,4 +34,13 @@ export const stepKeyEnum = pgEnum("step_key_enum", [
   "receive",
   "inspection",
   "distribution",
+]);
+
+
+export const analysisTypeEnum = pgEnum('analysis_type', [
+  'food_authenticity',  // computer vision check makanan asli atau bukan
+  'people_count',       // hitung jumlah orang
+  'cleanliness',        // cek kebersihan dapur
+  'mealbox_count',      // hitung jumlah kotak makan
+  'food_detection',     // deteksi makanan berdasarkan label
 ]);

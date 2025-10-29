@@ -18,7 +18,7 @@ export const forgotPasswordHandler = catchAsync(async (c) => {
   }
 
   const resetToken = await generateResetToken({ email: findUser.email, id: findUser.id });
-  const resetLink = `http://128.199.77.145:3001/reset-password/${resetToken}`;
+  const resetLink = `${process.env.FRONTEND_URL}/auth/reset-password/${resetToken}`;
 
   await sendEmail("reset-password", findUser.email, { resetLink });
 

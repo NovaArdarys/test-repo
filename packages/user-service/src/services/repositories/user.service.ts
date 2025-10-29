@@ -1,7 +1,7 @@
 
 import { bcryptHash } from "@/utils/hashing";
 import { CreateUserInput, userDetails, users, userSessions } from "@/db/schemas";
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { or } from "drizzle-orm";
 import { isEmpty } from "lodash";
 import { db } from "@/db";
@@ -10,6 +10,7 @@ import redis from "@/constants/redis";
 import ApiError from "@/utils/ApiError";
 import { userDetailType } from "@/validator/user.validator";
 import { transformPhoneNumber } from "@/utils/phone.formater.util";
+import { buildPaginatedWhere } from "@/utils/pagination";
 const TOKEN_KEY_PREFIX = 'revoked:';
 
 export async function getUser({ email }: { email: string; phone?: string; }) {
@@ -55,7 +56,6 @@ export async function getUser({ email }: { email: string; phone?: string; }) {
 
   return user ? user : null;
 }
-
 export async function createUser(data: CreateUserInput, userDetail: userDetailType) {
   return await db.transaction(async (tx) => {
 

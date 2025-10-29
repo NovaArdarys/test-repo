@@ -95,13 +95,19 @@ export const getUserDetailsHandler = catchAsync(async (c) => {
 
 
 export const updateUserDetailsHandler = catchAsync(async (c) => {
-  const userId = c.req.param('id');
   const data = await c.req.parseBody() as unknown as UpdateUserDetailInput;
   const audit = getAuditFields(c);
 
-  const result = await UserService.updateOrCreateUserDetails(userId, { ...data, ...audit });
-  if (!result) {
-    return c.json({ error: 'Failed to update or create user details' }, 500);
+  const user = await UserService.updateUser(audit.userId, { ...data, updated_by: audit.updated_by });
+  const profile = await UserService.getUserById(audit.userId);
+
+  if (profile) {
+    const result = await UserService.updateOrCreateUserDetails(profile?.id, { ...data, ...audit });
+
+    if (!result) {
+      return c.json({ error: 'Failed to update or create user details' }, 500);
+    }
   }
-  return c.json({ message: 'User details updated successfully', data: { id: userId } }, 200);
+
+  return c.json({ message: 'User details updated successfully', data: { id: user.id } }, 200);
 });

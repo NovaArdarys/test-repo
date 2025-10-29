@@ -12,8 +12,17 @@ const getAuditFields = (c: Context) => ({
 
 export const registerHandler = catchAsync(async (c) => {
 
-  const { email, password, address, dateOfBirth, fullName, phoneNumber, } = await c.req.parseBody() as unknown as registerSchemaType;
+  const { email, password, address, dateOfBirth, fullName, phoneNumber, file } = await c.req.parseBody() as unknown as registerSchemaType;
   const audit = getAuditFields(c);
+
+  // if (file) {
+  //   if (Array.isArray(file)) {
+  //     file.forEach(f => console.log("Multiple:", f.name));
+  //   } else {
+  //     console.log("Single:", file.name);
+  //     return c.json({ data: file.name });
+  //   }
+  // }
 
   const [firstName, lastName] = fullName?.split(" ") || ["", ""];
   const result = await createUserServiceClient({
@@ -28,5 +37,5 @@ export const registerHandler = catchAsync(async (c) => {
     createdBy: audit.createdBy
   });
 
-  return c.json({ data: result });
+  return c.json({ data: "ok" });
 });
