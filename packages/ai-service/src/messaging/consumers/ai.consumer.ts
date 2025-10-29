@@ -3,19 +3,7 @@ import { Channel, ConsumeMessage } from "amqplib";
 import { EXCHANGES } from "../events/exchanges";
 import { entityTypeEnum } from "@/db/schemas";
 import { foodQueue } from "@/jobs/queue/food.queue";
-
-const entityTypeValidator = z.enum(entityTypeEnum.enumValues, {
-  error: () => ({ message: `Invalid type ${entityTypeEnum.enumValues.join(', ')}` }),
-});
-
-
-const storageCommittedSchema = z.object({
-  storageId: z.string(),
-  url: z.string(),
-  entityType: entityTypeValidator,
-  entityId: z.string(),
-  meta: z.record(z.string(), z.any()).optional(),
-});
+import { storageCommittedSchema } from "@/validator/storage.validator";
 
 // ===== queue dan route key =====
 const STORAGE_QUEUE_NAME = "ai_service_storage_queue";
@@ -33,8 +21,7 @@ async function handleStorageEvent(msg: import("amqplib").ConsumeMessage | null, 
     console.log("🪅 =====parsed====== ", parsed);
     const data = storageCommittedSchema.parse(parsed);
 
-    // logic here
-    const job = await foodQueue.add('food-detection', parsed, {
+    const job = await foodQueue.add('food-detection', data, {
       attempts: 3,
       backoff: { type: 'exponential', delay: 3000 }
     });
