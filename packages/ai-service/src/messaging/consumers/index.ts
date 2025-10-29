@@ -1,12 +1,13 @@
 // /user-service/src/messaging/consumers/index.ts
 import * as amqplib from 'amqplib';
+import { setupAiServiceConsumers } from './ai.consumer';
 
 
 export async function initializeConsumers(channel: amqplib.Channel): Promise<void> {
   try {
     console.log("Initializing all message consumers...");
 
-
+    await setupAiServiceConsumers(channel);
 
     console.log("All consumers are successfully listening.");
 
