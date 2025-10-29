@@ -20,7 +20,7 @@ spec:
         - name: storage
           image: rahvanna/storage-service:latest
           ports:
-            - containerPort: 3011
+            - containerPort: 4001
               name: http
           envFrom:
             - configMapRef:
@@ -29,7 +29,7 @@ spec:
                 name: common-secret
           env:
             - name: PORT
-              value: '3011'
+              value: '4001'
             - name: SERVICE_NAME
               value: 'storage-service'
           resources:
@@ -42,13 +42,13 @@ spec:
           # readinessProbe:
           #   httpGet:
           #     path: /health
-          #     port: 3011
+          #     port: 4001
           #   initialDelaySeconds: 5
           #   periodSeconds: 10
           # livenessProbe:
           #   httpGet:
           #     path: /health
-          #     port: 3011
+          #     port: 4001
           #   initialDelaySeconds: 15
           #   periodSeconds: 20
 ---
@@ -63,8 +63,8 @@ spec:
   selector:
     app: storage-service
   ports:
-    - port: 3011
-      targetPort: 3011
+    - port: 4001
+      targetPort: 4001
       protocol: TCP
       name: http
   type: ClusterIP

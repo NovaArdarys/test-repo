@@ -126,7 +126,7 @@ export const verifyResetToken = async (token: string) => {
       allowInvalidAsymmetricKeyTypes: true,
     });
 
-    if ((result as any).type !== 'reset') {
+    if ((result as any).type !== 'reset-password') {
       throw new Error('Invalid token type');
     }
 

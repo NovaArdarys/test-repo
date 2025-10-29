@@ -1,9 +1,9 @@
 import { db } from "@/db";
-import { dailyReports, foodItems, masterSteps, menuFoodItem, menuPlans, menuPlanSchoolsKitchen, stepReports, suppliers } from "@/db/schemas";
+import { dailyReports, foodItems, masterSteps, menuFoodItem, menuPlans, menuPlanSchoolsKitchen, stepReports, storage, suppliers, suppliersFoodItems } from "@/db/schemas";
 import { kitchens, drivers, schools } from "@/db/schemas";
 import { buildPaginatedWhere } from "@/utils/pagination";
 import { eq, and, desc, InferInsertModel, InferSelectModel, between, gte, lte, sql, inArray } from "drizzle-orm";
-import { isEmpty } from "lodash";
+import { isEmpty, orderBy } from "lodash";
 
 export type DailyReport = InferSelectModel<typeof dailyReports>;
 export type DailyReportInsert = InferInsertModel<typeof dailyReports>;
@@ -115,6 +115,7 @@ export async function getDailyReportById(id: string) {
           id: true,
           isCompleted: true,
           notes: true,
+          imageURL: true,
         },
         with: {
           step: {
@@ -201,14 +202,10 @@ export async function getDailyReportsList(params?: {
     },
     extra: [
       kitchenIds.length > 0 && entityType === "kitchen"
-        ? sql`${dailyReports.entityId} = ANY(ARRAY[${sql.raw(
-          kitchenIds.map((id) => `'${id}'`).join(",")
-        )}]::uuid[])`
+        ? sql`${dailyReports.entityId} = ANY(${sql.raw(`ARRAY[${kitchenIds.map(id => `'${id}'`).join(',')}]::uuid[]`)})`
         : undefined,
       schoolIds.length > 0 && entityType === "school"
-        ? sql`${dailyReports.entityId} = ANY(ARRAY[${sql.raw(
-          schoolIds.map((id) => `'${id}'`).join(",")
-        )}]::uuid[])`
+        ? sql`${dailyReports.entityId} = ANY(${sql.raw(`ARRAY[${schoolIds.map(id => `'${id}'`).join(',')}]::uuid[]`)})`
         : undefined,
       params?.menuPlanName
         ? sql`${dailyReports.menuPlanId} IN (
@@ -221,101 +218,194 @@ export async function getDailyReportsList(params?: {
     limit,
   });
 
-  const data = await db.query.dailyReports.findMany({
-    where: () => where,
-    with: {
+  const data = await db
+    .select({
+      dailyReports,
       menuPlan: {
-        columns: {
-          id: true,
-          name: true,
-          planEndDate: true,
-          planStartDate: true,
-        },
-        with: {
-          suppliersFoodItems: {
-            with: {
-              foodItem: {
-                columns: {
-                  id: true,
-                  description: true,
-                  name: true,
-                  type: true,
-                },
-              },
-              supplier: {
-                columns: {
-                  id: true,
-                  address: true,
-                  name: true,
-                  description: true,
-                  phoneNumber: true,
-                },
-              },
-            },
-          },
-        },
+        id: menuPlans.id,
+        name: menuPlans.name,
+        planEndDate: menuPlans.planEndDate,
+        planStartDate: menuPlans.planStartDate,
       },
-      steps: {
-        columns: {
-          id: true,
-          isCompleted: true,
-          notes: true,
-        },
-        with: {
-          step: {
-            columns: {
-              stepKey: true,
-              stepName: true,
-              stepOrder: true,
-            },
-          },
-        },
+      suppliersFoodItem: {
+        id: suppliersFoodItems.id,
       },
-    },
-    limit,
-    offset: (page - 1) * limit,
-    orderBy: desc(dailyReports.date),
+      foodItem: {
+        id: foodItems.id,
+        description: foodItems.description,
+        name: foodItems.name,
+        type: foodItems.type,
+      },
+      supplier: {
+        id: suppliers.id,
+        address: suppliers.address,
+        name: suppliers.name,
+        description: suppliers.description,
+        phoneNumber: suppliers.phoneNumber,
+      },
+      stepData: {
+        id: stepReports.id,
+        isCompleted: stepReports.isCompleted,
+        notes: stepReports.notes,
+      },
+      stepMeta: {
+        stepKey: masterSteps.stepKey,
+        stepName: masterSteps.stepName,
+        stepOrder: masterSteps.stepOrder,
+      },
+      storage: {
+        imageURL: storage.fileUrl,
+      }
+    })
+    .from(dailyReports)
+    .leftJoin(
+      menuPlans,
+      eq(dailyReports.menuPlanId, menuPlans.id)
+    )
+    .leftJoin(
+      suppliersFoodItems,
+      eq(menuPlans.id, suppliersFoodItems.menuPlanId)
+    )
+    .leftJoin(
+      foodItems,
+      eq(suppliersFoodItems.foodItemId, foodItems.id)
+    )
+    .leftJoin(
+      suppliers,
+      eq(suppliersFoodItems.supplierId, suppliers.id)
+    )
+    .leftJoin(
+      stepReports,
+      eq(dailyReports.id, stepReports.dailyReportId)
+    )
+    .leftJoin(
+      masterSteps,
+      eq(stepReports.stepId, masterSteps.id)
+    )
+    .leftJoin(
+      storage,
+      eq(stepReports.id, storage.entityId)
+    )
+    .where(where)
+    .limit(limit)
+    .offset((page - 1) * limit)
+    .orderBy(desc(dailyReports.date));
+
+  type Supplier = {
+    id: string;
+    address: string | null;
+    name: string;
+    description: string | null;
+    phoneNumber: string | null;
+  };
+
+  const reportMap = new Map();
+
+  data.forEach((row) => {
+    const reportId = row.dailyReports.id;
+
+    if (!reportMap.has(reportId)) {
+      reportMap.set(reportId, {
+        ...row.dailyReports,
+        menuPlan: row.menuPlan ? {
+          ...row.menuPlan,
+          _foodItemMap: new Map(),
+        } : null,
+        _stepMap: new Map(),
+      });
+    }
+
+    const report = reportMap.get(reportId);
+
+    const sfiId = row.suppliersFoodItem?.id;
+    const foodItemId = row.foodItem?.id;
+
+    if (sfiId && report.menuPlan && foodItemId) {
+      const existingFoodItem = report.menuPlan._foodItemMap.get(sfiId);
+
+      if (!existingFoodItem) {
+        const newFoodItem = {
+          ...row.foodItem,
+          id: sfiId,
+          foodId: foodItemId,
+          suppliers: [] as Supplier[],
+        };
+
+        if (row.supplier) {
+          newFoodItem.suppliers.push(row.supplier);
+        }
+        report.menuPlan._foodItemMap.set(sfiId, newFoodItem);
+      } else if (row.supplier && !existingFoodItem.suppliers.some((s: any) => s.id === row?.supplier?.id)) {
+        existingFoodItem.suppliers.push(row.supplier);
+      }
+    }
+
+    const stepReportId = row.stepData?.id;
+    const fileUrl = row.storage?.imageURL;
+
+    if (stepReportId) {
+      let step = report._stepMap.get(stepReportId);
+
+      if (!step) {
+        step = {
+          ...row.stepData,
+          ...row.stepMeta,
+          imageURLs: [] as string[],
+        };
+        report._stepMap.set(stepReportId, step);
+      }
+
+      if (fileUrl && !step.imageURLs.includes(fileUrl)) {
+        step.imageURLs.push(fileUrl);
+      }
+    }
   });
 
-  // === Post-processing ===
-  const groupedData = data.map((report) => {
-    if (!report.menuPlan) return report;
+  const finalGroupedData = Array.from(reportMap.values()).map(report => {
 
-    const foodItemMap = new Map<string, any>();
-    report.menuPlan.suppliersFoodItems.forEach((sfi) => {
-      const foodItem = { ...sfi.foodItem, id: sfi.id, foodId: sfi.foodItem.id };
-      const supplier = sfi.supplier;
-      if (!foodItem) return;
+    if (report.menuPlan) {
+      report.menuPlan.foodItems = Array.from(report.menuPlan._foodItemMap.values()).map((foodItem: any) => {
+        const { foodId, ...restFoodItem } = foodItem;
+        return restFoodItem;
+      });
+      delete report.menuPlan._foodItemMap;
 
-      const fi = foodItemMap.get(foodItem.id) ?? {
-        ...foodItem,
-        suppliers: [],
-      };
-      if (supplier) fi.suppliers.push(supplier);
-      foodItemMap.set(foodItem.id, fi);
-    });
-
-    const groupedFoodItems = Array.from(foodItemMap.values());
-    const { suppliersFoodItems, planEndDate, planStartDate, ...menuPlan } = report.menuPlan;
-
-    return {
-      menuPlan: {
-        ...menuPlan,
+      const { planEndDate, planStartDate, ...menuPlan } = report.menuPlan;
+      report.menuPlan = {
         date: planStartDate,
-        foodItems: groupedFoodItems,
-      },
-      steps: report.steps.map(({ step, ...steps }) => ({
-        ...steps,
-        ...step,
-      })),
-    };
+        ...menuPlan,
+      };
+    }
+
+    report.steps = orderBy(Array.from(report._stepMap.values()).map((step: any) => {
+      const { ...restStep } = step;
+      return restStep;
+    }), "stepOrder", "asc");
+    delete report._stepMap;
+
+    const {
+      id,
+      entityId,
+      menuPlanId,
+      createdAt,
+      createdBy,
+      updatedAt,
+      updatedBy,
+      date,
+      entityType,
+      status,
+      ...finalReport
+    } = report;
+
+    return finalReport;
   });
 
   return {
-    data: groupedData,
+    data: finalGroupedData,
     meta,
   };
 }
+
 
 export async function updateDailyReport(
   id: string,

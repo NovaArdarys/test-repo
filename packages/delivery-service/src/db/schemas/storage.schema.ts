@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import { entityTypeEnum } from "./enums/enums";
 import { pgTable, uuid, text, varchar, timestamp, index, uniqueIndex } from "drizzle-orm/pg-core";
 
@@ -18,15 +19,25 @@ export const storage = pgTable(
   (table) => {
     return {
       entityIndex: index("storages_entity_idx").on(table.entityType, table.entityId),
-
       createdByIndex: index("storages_created_by_idx").on(table.createdBy),
-
       createdAtIndex: index("storages_created_at_idx").on(table.createdAt),
 
-      uniqueEntityFile: uniqueIndex("storages_entity_unique_idx").on(table.entityType, table.entityId),
+      uniqueEntityFile: uniqueIndex("storages_entity_unique_idx").on(table.entityType, table.entityId).where(
+        sql`
+            ${table.entityType} NOT IN (
+                'kitchen_daily_report', 
+                'driver_daily_report', 
+                'school_daily_report'
+            )
+        `
+      ),
     };
   }
 );
+
+
+
+
 
 
 

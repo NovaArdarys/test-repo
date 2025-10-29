@@ -168,6 +168,7 @@ export async function getUserById(id: string) {
       schoolId: schools.id,
       schoolName: schools.name,
       schoolAddress: schools.address,
+      imageURL: userDetails.imageURL
     })
     .from(users)
     .innerJoin(userDetails, eq(userDetails.userId, users.id))
@@ -197,7 +198,7 @@ export async function getUserById(id: string) {
     schoolId: u.schoolId ?? null,
     schoolName: u.schoolName ?? null,
     schoolAddress: u.schoolAddress ?? null,
-    imageURL: "",
+    imageURL: u.imageURL,
   };
 }
 

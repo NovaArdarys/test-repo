@@ -35,3 +35,12 @@ export const stepKeyEnum = pgEnum("step_key_enum", [
   "inspection",
   "distribution",
 ]);
+
+
+export const analysisTypeEnum = pgEnum('analysis_type', [
+  'food_authenticity',  // computer vision check makanan asli atau bukan
+  'people_count',       // hitung jumlah orang
+  'cleanliness',        // cek kebersihan dapur
+  'mealbox_count',      // hitung jumlah kotak makan
+  'food_detection',     // deteksi makanan berdasarkan label
+]);

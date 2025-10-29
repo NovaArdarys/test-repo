@@ -87,6 +87,7 @@ bootstrap();
 export default {
   port: 3004,
   fetch: app.fetch,
+
 };
 
 export type AppType = typeof app;

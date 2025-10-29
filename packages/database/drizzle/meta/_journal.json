@@ -232,6 +232,20 @@
       "when": 1761706029356,
       "tag": "0032_glamorous_spyke",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1761732478087,
+      "tag": "0033_lethal_shape",
+      "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1761743853253,
+      "tag": "0034_nebulous_hiroim",
+      "breakpoints": true
     }
   ]
 }

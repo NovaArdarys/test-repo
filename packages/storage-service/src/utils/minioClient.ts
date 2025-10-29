@@ -3,16 +3,20 @@ import { randomUUID } from "crypto";
 import { Readable } from "stream";
 
 export const minioClient = new Client({
-  endPoint: process.env.MINIO_ENDPOINT_PUBLIC || "minio",
+  endPoint: process.env.MINIO_ENDPOINT_SERVER || "minio",
   port: parseInt(process.env.MINIO_PORT || "9000", 10),
   useSSL: false,
   accessKey: process.env.MINIO_ROOT_USER || "minioadmin",
   secretKey: process.env.MINIO_ROOT_PASSWORD || "minioadmin123",
 });
 
-// http://159.223.41.229:30001
-// user: minioadmin
-// pass: 2dyEswcp7VSPFqta8cFrEqZLDvuoZ6vKzg
+// export const minioClient = new Client({
+//   endPoint: "128.199.77.145",
+//   port: parseInt("9000", 10),
+//   useSSL: false,
+//   accessKey: "xxxxxxxx",
+//   secretKey: "xxxxxxxx",
+// });
 
 export interface MinioUploadResult {
   tmpId: string;

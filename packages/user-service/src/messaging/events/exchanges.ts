@@ -7,4 +7,5 @@ export const EXCHANGES = {
   REPORT: "report.exchange",
   KITCHEN: "report.kitchen",
   SCHOOL: "school.kitchen",
+  DELIVERY: "delivery.exchange"
 };

@@ -1,5 +1,6 @@
-import { boolean, decimal, pgTable, text, timestamp, uuid, varchar, uniqueIndex } from "drizzle-orm/pg-core";
+import { boolean, decimal, pgTable, text, timestamp, uuid, varchar, uniqueIndex, index } from "drizzle-orm/pg-core";
 import { storage } from "./storage.schema";
+import { menuPlans } from "./food.schema";
 
 export const schools = pgTable('schools', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -34,6 +35,31 @@ export const userSchools = pgTable(
   (table) => {
     return {
       uniqueUser: uniqueIndex("user_schools_user_unique").on(table.userId),
+    };
+  }
+);
+
+export const schoolClassroom = pgTable(
+  "user_class_room",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    schoolId: uuid("school_id").notNull(),
+    menuPlanId: uuid("menu_plan_id")
+      .notNull()
+      .references(() => menuPlans.id, { onDelete: "cascade" }),
+    name: varchar("name", { length: 100 }).notNull().unique(),
+    isLargeClass: boolean("is_large_class").default(false).notNull(),
+    isDeleted: boolean("is_deleted").default(false).notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    createdBy: uuid("created_by"),
+  },
+  (table) => {
+    return {
+      schoolIdIdx: index("user_class_room_school_id_idx").on(table.schoolId),
+
+      largeClassIdx: index("user_class_room_is_large_class_idx").on(table.isLargeClass),
+
+      notDeletedIdx: index("user_class_room_not_deleted_idx").on(table.isDeleted),
     };
   }
 );

@@ -28,7 +28,7 @@ export const sendEmail = async (type: string, to: string, data: Record<string, a
 
   try {
     const info = await transporter.sendMail({
-      from: '"Your App" <alexis.nova.hartley@ptn-techlabs.com>',
+      from: '"Your App" <andani.kamia@multiintegra-digital.co.id>',
       to,
       subject,
       text,
