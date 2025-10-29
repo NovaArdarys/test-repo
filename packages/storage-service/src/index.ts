@@ -94,7 +94,7 @@ async function bootstrap() {
 bootstrap();
 
 export default {
-  port: 3011,
+  port: 4001,
   fetch: app.fetch,
 
 };

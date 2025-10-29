@@ -31,8 +31,8 @@ export async function insertAiLog(params: InsertAiLogParams) {
 
   return await db.insert(aiAnalysisLogs).values({
     entityId,
-    entityType: entityType ?? "other",
-    analysisType: analysisType ?? "food-detection",
+    entityType,
+    analysisType,
     sourceImageUrl: sourceImageUrl ?? null,
     outputImageUrl: outputImageUrl ?? null,
     processingTime: processingTime ?? null,

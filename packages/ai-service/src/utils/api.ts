@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const AI_URL = 'https://dev-mbg-be-ai.midigi.id/api/detect/food';
+const AI_URL = 'https://dev-mbg-be-ai.midigi.id/api';
 const API_KEY = 'food_detection_user_2024_secure';
 
 const aiClient = axios.create({

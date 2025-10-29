@@ -80,6 +80,23 @@ export const foodWorker = new Worker<StorageCommittedType>(
 
       const result = await detectAI(aiType, { image, labels });
 
+      console.log({
+        entityId: job.data.entityId,
+        entityType: job.data.entityType,
+        analysisType: aiType === "food" ? "food_detection" : aiType === "cleanliness" ? "cleanliness" : "mealbox_count",
+        sourceImageUrl: job.data.url,
+        outputImageUrl: result?.output_image ?? null,
+        processingTime: String(processingTime),
+        threshold: result?.threshold ?? null,
+        output: result,
+        input: job.data,
+        metadata: {
+          jobId: job.id,
+          queue: 'food-detect-queue',
+          timestamp: new Date().toISOString()
+        }
+      }, "-------- 🔥🔥🔥🔥 ---------");
+
 
       await insertAiLog({
         entityId: job.data.entityId,
