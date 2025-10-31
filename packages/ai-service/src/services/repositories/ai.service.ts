@@ -10,7 +10,6 @@ export type AiAnalysisLogInsert = InferInsertModel<typeof aiAnalysisLogs>;
 
 export interface InsertAiLogParams extends Partial<AiAnalysisLogInsert> {
   analysisType: AnalysisType;
-  entityType: EntityType;
   entityId: string;
 }
 
@@ -18,7 +17,6 @@ export interface InsertAiLogParams extends Partial<AiAnalysisLogInsert> {
 export async function insertAiLog(params: InsertAiLogParams) {
   const {
     entityId,
-    entityType,
     analysisType,
     sourceImageUrl,
     outputImageUrl,

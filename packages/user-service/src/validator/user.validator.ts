@@ -42,30 +42,30 @@ export const userDetailSchema = z
       .refine((val) => val === null || val?.trim() !== "", {
         message: "Password tidak boleh kosong",
       }),
-    confirmationPassword: z.string().optional(),
+    // confirmationPassword: z.string().optional(),
   })
-  .partial()
-  .superRefine((data, ctx) => {
-    if (data.password && !data.confirmationPassword) {
-      ctx.addIssue({
-        code: "custom",
-        message: "Konfirmasi password wajib diisi",
-        path: ["confirmationPassword"],
-      });
-    }
+  .partial();
+// .superRefine((data, ctx) => {
+//   if (data.password && !data.confirmationPassword) {
+//     ctx.addIssue({
+//       code: "custom",
+//       message: "Konfirmasi password wajib diisi",
+//       path: ["confirmationPassword"],
+//     });
+//   }
 
-    if (
-      data.password &&
-      data.confirmationPassword &&
-      data.password !== data.confirmationPassword
-    ) {
-      ctx.addIssue({
-        code: "custom",
-        message: "Konfirmasi password tidak cocok",
-        path: ["confirmationPassword"],
-      });
-    }
-  });
+//   if (
+//     data.password &&
+//     data.confirmationPassword &&
+//     data.password !== data.confirmationPassword
+//   ) {
+//     ctx.addIssue({
+//       code: "custom",
+//       message: "Konfirmasi password tidak cocok",
+//       path: ["confirmationPassword"],
+//     });
+//   }
+// });
 
 export type SaveTokenType = z.infer<typeof saveTokenSchema>;
 export type userDetailType = z.infer<typeof userDetailSchema>;

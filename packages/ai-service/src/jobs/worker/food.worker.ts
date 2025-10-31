@@ -68,18 +68,30 @@ export const foodWorker = new Worker<StorageCommittedType>(
 
       const image = await imageUrlToBase64(job.data.url);
 
-      const labels =
-        aiType === "food"
-          ? stepReportData.dailyReport.menuPlan.menuFoodItem.map((item) => ({
-            id: item.foodItem?.name ?? "",
-            en: item.foodItem?.nameEn ?? "",
-          }))
-          : undefined;
+
       const end = performance.now();
       const processingTime = (end - start) / 1000;
+      const labels =
+        aiType === "food"
+          ? stepReportData.dailyReport.menuPlan.menuFoodItem
+            .map((item) => ({
+              id: item.foodItem?.name?.trim() || "",
+              en: item.foodItem?.nameEn?.trim() || item.foodItem?.name?.trim() || "",
+            }))
+            .filter((l) => l.id && l.en)
+          : [];
 
-      const result = await detectAI(aiType, { image, labels });
+      if (aiType === "food" && (!labels || labels.length === 0)) {
+        throw new Error("No valid food labels found for AI request.");
+      }
 
+      const result = await detectAI(aiType, {
+        image,
+        labels: labels.map(l => ({
+          id: l.id || "",
+          en: l.en || "",
+        })),
+      });
       console.log({
         entityId: job.data.entityId,
         entityType: job.data.entityType,
@@ -100,8 +112,12 @@ export const foodWorker = new Worker<StorageCommittedType>(
 
       await insertAiLog({
         entityId: job.data.entityId,
-        entityType: job.data.entityType,
-        analysisType: aiType === "food" ? "food_detection" : aiType === "cleanliness" ? "cleanliness" : "mealbox_count",
+        analysisType:
+          aiType === "food"
+            ? "food_detection"
+            : aiType === "cleanliness"
+              ? "cleanliness"
+              : "mealbox_count",
         sourceImageUrl: job.data.url,
         outputImageUrl: result?.output_image ?? null,
         processingTime: String(processingTime),
@@ -110,8 +126,8 @@ export const foodWorker = new Worker<StorageCommittedType>(
         input: job.data,
         metadata: {
           jobId: job.id,
-          queue: 'food-detect-queue',
-          timestamp: new Date().toISOString()
+          queue: "food-detect-queue",
+          timestamp: new Date().toISOString(),
         },
       });
 
@@ -123,8 +139,7 @@ export const foodWorker = new Worker<StorageCommittedType>(
       try {
         await insertAiLog({
           entityId: job.data.entityId,
-          entityType: job.data.entityType,
-          analysisType: "other",
+          analysisType: "mealbox_count",
           sourceImageUrl: job.data.url,
           outputImageUrl: null,
           processingTime: "0",
