@@ -34,6 +34,7 @@ export const userDetailSchema = z
     address: z.string().optional(),
     dateOfBirth: z.string().pipe(z.coerce.date()).optional(),
     email: z.string().optional(),
+    roleId: z.string().optional(),
     password: z
       .string()
       .min(6, { message: "Password minimal 6 karakter" })

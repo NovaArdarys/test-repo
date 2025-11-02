@@ -12,7 +12,7 @@ const getAuditFields = (c: Context) => ({
 
 export const registerHandler = catchAsync(async (c) => {
 
-  const { email, password, address, dateOfBirth, fullName, phoneNumber, file } = await c.req.parseBody() as unknown as registerSchemaType;
+  const { email, password, address, dateOfBirth, fullName, phoneNumber, roleId, file } = await c.req.parseBody() as unknown as registerSchemaType;
   const audit = getAuditFields(c);
 
   // if (file) {
@@ -25,7 +25,7 @@ export const registerHandler = catchAsync(async (c) => {
   // }
 
   const [firstName, lastName] = fullName?.split(" ") || ["", ""];
-  const result = await createUserServiceClient({
+  const { password: resPassword, ...result } = await createUserServiceClient({
     email,
     password,
     address: address || "",
@@ -34,8 +34,9 @@ export const registerHandler = catchAsync(async (c) => {
     lastName: lastName || "",
     phoneNumber: phoneNumber || "",
     updatedAt: new Date(),
-    createdBy: audit.createdBy
+    createdBy: audit.createdBy,
+    roleId
   });
 
-  return c.json({ data: "ok" });
+  return c.json({ data: result });
 });

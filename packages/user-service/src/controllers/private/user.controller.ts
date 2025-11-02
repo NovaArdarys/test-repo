@@ -34,14 +34,14 @@ export const userSaveTokenHandler = catchAsync(async (c) => {
 
 export const registerHandler = catchAsync(async (c) => {
 
-  const { email, password, address, dateOfBirth, firstName, lastName, phoneNumber, createdBy } = await c.req.parseBody() as unknown as registerSchemaType;
+  const { email, password, address, dateOfBirth, firstName, lastName, phoneNumber, roleId } = await c.req.parseBody() as unknown as registerSchemaType;
 
   const result = await createUser({
     email,
     password,
-    createdBy: createdBy,
+    createdBy: null,
     createdAt: new Date(),
-    updatedBy: createdBy,
+    updatedBy: null,
     updatedAt: new Date()
   }, {
     address: address || "",
@@ -49,7 +49,7 @@ export const registerHandler = catchAsync(async (c) => {
     firstName: firstName || "",
     lastName: lastName || "",
     phoneNumber: phoneNumber || "",
-  });
+  }, roleId || "");
 
   return c.json({ data: result });
 });

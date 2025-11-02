@@ -1,6 +1,6 @@
 
 import { bcryptHash } from "@/utils/hashing";
-import { CreateUserInput, userDetails, users, userSessions } from "@/db/schemas";
+import { CreateUserInput, userDetails, userRoles, users, userSessions } from "@/db/schemas";
 import { and, eq, sql } from "drizzle-orm";
 import { or } from "drizzle-orm";
 import { isEmpty } from "lodash";
@@ -56,7 +56,7 @@ export async function getUser({ email }: { email: string; phone?: string; }) {
 
   return user ? user : null;
 }
-export async function createUser(data: CreateUserInput, userDetail: userDetailType) {
+export async function createUser(data: CreateUserInput, userDetail: userDetailType, roleId: string) {
   return await db.transaction(async (tx) => {
 
     const passwordHashed = await bcryptHash(data.password);
@@ -84,6 +84,14 @@ export async function createUser(data: CreateUserInput, userDetail: userDetailTy
       createdBy: user.id,
       updatedAt: new Date(),
       updatedBy: user.id,
+    }).returning();
+
+    await tx.insert(userRoles).values({
+      userId: user.id,
+      roleId: roleId,
+      createdBy: user.id,
+      createdAt: new Date(),
+      isDeleted: false,
     }).returning();
 
     const [details] = await tx

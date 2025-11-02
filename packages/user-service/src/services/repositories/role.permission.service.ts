@@ -26,9 +26,6 @@ type RoleRead = {
   id: string;
   name: string;
   description: string | null;
-  isDeleted: boolean;
-  createdAt: Date;
-  updatedAt: Date;
 };
 
 type PermissionRead = {
@@ -55,9 +52,6 @@ export async function getRolesList({ page, limit }: {
       id: roles.id,
       name: roles.name,
       description: roles.description,
-      isDeleted: roles.isDeleted,
-      createdAt: roles.createdAt,
-      updatedAt: roles.updatedAt,
     })
     .from(roles)
     .where(whereCondition)
@@ -77,7 +71,6 @@ export async function getRolesList({ page, limit }: {
   return {
     data: data.map(r => ({
       ...r,
-      isDeleted: r.isDeleted,
     })),
     meta: {
       page,

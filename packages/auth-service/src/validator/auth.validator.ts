@@ -25,6 +25,7 @@ export const registerSchema = z.object({
   email: z.string().min(1),
   password: passwordSchema,
   file: uploadFileSchema,
+  roleId: z.string(),
   ...userDetailSchema.shape,
 });
 
