@@ -1,11 +1,9 @@
-import { connect } from 'amqplib';
-
-import * as amqp from 'amqplib';
-import { EXCHANGE_NAME } from '../constants/config';
+import * as amqp from "amqplib";
+import { EXCHANGES } from "./events/exchanges";
 
 interface RabbitMQConnection {
   connection: amqp.Connection | null;
-  channel: amqp.Channel | null;
+  channel: amqp.ConfirmChannel | null;
 }
 
 const rabbitMQState: RabbitMQConnection = {
@@ -13,45 +11,55 @@ const rabbitMQState: RabbitMQConnection = {
   channel: null,
 };
 
-export async function connectRabbitMQ(): Promise<amqp.Channel> {
-  if (rabbitMQState.channel) {
-    return rabbitMQState.channel;
-  }
+const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+export async function connectRabbitMQ(): Promise<amqp.ConfirmChannel> {
+  if (rabbitMQState.channel) return rabbitMQState.channel;
 
   try {
-    console.log(`Connecting to RabbitMQ at ${process.env.RABBITMQ_HOST}...`);
-    console.log(`RabbitMQ at ${process.env.RABBITMQ_URL}...`);
-
-    const connection = await amqp.connect(process.env.RABBITMQ_URL || "");
+    console.log(`Connecting to RabbitMQ at ${process.env.RABBITMQ_URL}...`);
+    const connection = await amqp.connect(process.env.RABBITMQ_URL || "amqp://localhost");
     rabbitMQState.connection = connection as any;
 
     connection.on("error", (err) => {
-      console.error("RabbitMQ Connection Error:", err.message);
+      console.error("[RABBITMQ] Connection Error:", err.message);
     });
+
     connection.on("close", () => {
-      console.error("RabbitMQ Connection Closed! Attempting to reconnect in 5s...");
+      console.warn("[RABBITMQ] Connection closed! Reconnecting in 5s...");
+      rabbitMQState.connection = null;
+      rabbitMQState.channel = null;
       setTimeout(connectRabbitMQ, 5000);
     });
 
-    const channel = await connection.createChannel();
+    const channel = await connection.createConfirmChannel();
     rabbitMQState.channel = channel;
 
-    await channel.assertExchange(EXCHANGE_NAME.USER_EVENTS, 'topic', { durable: true });
+    channel.prefetch(10);
 
-    console.log("RabbitMQ connected and channel created successfully.");
+    channel.on("error", (err) => {
+      console.error("[RABBITMQ] Channel error:", err.message);
+      rabbitMQState.channel = null;
+    });
+
+    channel.on("close", () => {
+      console.warn("[RABBITMQ] Channel closed. Will recreate...");
+      rabbitMQState.channel = null;
+    });
+
+    await channel.assertExchange(EXCHANGES.LOG, "topic", { durable: true });
+
+    console.log("✅ RabbitMQ connected & ConfirmChannel created");
     return channel;
-
   } catch (error) {
-    console.error("Failed to connect to RabbitMQ:", error);
-    console.log("Retrying RabbitMQ connection in 10s...");
-    console.log(`Connecting to RabbitMQ at ${process.env.RABBITMQ_HOST}...`);
-    console.log(`RabbitMQ at ${process.env.RABBITMQ_URL}...`);
-    await new Promise(resolve => setTimeout(resolve, 10000));
+    console.error("[RABBITMQ] Connection failed:", error);
+    console.log("Retrying connection in 10s...");
+    await wait(10000);
     return connectRabbitMQ();
   }
 }
 
-export function getRabbitMQChannel(): amqp.Channel {
+export function getRabbitMQChannel(): amqp.ConfirmChannel {
   if (!rabbitMQState.channel) {
     throw new Error("RabbitMQ channel not initialized. Call connectRabbitMQ() first.");
   }
@@ -60,10 +68,14 @@ export function getRabbitMQChannel(): amqp.Channel {
 
 export async function checkBroker() {
   try {
-    const conn = await connect(process.env.RABBITMQ_URL || "amqp://rabbitmq:5672");
+    const conn = await amqp.connect(process.env.RABBITMQ_URL || "amqp://localhost");
     await conn.close();
     return { status: "Connected" };
   } catch (err) {
-    return { status: "Disconnected", URL: process.env.RABBITMQ_URL || "Not Detected", error: (err as Error).message };
+    return {
+      status: "Disconnected",
+      URL: process.env.RABBITMQ_URL || "Not Detected",
+      error: (err as Error).message,
+    };
   }
 }
