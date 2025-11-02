@@ -2,7 +2,7 @@ import redis from '@/constants/redis';
 import { db } from '@/db';
 import { detectAI, getAITypeFromStepOrder } from '@/services/clients/ai.client.service';
 import { insertAiLog } from '@/services/repositories/ai.service';
-import { imageUrlToBase64 } from '@/utils/imageToBase64';
+import { compressImageToBase64 } from '@/utils/imageCompress';
 import { StorageCommittedType } from '@/validator/storage.validator';
 import { Worker } from 'bullmq';
 
@@ -14,9 +14,6 @@ export const foodWorker = new Worker<StorageCommittedType>(
     const start = performance.now();
 
     try {
-
-      console.log(job.data, "----------🛄-------------");
-      const base64Image = await imageUrlToBase64(job.data.url);
 
       const stepReportData = await db.query.stepReports.findFirst({
         where: (sr, { eq }) => eq(sr.id, job.data.entityId),
@@ -54,20 +51,16 @@ export const foodWorker = new Worker<StorageCommittedType>(
         }
       });
 
-      console.log(JSON.stringify(stepReportData), "------- 💯 ---------");
-
       if (!stepReportData?.step) {
         throw new Error("Step report not found or missing step data.");
       }
 
       const aiType = getAITypeFromStepOrder(stepReportData.step.stepOrder);
       if (!aiType) {
-        console.log(`⚠️ Step ${stepReportData.step.stepOrder} skipped (no AI processing)`);
         return null;
       }
 
-      const image = await imageUrlToBase64(job.data.url);
-
+      const image = await compressImageToBase64(job.data.url);
 
       const end = performance.now();
       const processingTime = (end - start) / 1000;
@@ -123,8 +116,14 @@ export const foodWorker = new Worker<StorageCommittedType>(
         processingTime: String(processingTime),
         threshold: result?.threshold ?? null,
         output: result,
-        input: job.data,
+        input: {
+          labels: labels.map(l => ({
+            id: l.id || "",
+            en: l.en || "",
+          })),
+        },
         metadata: {
+          aiURL: `/detect/${aiType}`,
           jobId: job.id,
           queue: "food-detect-queue",
           timestamp: new Date().toISOString(),
@@ -135,7 +134,6 @@ export const foodWorker = new Worker<StorageCommittedType>(
       return result;
 
     } catch (err: any) {
-      console.error(`❌ [Worker] Job ${job.id} failed:`, err.message || err);
       try {
         await insertAiLog({
           entityId: job.data.entityId,

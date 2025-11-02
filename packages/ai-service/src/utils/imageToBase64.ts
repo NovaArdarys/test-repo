@@ -22,7 +22,6 @@ export async function imageUrlToBase64(url: string): Promise<string> {
   try {
     const resolvedUrl = getInternalMinioUrl(url);
 
-    console.log(`📥 Downloading image from ${resolvedUrl}`);
     const response = await axios.get(resolvedUrl, { responseType: "arraybuffer" });
 
     const buffer = Buffer.from(response.data, "binary");

@@ -10,8 +10,9 @@ export type AIAnalysisType =
 export interface BaseAIInput {
   image: string;
 }
-export interface DetectFoodInput extends BaseAIInput {
+export interface DetectInput extends BaseAIInput {
   labels?: Array<{ id: string; en: string; }>;
+  image: string;
 }
 
 
@@ -32,9 +33,11 @@ export function getAITypeFromStepOrder(stepOrder: number) {
 
 export async function detectAI<T extends AIAnalysisType>(
   type: T,
-  data: T extends "food" ? DetectFoodInput : BaseAIInput
+  data: T extends "food" ? DetectInput : BaseAIInput
 ): Promise<any> {
   try {
+    console.log(data, "========== payload ============", `/detect/${type}`);
+
     const res = await aiClient.post(`/detect/${type}`, data);
     return res.data;
   } catch (error: any) {

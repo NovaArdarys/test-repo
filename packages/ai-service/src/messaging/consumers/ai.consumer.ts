@@ -18,8 +18,6 @@ const LOG_ROUTING_KEY = "log.#";
 async function handleStorageEvent(data: z.infer<typeof storageCommittedSchema>) {
   const parsed = storageCommittedSchema.parse(data);
 
-  console.log("🧠 [AI STORAGE EVENT] Received:", parsed);
-
   await foodQueue.add("detection", parsed, {
     attempts: 3,
     backoff: { type: "exponential", delay: 3000 },

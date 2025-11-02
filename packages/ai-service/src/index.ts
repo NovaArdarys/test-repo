@@ -12,6 +12,7 @@ import { checkBroker, connectRabbitMQ } from './messaging/broker';
 import { checkDatabase } from '@/db';
 import { initializeConsumers } from './messaging/consumers';
 import { eventMonitorRoute } from './routes/event.monitor.route';
+import { compressImageToBase64 } from './utils/imageCompress';
 
 type Variables = JwtVariables;
 
@@ -65,6 +66,42 @@ const app = new Hono<{ Variables: Variables; }>()
       service: 'AI Service',
       database: dbStatus,
       broker: rabbitStatus,
+    });
+  })
+  .get("/api/compress", async (c) => {
+    try {
+      const url = c.req.query("url");
+      const target = Number(c.req.query("target") || 60);
+
+      if (!url) {
+        return c.text("Missing 'url' query param", 400);
+      }
+
+      // Panggil fungsi kompresi
+      const base64 = await compressImageToBase64(url, target);
+
+      const binary = Buffer.from(base64, "base64");
+
+      const contentType = url.endsWith(".png") ? "image/png" : "image/jpeg";
+
+      return new Response(binary, {
+        headers: {
+          "Content-Type": contentType,
+          "Content-Length": binary.length.toString(),
+        },
+      });
+    } catch (err: any) {
+      console.error("❌ Compression failed:", err);
+      return c.text(`Error: ${err.message}`, 500);
+    }
+  })
+  .post("/api/compress", async (c) => {
+    const { url } = await c.req.json();
+    const result = await compressImageToBase64(url, 60);
+
+    return c.json({
+      success: true,
+      preview: result,
     });
   })
   .route("/api/events", eventMonitorRoute)
