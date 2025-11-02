@@ -1,6 +1,7 @@
 // publishHelper.ts
 import redis from "@/constants/redis";
 import { getRabbitMQChannel } from "../broker";
+import { v4 as uuidv4 } from "uuid";
 
 /**
  * safePublish - publish message ke RabbitMQ dengan confirm channel (ACK/NACK)
@@ -12,24 +13,31 @@ import { getRabbitMQChannel } from "../broker";
  */
 export async function safePublish(exchange: string, routingKey: string, data: any) {
   const channel = getRabbitMQChannel();
-  const message = JSON.stringify(data);
+  const payload = {
+    ...data,
+    _meta: {
+      eventId: uuidv4(),
+      exchange,
+      routingKey,
+      createdAt: new Date().toISOString(),
+    },
+  };
 
-  const outboxKey = `outbox:${exchange}:${routingKey}:${Date.now()}`;
+  const message = JSON.stringify(payload);
+  const outboxKey = `outbox:${exchange}:${routingKey}:${payload._meta.eventId}`;
+
   await redis.set(outboxKey, message);
-
   await channel.assertExchange(exchange, "topic", { durable: true });
 
   return new Promise<void>((resolve, reject) => {
     channel.publish(exchange, routingKey, Buffer.from(message), { persistent: true }, async (err) => {
       if (err) {
-        console.error(`[RABBITMQ] ❌ Failed to publish [${routingKey}]:`, err.message);
+        console.error(`[RABBITMQ] ❌ Failed to publish [${routingKey}]`, err.message);
         return reject(err);
       }
 
-      console.log(`[RABBITMQ] ✅ Published [${routingKey}] to ${exchange}`);
-
+      console.log(`[RABBITMQ] ✅ Published [${routingKey}] (${payload._meta.eventId})`);
       await redis.del(outboxKey);
-
       resolve();
     });
   });
