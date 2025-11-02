@@ -281,6 +281,13 @@
       "when": 1761778640788,
       "tag": "0039_talented_iron_lad",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1762080503356,
+      "tag": "0040_outgoing_jubilee",
+      "breakpoints": true
     }
   ]
 }
