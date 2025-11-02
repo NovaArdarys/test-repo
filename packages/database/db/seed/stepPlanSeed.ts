@@ -13,23 +13,19 @@ const stepsByEntity: Record<
   { stepKey: StepKey; stepName: string; stepOrder: number; }[]
 > = {
   kitchen: [
-    { stepKey: "preparation", stepName: "Preparation", stepOrder: 1 },
-    { stepKey: "preparationTool", stepName: "Preparation APD", stepOrder: 2 },
-    { stepKey: "cooking", stepName: "Cooking", stepOrder: 3 },
-    { stepKey: "packaging", stepName: "Packaging", stepOrder: 4 },
+    { stepKey: "preparation", stepName: "Persiapan", stepOrder: 1 },
+    { stepKey: "preparationTool", stepName: "APD", stepOrder: 2 },
+    { stepKey: "cooking", stepName: "Dapur", stepOrder: 3 },
+    { stepKey: "packaging", stepName: "Pemorsian", stepOrder: 4 },
   ],
   driver: [
-    { stepKey: "pickup", stepName: "Pickup Order", stepOrder: 1 },
-    { stepKey: "delivery", stepName: "Delivery to School", stepOrder: 2 },
-    { stepKey: "confirmation", stepName: "Delivery Confirmation", stepOrder: 3 },
+    { stepKey: "delivery", stepName: "Pengantaran", stepOrder: 1 },
+    { stepKey: "pickup", stepName: "Pengambilan", stepOrder: 2 },
   ],
   school: [
-    { stepKey: "receive", stepName: "Receive Meals", stepOrder: 1 },
-    { stepKey: "inspection", stepName: "Quality Inspection", stepOrder: 2 },
-    { stepKey: "distribution", stepName: "Distribute to Students", stepOrder: 3 },
+    { stepKey: "inspection", stepName: "Foto Murid", stepOrder: 1 },
+    { stepKey: "receive", stepName: "Konfirmasi Penerimaan", stepOrder: 2 },
   ],
-  // incidentReport: [],
-  // profile: []
 };
 
 export async function seedMasterSteps() {
