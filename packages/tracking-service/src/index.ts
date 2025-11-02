@@ -14,15 +14,9 @@ import { checkBroker } from './messaging/broker';
 import type { ServerWebSocket } from 'bun';
 import { handleUpgrade } from './websocket/handler';
 
-// --------------------
-// Type & Globals
-// --------------------
 type Variables = JwtVariables;
 export const clients = new Set<ServerWebSocket<unknown>>();
 
-// --------------------
-// Hono App
-// --------------------
 const app = new Hono<{ Variables: Variables; }>();
 
 app
@@ -62,7 +56,8 @@ app
     }),
   )
   .get('/api/health', async (c) => {
-    const [dbStatus, rabbitStatus] = await Promise.all([checkDatabase(), checkBroker()]);
+    const dbStatus = await checkDatabase();
+    const rabbitStatus = await checkBroker();
 
     return c.json({
       status: 'Running',
@@ -73,9 +68,6 @@ app
   })
   .onError(errorHandler);
 
-// --------------------
-// Server Setup
-// --------------------
 const port = Number(3002);
 
 (async () => {
@@ -86,20 +78,17 @@ const port = Number(3002);
     async fetch(req, server) {
       const url = new URL(req.url);
 
-      // --- WebSocket upgrade
       if (url.pathname === '/ws') {
-        if (server.upgrade(req, { data: { url: req.url } })) {
+        if (server.upgrade(req, { data: { url: req?.url || "" } } as any)) {
           return;
         }
         return new Response('Upgrade failed', { status: 400 });
       }
 
-      // --- HTTP publish
       if (url.pathname === '/publish' && req.method === 'POST') {
         return httpPublishHandler(req);
       }
 
-      // --- Hono routes
       return app.fetch(req, server);
     },
   });
