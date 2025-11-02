@@ -2,6 +2,15 @@
 import { ConsumeMessage, Channel } from "amqplib";
 import redis from "@/constants/redis";
 
+/**
+ * consumer helper
+ *
+ * @export
+ * @template T
+ * @param {((data: T, msg: ConsumeMessage, channel: Channel) => Promise<void> | void)} handler
+ * @param {Channel} channel
+ * @return {*} 
+ */
 export function safeConsume<T extends Record<string, any>>(
   handler: (data: T, msg: ConsumeMessage, channel: Channel) => Promise<void> | void,
   channel: Channel
