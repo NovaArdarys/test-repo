@@ -2,7 +2,7 @@ import { z } from "zod";
 import { Channel } from "amqplib";
 import { EXCHANGES } from "../events/exchanges";
 import { entityTypeEnum } from "@/db/schemas";
-import { updateSchool } from "@/services/repositories/school.service";
+import { assignUserToSchool, isUserAssignedToSchool, updateSchool } from "@/services/repositories/school.service";
 import { safeConsume } from "../utils/consumerHelper";
 
 // ===== VALIDATORS =====
@@ -59,6 +59,14 @@ async function handleLogEvent(data: any) {
 // User Assign Event
 async function handleAssignToSchool(data: z.infer<typeof baseUserSchool>) {
   const parsed = baseUserSchool.parse(data);
+  const alreadyAssigned = await isUserAssignedToSchool(parsed.userId, parsed.schoolId);
+  if (!alreadyAssigned) {
+    await assignUserToSchool({
+      schoolId: parsed.schoolId,
+      userId: parsed.userId,
+      createdBy: parsed.createdBy,
+    });
+  }
   console.log(`[USER EVENT] Assign user ${parsed.userId} to school ${parsed.schoolId}`);
 }
 

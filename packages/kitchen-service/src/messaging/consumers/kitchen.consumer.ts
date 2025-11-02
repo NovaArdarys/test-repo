@@ -5,6 +5,7 @@ import { entityTypeEnum } from "@/db/schemas";
 import { updateKitchen } from "@/services/repositories/kitchen.service";
 import { updateSupplier } from "@/services/repositories/suppliers.service";
 import { safeConsume } from "../utils/consumerHelper";
+import { assignUserToKitchen, isUserAssignedToKitchen } from "@/services/repositories/user.kitchen.service";
 
 // ===== VALIDATORS =====
 const entityTypeValidator = z.enum(entityTypeEnum.enumValues);
@@ -62,6 +63,16 @@ async function handleLogEvent(data: any) {
 // Assign User to Kitchen
 async function handleAssignToKitchen(data: z.infer<typeof baseUserKitchen>) {
   const parsed = baseUserKitchen.parse(data);
+
+  const alreadyAssigned = await isUserAssignedToKitchen(parsed.userId, parsed.kitchenId);
+  if (!alreadyAssigned) {
+    await assignUserToKitchen({
+      kitchenId: parsed.kitchenId,
+      userId: parsed.userId,
+      createdBy: parsed.createdBy,
+    });
+  }
+
   console.log(`[USER EVENT] Assign user ${parsed.userId} to kitchen ${parsed.kitchenId}`);
 }
 
