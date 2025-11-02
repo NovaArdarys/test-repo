@@ -29,6 +29,14 @@ export async function safePublish(exchange: string, routingKey: string, data: an
   await redis.set(outboxKey, message);
   await channel.assertExchange(exchange, "topic", { durable: true });
 
+  await redis.hSet(`eventlog:${payload._meta.eventId}`, {
+    exchange,
+    routingKey,
+    publishedAt: new Date().toISOString(),
+    status: "published",
+    publisher: process.env.SERVICE_NAME || "unknown",
+  });
+
   return new Promise<void>((resolve, reject) => {
     channel.publish(exchange, routingKey, Buffer.from(message), { persistent: true }, async (err) => {
       if (err) {
