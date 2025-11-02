@@ -37,21 +37,21 @@ export const registerHandler = catchAsync(async (c) => {
 
   const { email, password, address, dateOfBirth, firstName, lastName, phoneNumber, roleId, isActive, kitchenId, schoolId, createdBy } = await c.req.parseBody() as unknown as registerSchemaType;
 
-  // const result = await createUser({
-  //   email,
-  //   password,
-  //   createdBy: createdBy || null,
-  //   createdAt: new Date(),
-  //   updatedBy: null,
-  //   updatedAt: new Date(),
-  //   isActive
-  // }, {
-  //   address: address || "",
-  //   dateOfBirth: dateOfBirth || new Date(),
-  //   firstName: firstName || "",
-  //   lastName: lastName || "",
-  //   phoneNumber: phoneNumber || "",
-  // }, roleId || "");
+  const result = await createUser({
+    email,
+    password,
+    createdBy: createdBy || null,
+    createdAt: new Date(),
+    updatedBy: null,
+    updatedAt: new Date(),
+    isActive
+  }, {
+    address: address || "",
+    dateOfBirth: dateOfBirth || new Date(),
+    firstName: firstName || "",
+    lastName: lastName || "",
+    phoneNumber: phoneNumber || "",
+  }, roleId || "");
 
   if (kitchenId) {
     await publishAssignUserToKitchen({
@@ -69,7 +69,7 @@ export const registerHandler = catchAsync(async (c) => {
     });
   }
 
-  return c.json({ data: { kitchenId, schoolId } });
+  return c.json({ data: { ...result, kitchenId, schoolId } });
 });
 
 export const removeTokenHandler = catchAsync(async (c) => {
