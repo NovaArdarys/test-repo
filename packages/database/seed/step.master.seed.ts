@@ -1,5 +1,5 @@
-import { db } from "../index";
-import { masterSteps } from "../schemas/stepPlan.schema";
+import { db } from "../db/index";
+import { masterSteps } from "../db/schemas/stepPlan.schema";
 import { eq } from "drizzle-orm";
 
 // 🔹 Ambil tipe langsung dari schema

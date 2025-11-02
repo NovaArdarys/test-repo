@@ -1,6 +1,6 @@
 import { randomUUID } from 'crypto';
-import { db } from '..';
-import { foodItems } from '../schemas';
+import { db } from '../db';
+import { foodItems } from '../db/schemas';
 import { foodData } from './data/foodData';
 
 async function seedFoodItems() {
