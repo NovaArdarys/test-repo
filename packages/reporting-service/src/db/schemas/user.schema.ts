@@ -3,7 +3,6 @@ import { permissionTypeEnum, userTokenTypeEnum } from './enums/enums';
 import type { InferInsertModel } from 'drizzle-orm';
 import { storage } from './storage.schema';
 
-
 export const users = pgTable('users', {
   id: uuid('id').primaryKey().defaultRandom(),
   email: text('email').notNull().unique(),

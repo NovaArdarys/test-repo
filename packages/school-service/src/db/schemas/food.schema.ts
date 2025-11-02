@@ -3,7 +3,7 @@ import { boolean, date, pgTable, text, timestamp, uuid, varchar } from "drizzle-
 
 export const foodItems = pgTable('food_items', {
   id: uuid('id').primaryKey().defaultRandom(),
-  name: varchar('name', { length: 100 }).notNull(),
+  name: varchar('name', { length: 100 }).notNull().unique(),
   nameEn: varchar('name_en', { length: 100 }),
   type: foodTypeEnum('type').notNull(),
   description: text('description'),

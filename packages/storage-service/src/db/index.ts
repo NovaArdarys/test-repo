@@ -11,7 +11,6 @@ const pool = new Pool({
   ssl: false,
   // connectionString: "postgresql://postgres.yiokveqrkxvdhzkqcyrd:vHb1mSnZgEV8NV5u@aws-1-ap-southeast-1.pooler.supabase.com:6543/postgres",
 });
-
 export const db = drizzle(pool, { schema });
 
 

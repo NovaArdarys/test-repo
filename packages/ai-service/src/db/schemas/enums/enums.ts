@@ -3,7 +3,7 @@ import { pgEnum } from "drizzle-orm/pg-core";
 export const userTokenTypeEnum = pgEnum('user_token_type', ['reset_password', 'verify_email', 'refresh_token']);
 export const logLevelEnum = pgEnum('log_level', ['DEBUG', 'INFO', 'WARN', 'ERROR', 'FATAL']);
 export const permissionTypeEnum = pgEnum('permission_type', ['API', 'WEBSITE', 'MOBILE']);
-export const foodTypeEnum = pgEnum('food_type', ['PROTEIN', 'CARBO', 'VEGETABLE', 'FRUIT', 'DRINK', 'OTHER']);
+export const foodTypeEnum = pgEnum('food_type', ['PROTEIN', 'PLANT_BASED_PROTEIN', 'CARBO', 'VEGETABLE', 'FRUIT', 'DRINK', 'OTHER']);
 export const planStatusEnum = pgEnum('plan_status', ['DRAFT', 'ACTIVE']);
 export const deliveryStatusEnum = pgEnum('delivery_status', ['PENDING', 'IN_PROGRESS', 'DELIVERED', 'FAILED']);
 export const deliverySchoolStatusEnum = pgEnum('delivery_school_status', ['PENDING', 'DELIVERED', 'FAILED']);
@@ -43,5 +43,4 @@ export const analysisTypeEnum = pgEnum('analysis_type', [
   'cleanliness',        // cek kebersihan dapur
   'mealbox_count',      // hitung jumlah kotak makan
   'food_detection',     // deteksi makanan berdasarkan label
-  'other'
 ]);
