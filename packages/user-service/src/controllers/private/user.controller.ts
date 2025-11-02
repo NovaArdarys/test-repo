@@ -4,6 +4,7 @@ import { catchAsync } from "../../utils/catchAsync";
 import { isEmpty } from "lodash";
 import * as HttpStatus from "http-status";
 import { createUser, getUser, revokeTokenStatus, saveRefreshToken, updateUser, validateTokenStatus } from "@/services/repositories/user.service";
+import { publishAssignUserToKitchen, publishAssignUserToSchool } from "@/messaging/publishers/user.publisher";
 
 export const userInfoHandler = catchAsync(async (c) => {
   const { username }: UserInfoShemaType = await c.req.parseBody();
@@ -34,15 +35,16 @@ export const userSaveTokenHandler = catchAsync(async (c) => {
 
 export const registerHandler = catchAsync(async (c) => {
 
-  const { email, password, address, dateOfBirth, firstName, lastName, phoneNumber, roleId } = await c.req.parseBody() as unknown as registerSchemaType;
+  const { email, password, address, dateOfBirth, firstName, lastName, phoneNumber, roleId, isActive, kitchenId, schoolId, createdBy } = await c.req.parseBody() as unknown as registerSchemaType;
 
   const result = await createUser({
     email,
     password,
-    createdBy: null,
+    createdBy: createdBy || null,
     createdAt: new Date(),
     updatedBy: null,
-    updatedAt: new Date()
+    updatedAt: new Date(),
+    isActive
   }, {
     address: address || "",
     dateOfBirth: dateOfBirth || new Date(),
@@ -51,7 +53,23 @@ export const registerHandler = catchAsync(async (c) => {
     phoneNumber: phoneNumber || "",
   }, roleId || "");
 
-  return c.json({ data: result });
+  if (kitchenId) {
+    await publishAssignUserToKitchen({
+      kitchenId: kitchenId,
+      userId: result.userId,
+      createdBy: createdBy || ""
+    });
+  }
+
+  if (schoolId) {
+    await publishAssignUserToSchool({
+      schoolId: schoolId,
+      userId: result.userId,
+      createdBy: createdBy || ""
+    });
+  }
+
+  return c.json({ data: { kitchenId, schoolId } });
 });
 
 export const removeTokenHandler = catchAsync(async (c) => {

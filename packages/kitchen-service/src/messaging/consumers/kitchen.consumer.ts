@@ -18,9 +18,18 @@ const storageCommittedSchema = z.object({
   meta: z.record(z.string(), z.any()).optional(),
 });
 
+const baseUserKitchen = z.object({
+  kitchenId: z.string(),
+  userId: z.string(),
+  createdBy: z.string().optional(),
+});
+
 // ===== queue dan route key =====
 const STORAGE_QUEUE_NAME = "kitchen_service_storage_queue";
 const STORAGE_ROUTING_KEY = "storage.upload.commit";
+
+const USER_ASSIGN_KITCHEN_QUEUE_NAME = "kitchen_service_assign_user_queue";
+const USER_ASSIGN_KITCHEN_ROUTING_KEY = "kitchen.assign.commit";
 
 const LOG_QUEUE_NAME = "kitchen_service_log_queue";
 const LOG_ROUTING_KEY = "log.#";
@@ -79,6 +88,24 @@ function handleLogEvent(msg: ConsumeMessage | null, channel: Channel) {
   }
 }
 
+function handleAssignToKitchen(msg: ConsumeMessage | null, channel: Channel) {
+  if (!msg) return;
+
+  try {
+    const parsed = JSON.parse(msg.content.toString());
+    const routingKey = msg.fields.routingKey;
+    const data = baseUserKitchen.parse(parsed);
+
+
+    console.warn(`[EVENT IN] [${routingKey}] Received log event:`, data);
+
+    channel.ack(msg);
+  } catch (error) {
+    console.error("[LOG EVENT ERROR]", error);
+    channel.nack(msg, false, false);
+  }
+}
+
 // setup
 export async function setupKitchenServiceConsumers(channel: Channel) {
 
@@ -96,4 +123,11 @@ export async function setupKitchenServiceConsumers(channel: Channel) {
   channel.prefetch(10);
   channel.consume(storageQueue.queue, (msg) => handleStorageEvent(msg, channel), { noAck: false });
   console.log(`[*] Kitchen Service waiting for storage events in ${storageQueue.queue}`);
+
+  await channel.assertExchange(EXCHANGES.USER, "topic", { durable: true });
+  const userQueue = await channel.assertQueue(USER_ASSIGN_KITCHEN_QUEUE_NAME, { durable: true });
+  await channel.bindQueue(userQueue.queue, EXCHANGES.USER, USER_ASSIGN_KITCHEN_ROUTING_KEY);
+  channel.prefetch(10);
+  channel.consume(userQueue.queue, (msg) => handleAssignToKitchen(msg, channel), { noAck: false });
+  console.log(`[*] User Service waiting for storage events in ${userQueue.queue}`);
 }

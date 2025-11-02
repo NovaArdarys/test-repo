@@ -67,6 +67,7 @@ export async function createUser(data: CreateUserInput, userDetail: userDetailTy
       .values({
         email: data.email.toLowerCase(),
         password: passwordHashed,
+        isActive: data.isActive,
         // phone: phoneFormatted,
         createdBy: data?.createdBy || null,
         updatedBy: data?.createdBy || null,

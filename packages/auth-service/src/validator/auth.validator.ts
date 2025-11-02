@@ -26,6 +26,9 @@ export const registerSchema = z.object({
   password: passwordSchema,
   file: uploadFileSchema,
   roleId: z.string(),
+  kitchenId: z.string().optional(),
+  schoolId: z.string().optional(),
+  isActive: z.coerce.boolean().optional(),
   ...userDetailSchema.shape,
 });
 

@@ -12,30 +12,24 @@ const getAuditFields = (c: Context) => ({
 
 export const registerHandler = catchAsync(async (c) => {
 
-  const { email, password, address, dateOfBirth, fullName, phoneNumber, roleId, file } = await c.req.parseBody() as unknown as registerSchemaType;
+  const { email, password, address, dateOfBirth, fullName, phoneNumber, roleId, isActive, kitchenId, schoolId } = await c.req.parseBody() as unknown as registerSchemaType;
   const audit = getAuditFields(c);
 
-  // if (file) {
-  //   if (Array.isArray(file)) {
-  //     file.forEach(f => console.log("Multiple:", f.name));
-  //   } else {
-  //     console.log("Single:", file.name);
-  //     return c.json({ data: file.name });
-  //   }
-  // }
-
   const [firstName, lastName] = fullName?.split(" ") || ["", ""];
-  const { password: resPassword, ...result } = await createUserServiceClient({
+  const { password: _removedPassword, ...result } = await createUserServiceClient({
     email,
     password,
-    address: address || "",
-    dateOfBirth: dateOfBirth || new Date(),
-    firstName: firstName || "",
-    lastName: lastName || "",
-    phoneNumber: phoneNumber || "",
-    updatedAt: new Date(),
+    roleId,
+    isActive: Boolean(isActive),
+    address: address?.trim() ?? "",
+    phoneNumber: phoneNumber?.trim() ?? "",
+    dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : new Date(),
+    firstName,
+    lastName,
+    kitchenId: kitchenId ?? "",
+    schoolId: schoolId ?? "",
     createdBy: audit.createdBy,
-    roleId
+    updatedAt: new Date(),
   });
 
   return c.json({ data: result });

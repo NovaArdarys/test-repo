@@ -34,7 +34,6 @@ export const userDetailSchema = z
     address: z.string().optional(),
     dateOfBirth: z.string().pipe(z.coerce.date()).optional(),
     email: z.string().optional(),
-    roleId: z.string().optional(),
     password: z
       .string()
       .min(6, { message: "Password minimal 6 karakter" })
@@ -74,6 +73,11 @@ export type userDetailType = z.infer<typeof userDetailSchema>;
 export const registerSchema = userDetailSchema.safeExtend({
   email: z.string({ message: "Email wajib diisi" }),
   password: z.string().min(6, { message: "Minimal 6 karakter mengandung 1 huruf besar dan 1 angka" }),
+  roleId: z.string().optional(),
+  kitchenId: z.string().optional(),
+  schoolId: z.string().optional(),
+  isActive: z.coerce.boolean().optional(),
+  createdBy: z.string().optional()
 });
 
 export type registerSchemaType = z.infer<typeof registerSchema>;
