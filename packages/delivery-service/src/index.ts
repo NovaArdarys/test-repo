@@ -11,6 +11,7 @@ import { join } from 'path';
 import { checkBroker, connectRabbitMQ } from './messaging/broker';
 import { checkDatabase } from '@/db';
 import { initializeConsumers } from './messaging/consumers';
+import { eventMonitorRoute } from './routes/event.monitor.route';
 
 type Variables = JwtVariables;
 
@@ -68,6 +69,7 @@ const app = new Hono<{ Variables: Variables; }>()
       broker: rabbitStatus,
     });
   })
+  .route("/api/events", eventMonitorRoute);
   .route('/api', routes)
 
   .onError(errorHandler);

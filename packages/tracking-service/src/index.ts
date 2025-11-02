@@ -13,6 +13,7 @@ import { httpPublishHandler } from './websocket/publish';
 import { checkBroker } from './messaging/broker';
 import type { ServerWebSocket } from 'bun';
 import { handleUpgrade } from './websocket/handler';
+import { eventMonitorRoute } from './routes/event.monitor.route';
 
 type Variables = JwtVariables;
 export const clients = new Set<ServerWebSocket<unknown>>();
@@ -66,6 +67,7 @@ app
       broker: rabbitStatus,
     });
   })
+  .route("/api/events", eventMonitorRoute);
   .onError(errorHandler);
 
 const port = Number(3002);
