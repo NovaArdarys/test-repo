@@ -68,7 +68,7 @@ const app = new Hono<{ Variables: Variables; }>()
       broker: rabbitStatus,
     });
   })
-  .route("/api/events", eventMonitorRoute);
+  .route("/api/events", eventMonitorRoute)
   .route('/api', routes)
 
   .onError(errorHandler);

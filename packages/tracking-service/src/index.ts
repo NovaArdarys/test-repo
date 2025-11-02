@@ -67,7 +67,7 @@ app
       broker: rabbitStatus,
     });
   })
-  .route("/api/events", eventMonitorRoute);
+  .route("/api/events", eventMonitorRoute)
   .onError(errorHandler);
 
 const port = Number(3002);

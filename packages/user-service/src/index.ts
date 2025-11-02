@@ -69,7 +69,7 @@ const app = new Hono<{ Variables: Variables; }>()
       broker: rabbitStatus,
     });
   })
-  .route("/api/events", eventMonitorRoute);
+  .route("/api/events", eventMonitorRoute)
   .route('/api/private', routesprivate)
   .route('/api', routespublic)
 
