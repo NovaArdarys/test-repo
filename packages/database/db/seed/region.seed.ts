@@ -1,7 +1,7 @@
 // seed.ts
 import { v4 as uuidv4 } from 'uuid';
-import { provinces, regencies, districts, villages } from '../db/schemas/master.schema';
-import { db } from '../db/index';
+import { provinces, regencies, districts, villages } from '../schemas/master.schema';
+import { db } from '../index';
 import { region } from './data/regionData';
 
 interface IdMap {

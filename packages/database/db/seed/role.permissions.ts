@@ -1,5 +1,5 @@
-import { db } from "../db";
-import { permissions, rolePermissions, roles } from "../db/schemas";
+import { db } from "..";
+import { permissions, rolePermissions, roles } from "../schemas";
 import { initialPermissionsData } from "./data/initialPermissionsData";
 import { initialRolesData } from "./data/initialRoleData";
 
