@@ -1,13 +1,12 @@
 import { z } from "zod";
-import { Channel, ConsumeMessage } from "amqplib";
+import { Channel } from "amqplib";
 import { EXCHANGES } from "../events/exchanges";
 import { entityTypeEnum } from "@/db/schemas";
 import { updateStepReport } from "@/services/repositories/daily.report.service";
+import { safeConsume } from "../utils/consumerHelper";
 
-const entityTypeValidator = z.enum(entityTypeEnum.enumValues, {
-  error: () => ({ message: `Invalid type ${entityTypeEnum.enumValues.join(', ')}` }),
-});
-
+// ===== VALIDATORS =====
+const entityTypeValidator = z.enum(entityTypeEnum.enumValues);
 
 const storageCommittedSchema = z.object({
   storageId: z.string(),
@@ -17,90 +16,59 @@ const storageCommittedSchema = z.object({
   meta: z.record(z.string(), z.any()).optional(),
 });
 
-// ===== queue dan route key =====
+// ===== QUEUES =====
 const STORAGE_QUEUE_NAME = "report_service_storage_queue";
 const STORAGE_ROUTING_KEY = "storage.upload.commit";
 
 const LOG_QUEUE_NAME = "report_service_log_queue";
 const LOG_ROUTING_KEY = "log.#";
 
-// consumer
-async function handleStorageEvent(msg: import("amqplib").ConsumeMessage | null, channel: import("amqplib").Channel) {
-  if (!msg) return;
+// ================= HANDLERS =================
 
-  try {
-    const parsed = JSON.parse(msg.content.toString());
-    console.log("🪅 =====parsed====== ", parsed);
-    const data = storageCommittedSchema.parse(parsed);
+// Storage Upload Event Handler
+async function handleStorageEvent(data: z.infer<typeof storageCommittedSchema>) {
+  const parsed = storageCommittedSchema.parse(data);
 
+  const validEntityTypes = [
+    "kitchen_daily_report",
+    "driver_daily_report",
+    "school_daily_report",
+  ];
 
-    if (data.entityType === "kitchen_daily_report") {
-      await updateStepReport(data.entityId, {
-        storageId: data.storageId,
-        imageURL: data.url,
-        updatedBy: data.meta?.uploadedBy,
-        updatedAt: new Date()
-      });
-
-    }
-    if (data.entityType === "driver_daily_report") {
-      await updateStepReport(data.entityId, {
-        storageId: data.storageId,
-        imageURL: data.url,
-        updatedBy: data.meta?.uploadedBy,
-        updatedAt: new Date()
-      });
-
-    }
-    if (data.entityType === "school_daily_report") {
-      await updateStepReport(data.entityId, {
-        storageId: data.storageId,
-        imageURL: data.url,
-        updatedBy: data.meta?.uploadedBy,
-        updatedAt: new Date()
-      });
-
-    }
-
-    channel.ack(msg);
-  } catch (err: any) {
-    console.log(err);
-    channel.nack(msg, false, false);
+  if (!validEntityTypes.includes(parsed.entityType)) {
+    console.log(`[REPORT EVENT] ⚠️ Skipped unsupported entityType: ${parsed.entityType}`);
+    return;
   }
+
+  await updateStepReport(parsed.entityId, {
+    storageId: parsed.storageId,
+    imageURL: parsed.url,
+    updatedBy: parsed.meta?.uploadedBy,
+    updatedAt: new Date(),
+  });
+
+  console.log(`[REPORT STORAGE EVENT] ✅ Updated ${parsed.entityType} (${parsed.entityId})`);
 }
 
-
-function handleLogEvent(msg: ConsumeMessage | null, channel: Channel) {
-  if (!msg) return;
-
-  try {
-    const content = JSON.parse(msg.content.toString());
-    const routingKey = msg.fields.routingKey;
-
-    console.warn(`[EVENT IN] [${routingKey}] Received log event:`, content);
-
-    channel.ack(msg);
-  } catch (error) {
-    console.error("[LOG EVENT ERROR]", error);
-    channel.nack(msg, false, false);
-  }
+// Log Event Handler
+async function handleLogEvent(data: any) {
+  console.warn(`[LOG EVENT IN] [${data._meta?.routingKey ?? "log"}]`, data);
 }
 
-// setup
 export async function setupReportServiceConsumers(channel: Channel) {
-
-  // log
+  // LOG
   await channel.assertExchange(EXCHANGES.LOG, "topic", { durable: true });
   const logQueue = await channel.assertQueue(LOG_QUEUE_NAME, { durable: true });
   await channel.bindQueue(logQueue.queue, EXCHANGES.LOG, LOG_ROUTING_KEY);
   channel.prefetch(10);
-  channel.consume(logQueue.queue, (msg) => handleLogEvent(msg, channel), { noAck: false });
-  console.log(`[*] Report Service waiting for log events in ${logQueue.queue}`);
+  channel.consume(logQueue.queue, safeConsume(handleLogEvent, channel), { noAck: false });
+  console.log(`[*] Report Service listening for LOG events in ${logQueue.queue}`);
 
+  // STORAGE
   await channel.assertExchange(EXCHANGES.STORAGE, "topic", { durable: true });
   const storageQueue = await channel.assertQueue(STORAGE_QUEUE_NAME, { durable: true });
   await channel.bindQueue(storageQueue.queue, EXCHANGES.STORAGE, STORAGE_ROUTING_KEY);
   channel.prefetch(10);
-  channel.consume(storageQueue.queue, (msg) => handleStorageEvent(msg, channel), { noAck: false });
-  console.log(`[*] Report Service waiting for storage events in ${storageQueue.queue}`);
+  channel.consume(storageQueue.queue, safeConsume(handleStorageEvent, channel), { noAck: false });
+  console.log(`[*] Report Service listening for STORAGE events in ${storageQueue.queue}`);
 }

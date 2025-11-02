@@ -1,90 +1,69 @@
 import { z } from "zod";
-import { Channel, ConsumeMessage } from "amqplib";
+import { Channel } from "amqplib";
 import { EXCHANGES } from "../events/exchanges";
 import { entityTypeEnum } from "@/db/schemas";
 import { createAutoDelivery } from "@/services/repositories/delivery.school.driver.service";
+import { safeConsume } from "../utils/consumerHelper";
 
-const entityTypeValidator = z.enum(entityTypeEnum.enumValues, {
-  error: () => ({ message: `Invalid type ${entityTypeEnum.enumValues.join(', ')}` }),
-});
+// ===== VALIDATORS =====
+const entityTypeValidator = z.enum(entityTypeEnum.enumValues);
 
-
-const storageCommittedSchema = z.object({
+const stepCommittedSchema = z.object({
   menuPlanId: z.string(),
   entityType: entityTypeValidator,
   entityId: z.string(),
   allStepCompleted: z.boolean(),
 });
 
-// ===== queue dan route key =====
+// ===== QUEUES =====
 const STEP_QUEUE_NAME = "delivery_service_step_queue";
 const STEP_ROUTING_KEY = "delivery.step.commit";
 
 const LOG_QUEUE_NAME = "delivery_service_log_queue";
 const LOG_ROUTING_KEY = "log.#";
 
-// consumer
-async function handleStorageEvent(msg: import("amqplib").ConsumeMessage | null, channel: import("amqplib").Channel) {
-  if (!msg) return;
+// ================= HANDLERS =================
 
-  try {
-    const parsed = JSON.parse(msg.content.toString());
-    const data = storageCommittedSchema.parse(parsed);
-    console.log("🪅 =====parsed====== ", data);
+// Handle Step Commit (trigger delivery)
+async function handleStepCommit(data: z.infer<typeof stepCommittedSchema>) {
+  const parsed = stepCommittedSchema.parse(data);
+  console.log("🪅 [DELIVERY EVENT IN] Parsed:", parsed);
 
-    console.log(data.entityType === "kitchen", "🐉🐉", data.allStepCompleted);
+  // Jika step berasal dari kitchen dan sudah complete → buat delivery otomatis
+  if (parsed.entityType === "kitchen" && parsed.allStepCompleted) {
+    const result = await createAutoDelivery({
+      kitchenId: parsed.entityId,
+      menuPlanId: parsed.menuPlanId,
+      status: "PENDING",
+      createdBy: "00000000-0000-0000-0000-000000000000", // system user
+    });
 
-    if (data.entityType === "kitchen" && data.allStepCompleted) {
-      const result = await createAutoDelivery({
-        kitchenId: data.entityId,
-        menuPlanId: data.menuPlanId,
-        status: "PENDING",
-        createdBy: "00000000-0000-0000-0000-000000000000"
-      });
-
-      console.log("============= ✅ success ✅ ===========", result);
-
-    }
-
-    channel.ack(msg);
-  } catch (err: any) {
-    console.log(err, "========error========");
-    channel.nack(msg, false, false);
+    console.log(`[DELIVERY EVENT] ✅ Auto delivery created for kitchen ${parsed.entityId}`, result);
+  } else {
+    console.log(`[DELIVERY EVENT] ⚠️ Skipped: entityType=${parsed.entityType}, allStepCompleted=${parsed.allStepCompleted}`);
   }
 }
 
-
-function handleLogEvent(msg: ConsumeMessage | null, channel: Channel) {
-  if (!msg) return;
-
-  try {
-    const content = JSON.parse(msg.content.toString());
-    const routingKey = msg.fields.routingKey;
-
-    console.warn(`[EVENT IN] [${routingKey}] Received log event:`, content);
-
-    channel.ack(msg);
-  } catch (error) {
-    console.error("[LOG EVENT ERROR]", error);
-    channel.nack(msg, false, false);
-  }
+// Handle Log Events
+async function handleLogEvent(data: any) {
+  console.warn(`[LOG EVENT IN] [${data._meta?.routingKey ?? "log"}]`, data);
 }
 
-// setup
+
 export async function setupDeliveryServiceConsumers(channel: Channel) {
-
-  // log
+  // LOG Listener
   await channel.assertExchange(EXCHANGES.LOG, "topic", { durable: true });
   const logQueue = await channel.assertQueue(LOG_QUEUE_NAME, { durable: true });
   await channel.bindQueue(logQueue.queue, EXCHANGES.LOG, LOG_ROUTING_KEY);
   channel.prefetch(10);
-  channel.consume(logQueue.queue, (msg) => handleLogEvent(msg, channel), { noAck: false });
-  console.log(`[*] Delivery Service waiting for log events in ${logQueue.queue}`);
+  channel.consume(logQueue.queue, safeConsume(handleLogEvent, channel), { noAck: false });
+  console.log(`[*] Delivery Service listening for LOG events in ${logQueue.queue}`);
 
+  // STEP Listener (delivery.step.commit)
   await channel.assertExchange(EXCHANGES.STORAGE, "topic", { durable: true });
-  const storageQueue = await channel.assertQueue(STEP_QUEUE_NAME, { durable: true });
-  await channel.bindQueue(storageQueue.queue, EXCHANGES.STORAGE, STEP_ROUTING_KEY);
+  const stepQueue = await channel.assertQueue(STEP_QUEUE_NAME, { durable: true });
+  await channel.bindQueue(stepQueue.queue, EXCHANGES.STORAGE, STEP_ROUTING_KEY);
   channel.prefetch(10);
-  channel.consume(storageQueue.queue, (msg) => handleStorageEvent(msg, channel), { noAck: false });
-  console.log(`[*] Delivery Service waiting for storage events in ${storageQueue.queue}`);
+  channel.consume(stepQueue.queue, safeConsume(handleStepCommit, channel), { noAck: false });
+  console.log(`[*] Delivery Service listening for STEP COMMIT events in ${stepQueue.queue}`);
 }

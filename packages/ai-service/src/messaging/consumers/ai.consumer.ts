@@ -1,71 +1,55 @@
 import { z } from "zod";
-import { Channel, ConsumeMessage } from "amqplib";
+import { Channel } from "amqplib";
 import { EXCHANGES } from "../events/exchanges";
-import { entityTypeEnum } from "@/db/schemas";
 import { foodQueue } from "@/jobs/queue/food.queue";
 import { storageCommittedSchema } from "@/validator/storage.validator";
+import { safeConsume } from "../utils/consumerHelper";
 
-// ===== queue dan route key =====
+// ===== QUEUES =====
 const STORAGE_QUEUE_NAME = "ai_service_storage_queue";
 const STORAGE_ROUTING_KEY = "storage.upload.commit";
 
 const LOG_QUEUE_NAME = "ai_service_log_queue";
 const LOG_ROUTING_KEY = "log.#";
 
-// consumer
-async function handleStorageEvent(msg: import("amqplib").ConsumeMessage | null, channel: import("amqplib").Channel) {
-  if (!msg) return;
+// ================= HANDLERS =================
 
-  try {
-    const parsed = JSON.parse(msg.content.toString());
-    const data = storageCommittedSchema.parse(parsed);
-    console.log("🪅 =====parsed====== ", data);
+// Handle Storage Upload Event → enqueue ke Bull Queue
+async function handleStorageEvent(data: z.infer<typeof storageCommittedSchema>) {
+  const parsed = storageCommittedSchema.parse(data);
 
-    const job = await foodQueue.add('detection', data, {
-      attempts: 3,
-      backoff: { type: 'exponential', delay: 3000 }
-    });
+  console.log("🧠 [AI STORAGE EVENT] Received:", parsed);
 
+  await foodQueue.add("detection", parsed, {
+    attempts: 3,
+    backoff: { type: "exponential", delay: 3000 },
+    removeOnComplete: true,
+    removeOnFail: false,
+  });
 
-    channel.ack(msg);
-  } catch (err: any) {
-    console.log(err);
-    channel.nack(msg, false, false);
-  }
+  console.log(`[AI WORKER] ✅ Job queued for detection [${parsed.storageId}]`);
 }
 
-
-function handleLogEvent(msg: ConsumeMessage | null, channel: Channel) {
-  if (!msg) return;
-
-  try {
-    const content = JSON.parse(msg.content.toString());
-    const routingKey = msg.fields.routingKey;
-
-    console.warn(`[EVENT IN] [${routingKey}] Received log event:`, content);
-
-    channel.ack(msg);
-  } catch (error) {
-    console.error("[LOG EVENT ERROR]", error);
-    channel.nack(msg, false, false);
-  }
+// Handle Log Event
+async function handleLogEvent(data: any) {
+  console.warn(`[LOG EVENT IN] [${data._meta?.routingKey ?? "log"}]`, data);
 }
 
-// setup
+// ================= SETUP =================
 export async function setupAiServiceConsumers(channel: Channel) {
-
-  // log
+  // LOG Listener
   await channel.assertExchange(EXCHANGES.LOG, "topic", { durable: true });
   const logQueue = await channel.assertQueue(LOG_QUEUE_NAME, { durable: true });
   await channel.bindQueue(logQueue.queue, EXCHANGES.LOG, LOG_ROUTING_KEY);
   channel.prefetch(10);
-  channel.consume(logQueue.queue, (msg) => handleLogEvent(msg, channel), { noAck: false });
-  console.log(`[*] AI Service waiting for log events in ${logQueue.queue}`);
+  channel.consume(logQueue.queue, safeConsume(handleLogEvent, channel), { noAck: false });
+  console.log(`[*] AI Service listening for LOG events in ${logQueue.queue}`);
 
+  // STORAGE Listener (storage.upload.commit)
   await channel.assertExchange(EXCHANGES.STORAGE, "topic", { durable: true });
   const storageQueue = await channel.assertQueue(STORAGE_QUEUE_NAME, { durable: true });
   await channel.bindQueue(storageQueue.queue, EXCHANGES.STORAGE, STORAGE_ROUTING_KEY);
   channel.prefetch(10);
-  channel.consume(storageQueue.queue, (msg) => handleStorageEvent(msg, channel), { noAck: false });
-  console.log(`[*] AI Service waiting for storage events in ${storageQueue.queue}`);
+  channel.consume(storageQueue.queue, safeConsume(handleStorageEvent, channel), { noAck: false });
+  console.log(`[*] AI Service listening for STORAGE events in ${storageQueue.queue}`);
 }

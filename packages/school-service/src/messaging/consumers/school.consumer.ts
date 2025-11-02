@@ -1,13 +1,12 @@
 import { z } from "zod";
-import { Channel, ConsumeMessage } from "amqplib";
+import { Channel } from "amqplib";
 import { EXCHANGES } from "../events/exchanges";
 import { entityTypeEnum } from "@/db/schemas";
 import { updateSchool } from "@/services/repositories/school.service";
+import { safeConsume } from "../utils/consumerHelper";
 
-const entityTypeValidator = z.enum(entityTypeEnum.enumValues, {
-  error: () => ({ message: `Invalid type ${entityTypeEnum.enumValues.join(', ')}` }),
-});
-
+// ===== VALIDATORS =====
+const entityTypeValidator = z.enum(entityTypeEnum.enumValues);
 
 const storageCommittedSchema = z.object({
   storageId: z.string(),
@@ -23,7 +22,7 @@ const baseUserSchool = z.object({
   createdBy: z.string().optional(),
 });
 
-// ===== queue dan route key =====
+// ===== QUEUES =====
 const STORAGE_QUEUE_NAME = "school_service_storage_queue";
 const STORAGE_ROUTING_KEY = "storage.upload.commit";
 
@@ -33,91 +32,61 @@ const USER_ASSIGN_SCHOOL_ROUTING_KEY = "school.assign.commit";
 const LOG_QUEUE_NAME = "school_service_log_queue";
 const LOG_ROUTING_KEY = "log.#";
 
-// consumer
-async function handleStorageEvent(msg: import("amqplib").ConsumeMessage | null, channel: import("amqplib").Channel) {
-  if (!msg) return;
+// ================= HANDLERS =================
 
-  try {
-    const parsed = JSON.parse(msg.content.toString());
-    console.log("🪅 =====parsed====== ", parsed);
-    const data = storageCommittedSchema.parse(parsed);
+// Storage Upload Event
+async function handleStorageEvent(data: z.infer<typeof storageCommittedSchema>) {
+  const parsed = storageCommittedSchema.parse(data);
 
+  if (parsed.entityType === "school") {
+    await updateSchool(parsed.entityId, {
+      storageId: parsed.storageId,
+      imageURL: parsed.url,
+      updatedBy: parsed.meta?.uploadedBy,
+    });
 
-    if (data.entityType === "school") {
-      await updateSchool(data.entityId, {
-        storageId: data.storageId,
-        imageURL: data.url,
-        updatedBy: data.meta?.uploadedBy,
-      });
-
-      console.log(`[STORAGE EVENT] Updated _profile ${data.entityId}`);
-    }
-
-    channel.ack(msg);
-  } catch (err: any) {
-    console.log(err);
-    channel.nack(msg, false, false);
+    console.log(`[SCHOOL STORAGE EVENT] ✅ Updated school ${parsed.entityId}`);
+  } else {
+    console.log(`[SCHOOL STORAGE EVENT] ⚠️ Skipped entityType: ${parsed.entityType}`);
   }
 }
 
-
-function handleLogEvent(msg: ConsumeMessage | null, channel: Channel) {
-  if (!msg) return;
-
-  try {
-    const content = JSON.parse(msg.content.toString());
-    const routingKey = msg.fields.routingKey;
-
-    console.warn(`[EVENT IN] [${routingKey}] Received log event:`, content);
-
-    channel.ack(msg);
-  } catch (error) {
-    console.error("[LOG EVENT ERROR]", error);
-    channel.nack(msg, false, false);
-  }
+// Log Event
+async function handleLogEvent(data: any) {
+  console.warn(`[LOG EVENT IN] [${data._meta?.routingKey ?? "log"}]`, data);
 }
 
-function handleAssignToSchool(msg: ConsumeMessage | null, channel: Channel) {
-  if (!msg) return;
-
-  try {
-    const parsed = JSON.parse(msg.content.toString());
-    const routingKey = msg.fields.routingKey;
-    const data = baseUserSchool.parse(parsed);
-
-
-    console.warn(`[EVENT IN] [${routingKey}] Received log event:`, data);
-
-    channel.ack(msg);
-  } catch (error) {
-    console.error("[LOG EVENT ERROR]", error);
-    channel.nack(msg, false, false);
-  }
+// User Assign Event
+async function handleAssignToSchool(data: z.infer<typeof baseUserSchool>) {
+  const parsed = baseUserSchool.parse(data);
+  console.log(`[USER EVENT] Assign user ${parsed.userId} to school ${parsed.schoolId}`);
 }
 
-// setup
+// ========================
+// 🚀 SETUP CONSUMERS
+// ========================
 export async function setupSchoolServiceConsumers(channel: Channel) {
-
-  // log
+  // LOG listener
   await channel.assertExchange(EXCHANGES.LOG, "topic", { durable: true });
   const logQueue = await channel.assertQueue(LOG_QUEUE_NAME, { durable: true });
   await channel.bindQueue(logQueue.queue, EXCHANGES.LOG, LOG_ROUTING_KEY);
   channel.prefetch(10);
-  channel.consume(logQueue.queue, (msg) => handleLogEvent(msg, channel), { noAck: false });
-  console.log(`[*] School Service waiting for log events in ${logQueue.queue}`);
+  channel.consume(logQueue.queue, safeConsume(handleLogEvent, channel), { noAck: false });
+  console.log(`[*] School Service listening for LOG events in ${logQueue.queue}`);
 
+  // STORAGE listener
   await channel.assertExchange(EXCHANGES.STORAGE, "topic", { durable: true });
   const storageQueue = await channel.assertQueue(STORAGE_QUEUE_NAME, { durable: true });
   await channel.bindQueue(storageQueue.queue, EXCHANGES.STORAGE, STORAGE_ROUTING_KEY);
   channel.prefetch(10);
-  channel.consume(storageQueue.queue, (msg) => handleStorageEvent(msg, channel), { noAck: false });
-  console.log(`[*] School Service waiting for storage events in ${storageQueue.queue}`);
+  channel.consume(storageQueue.queue, safeConsume(handleStorageEvent, channel), { noAck: false });
+  console.log(`[*] School Service listening for STORAGE events in ${storageQueue.queue}`);
 
-
+  // USER listener
   await channel.assertExchange(EXCHANGES.USER, "topic", { durable: true });
   const userQueue = await channel.assertQueue(USER_ASSIGN_SCHOOL_QUEUE_NAME, { durable: true });
   await channel.bindQueue(userQueue.queue, EXCHANGES.USER, USER_ASSIGN_SCHOOL_ROUTING_KEY);
   channel.prefetch(10);
-  channel.consume(userQueue.queue, (msg) => handleAssignToSchool(msg, channel), { noAck: false });
-  console.log(`[*] User Service waiting for storage events in ${userQueue.queue}`);
+  channel.consume(userQueue.queue, safeConsume(handleAssignToSchool, channel), { noAck: false });
+  console.log(`[*] School Service listening for USER events in ${userQueue.queue}`);
 }
