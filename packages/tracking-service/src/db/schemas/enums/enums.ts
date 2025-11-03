@@ -12,10 +12,10 @@ export type PermissionType = 'API' | 'WEBSITE' | 'MOBILE';
 
 export const entityTypeEnum = pgEnum("entity_type_enum", [
   "kitchen", // khusus daily report kitchen
-  "kitchen_daily_report", // khusus daily report kitchen
   "driver", // khusus daily report driver
-  "driver_daily_report", // khusus daily report driver
   "school", // khusus daily report school
+  "kitchen_daily_report", // khusus daily report kitchen
+  "driver_daily_report", // khusus daily report driver
   "school_daily_report", // khusus daily report school
   "profile", // entah ini untuk profile kitchen, school, atau user
   "profile_supplier", // entah ini untuk profile kitchen, school, atau user
