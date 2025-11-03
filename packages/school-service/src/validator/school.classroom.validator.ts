@@ -5,9 +5,9 @@ export const CreateSchoolClassroomSchema = z.object({
   menuPlanId: z.string().optional(),
   date: z.string().optional(),
   name: z.string().min(1, "Class name is required").max(100),
-  totalStudent: z.number().min(0).optional(),
+  totalStudent: z.preprocess((a) => parseInt(z.string().parse(a), 10), z.number().min(1)).optional(),
   storageId: z.string().nullable().optional(),
-  isLargeClass: z.boolean().optional(),
+  isLargeClass: z.preprocess((a) => a === 'true', z.boolean()),
 });
 
 export type CreateSchoolClassroomSchemaType = z.infer<typeof CreateSchoolClassroomSchema>;
@@ -28,6 +28,8 @@ export const ListSchoolClassroomQuerySchema = z.object({
   page: z.string().optional(),
   limit: z.string().optional(),
   name: z.string().optional(),
+  startDate: z.string().optional(),
+  endDate: z.string().optional(),
   schoolId: z.string().optional(),
   isLargeClass: z.enum(["true", "false"]).optional(),
 });

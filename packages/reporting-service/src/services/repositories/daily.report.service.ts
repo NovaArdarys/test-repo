@@ -1,8 +1,9 @@
 import { db } from "@/db";
-import { dailyReports, foodItems, masterSteps, menuFoodItem, menuPlans, menuPlanSchoolsKitchen, stepReports, storage, suppliers, suppliersFoodItems } from "@/db/schemas";
+import { dailyReports, foodItems, masterSteps, menuFoodItem, menuPlans, menuPlanSchoolsKitchen, schoolClassroom, stepReports, storage, suppliers, suppliersFoodItems } from "@/db/schemas";
 import { kitchens, drivers, schools } from "@/db/schemas";
+import { APIPagination } from "@/types/paginations.type";
 import { buildPaginatedWhere } from "@/utils/pagination";
-import { eq, and, desc, InferInsertModel, InferSelectModel, between, gte, lte, sql, inArray } from "drizzle-orm";
+import { eq, and, desc, InferInsertModel, InferSelectModel, between, gte, lte, sql, inArray, SQLWrapper } from "drizzle-orm";
 import { isEmpty, orderBy } from "lodash";
 
 export type DailyReport = InferSelectModel<typeof dailyReports>;
@@ -257,252 +258,90 @@ export async function getDailyReportWithoutMaskById(id: string) {
   };
 }
 
-export async function getDailyReportsList(params?: {
-  entityType?: string;
-  entityId?: string;
-  status?: string;
+export async function getSchoolClassroomList({
+  page = 1,
+  limit = 10,
+  name,
+  schoolId = [],
+  isLargeClass,
+  isDeleted = false,
+  startDate,
+  endDate,
+}: {
+  page?: number;
+  limit?: number;
+  name?: string;
+  schoolId?: string[];
+  isLargeClass?: boolean;
+  isDeleted?: boolean;
   startDate?: string;
   endDate?: string;
-  kitchenIds?: string[];
-  schoolIds?: string[];
-  page: number; // default 1
-  limit: number; // default 10
-  menuPlanName?: string;
-}) {
-  const {
-    entityType,
-    entityId,
-    status,
-    startDate,
-    endDate,
-    kitchenIds = [],
-    schoolIds = [],
-    page = 1,
-    limit = 10,
-  } = params ?? {};
+}): Promise<APIPagination<typeof schoolClassroom.$inferSelect>> {
+  const offset = (page - 1) * limit;
+  const whereConditions: SQLWrapper[] = [];
 
-  const { where, meta } = await buildPaginatedWhere({
-    table: dailyReports,
-    tableName: "daily_reports",
-    base: {
-      entityType,
-      entityId,
-      status,
-      date: {
-        gte: startDate ?? undefined,
-        lte: endDate ?? undefined,
-      },
+  if (name) {
+    whereConditions.push(
+      sql`${schoolClassroom.name} ILIKE ${"%" + name.toLowerCase() + "%"}`
+    );
+  }
+
+  if (schoolId && schoolId.length > 0) {
+    const uuidArray = sql.raw(
+      `ARRAY[${schoolId.map((id) => `'${id}'`).join(",")}]::uuid[]`
+    );
+    whereConditions.push(
+      sql`${schoolClassroom.schoolId} = ANY(${uuidArray})`
+    );
+  }
+
+  if (startDate && endDate) {
+    whereConditions.push(
+      sql`${schoolClassroom.date} BETWEEN ${startDate} AND ${endDate}`
+    );
+  } else if (startDate) {
+    whereConditions.push(sql`${schoolClassroom.date} >= ${startDate}`);
+  } else if (endDate) {
+    whereConditions.push(sql`${schoolClassroom.date} <= ${endDate}`);
+  }
+
+  if (isLargeClass !== undefined) {
+    whereConditions.push(eq(schoolClassroom.isLargeClass, isLargeClass));
+  }
+
+  whereConditions.push(eq(schoolClassroom.isDeleted, isDeleted));
+
+  const dataPromise = db.query.schoolClassroom.findMany({
+    with: {
+      menuPlan: true,
+      storage: true,
     },
-    extra: [
-      kitchenIds.length > 0 && entityType === "kitchen"
-        ? sql`${dailyReports.entityId} = ANY(${sql.raw(`ARRAY[${kitchenIds.map(id => `'${id}'`).join(',')}]::uuid[]`)})`
-        : undefined,
-      schoolIds.length > 0 && entityType === "school"
-        ? sql`${dailyReports.entityId} = ANY(${sql.raw(`ARRAY[${schoolIds.map(id => `'${id}'`).join(',')}]::uuid[]`)})`
-        : undefined,
-      params?.menuPlanName
-        ? sql`${dailyReports.menuPlanId} IN (
-            SELECT id FROM menu_plans
-            WHERE name ILIKE ${`%${params?.menuPlanName}%`}
-          )`
-        : undefined,
-    ],
-    page,
+    where: and(...whereConditions),
     limit,
+    offset,
+    orderBy: desc(schoolClassroom.date),
   });
 
-  const data = await db
-    .select({
-      dailyReports,
-      menuPlan: {
-        id: menuPlans.id,
-        name: menuPlans.name,
-        planEndDate: menuPlans.planEndDate,
-        planStartDate: menuPlans.planStartDate,
-      },
-      suppliersFoodItem: {
-        id: suppliersFoodItems.id,
-      },
-      foodItem: {
-        id: foodItems.id,
-        description: foodItems.description,
-        name: foodItems.name,
-        type: foodItems.type,
-      },
-      supplier: {
-        id: suppliers.id,
-        address: suppliers.address,
-        name: suppliers.name,
-        description: suppliers.description,
-        phoneNumber: suppliers.phoneNumber,
-      },
-      stepData: {
-        id: stepReports.id,
-        isCompleted: stepReports.isCompleted,
-        notes: stepReports.notes,
-      },
-      stepMeta: {
-        stepKey: masterSteps.stepKey,
-        stepName: masterSteps.stepName,
-        stepOrder: masterSteps.stepOrder,
-      },
-      storage: {
-        imageURL: storage.fileUrl,
-      }
-    })
-    .from(dailyReports)
-    .leftJoin(
-      menuPlans,
-      eq(dailyReports.menuPlanId, menuPlans.id)
-    )
-    .leftJoin(
-      suppliersFoodItems,
-      eq(menuPlans.id, suppliersFoodItems.menuPlanId)
-    )
-    .leftJoin(
-      foodItems,
-      eq(suppliersFoodItems.foodItemId, foodItems.id)
-    )
-    .leftJoin(
-      suppliers,
-      eq(suppliersFoodItems.supplierId, suppliers.id)
-    )
-    .leftJoin(
-      stepReports,
-      eq(dailyReports.id, stepReports.dailyReportId)
-    )
-    .leftJoin(
-      masterSteps,
-      eq(stepReports.stepId, masterSteps.id)
-    )
-    .leftJoin(
-      storage,
-      eq(stepReports.id, storage.entityId)
-    )
-    .where(where)
-    .limit(limit)
-    .offset((page - 1) * limit)
-    .orderBy(desc(dailyReports.date));
+  const countPromise = db
+    .select({ count: sql<number>`count(*)` })
+    .from(schoolClassroom)
+    .where(and(...whereConditions));
 
-  type Supplier = {
-    id: string;
-    address: string | null;
-    name: string;
-    description: string | null;
-    phoneNumber: string | null;
-  };
+  const [data, countResult] = await Promise.all([
+    dataPromise,
+    countPromise.execute(),
+  ]);
 
-  const reportMap = new Map();
-
-  data.forEach((row) => {
-    const reportId = row.dailyReports.id;
-
-    if (!reportMap.has(reportId)) {
-      reportMap.set(reportId, {
-        ...row.dailyReports,
-        menuPlan: row.menuPlan ? {
-          ...row.menuPlan,
-          _foodItemMap: new Map(),
-        } : null,
-        _stepMap: new Map(),
-      });
-    }
-
-    const report = reportMap.get(reportId);
-
-    const sfiId = row.suppliersFoodItem?.id;
-    const foodItemId = row.foodItem?.id;
-    console.log("=============", foodItemId, "=============");
-
-
-
-    if (sfiId && report.menuPlan) {
-      const existingFoodItem = report.menuPlan._foodItemMap.get(sfiId);
-
-      if (!existingFoodItem) {
-        const newFoodItem = {
-          ...(row.foodItem ?? {}),
-          id: sfiId,
-          foodId: foodItemId,
-          suppliers: [] as Supplier[],
-        };
-
-        if (row.supplier) {
-          newFoodItem.suppliers.push(row.supplier);
-        }
-
-        report.menuPlan._foodItemMap.set(sfiId, newFoodItem);
-      } else if (
-        row.supplier &&
-        !existingFoodItem.suppliers.some((s: any) => s.id === row?.supplier?.id)
-      ) {
-        existingFoodItem.suppliers.push(row.supplier);
-      }
-    }
-
-    const stepReportId = row.stepData?.id;
-    const fileUrl = row.storage?.imageURL;
-
-    if (stepReportId) {
-      let step = report._stepMap.get(stepReportId);
-
-      if (!step) {
-        step = {
-          ...row.stepData,
-          ...row.stepMeta,
-          imageURLs: [] as string[],
-        };
-        report._stepMap.set(stepReportId, step);
-      }
-
-      if (fileUrl && !step.imageURLs.includes(fileUrl)) {
-        step.imageURLs.push(fileUrl);
-      }
-    }
-  });
-
-  const finalGroupedData = Array.from(reportMap.values()).map(report => {
-
-    if (report.menuPlan) {
-      report.menuPlan.foodItems = Array.from(report.menuPlan._foodItemMap.values()).map((foodItem: any) => {
-        const { ...restFoodItem } = foodItem;
-        return restFoodItem;
-      });
-      delete report.menuPlan._foodItemMap;
-
-      const { planEndDate, planStartDate, ...menuPlan } = report.menuPlan;
-      report.menuPlan = {
-        date: planStartDate,
-        ...menuPlan,
-      };
-    }
-
-    report.steps = orderBy(Array.from(report._stepMap.values()).map((step: any) => {
-      const { ...restStep } = step;
-      return restStep;
-    }), "stepOrder", "asc");
-    delete report._stepMap;
-
-    const {
-      id,
-      entityId,
-      menuPlanId,
-      createdAt,
-      createdBy,
-      updatedAt,
-      updatedBy,
-      date,
-      entityType,
-      status,
-      ...finalReport
-    } = report;
-
-    return finalReport;
-  });
+  const total = Number(countResult[0].count);
 
   return {
-    data: finalGroupedData,
-    meta,
+    data: data,
+    meta: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+    },
   };
 }
 

@@ -19,6 +19,9 @@ const getAuditFields = (c: Context) => ({
   updatedBy: c.get("userId") as string,
   updatedAt: new Date(),
   createdAt: new Date(),
+  kitchenId: c.get("kitchenId") as string[],
+  driverId: c.get("driverId") as string[],
+  schoolId: c.get("schoolId") as string[],
 });
 
 export const listSchoolClassroomHandler = catchAsync(async (c: Context) => {
@@ -26,17 +29,22 @@ export const listSchoolClassroomHandler = catchAsync(async (c: Context) => {
   const page = parseInt(query.page || "1");
   const limit = parseInt(query.limit || "10");
   const name = query.name;
-  const schoolId = query.schoolId;
+  const startDate = query.startDate;
+  const endDate = query.endDate;
   const isLargeClass = query.isLargeClass
     ? query.isLargeClass === "true"
     : undefined;
+
+  const audit = getAuditFields(c);
 
   const data = await getSchoolClassroomList({
     page,
     limit,
     name,
-    schoolId,
+    schoolIds: audit.schoolId,
     isLargeClass,
+    endDate,
+    startDate
   });
 
   return c.json({ data: data.data, meta: data.meta }, 200);

@@ -25,28 +25,28 @@ app.use(checkAccessToken);
 
 app.get(
   '/',
-  permission(),
+  // permission(),
   validate(ListSchoolClassroomQuerySchema, 'query'),
   listSchoolClassroomHandler
 );
 
 app.post(
   '/',
-  permission(),
+  // permission(),
   validate(CreateSchoolClassroomSchema),
   createSchoolClassroomHandler
 );
 
 app.get(
   '/:id',
-  permission(),
+  // permission(),
   validate(idParamSchema, 'param'),
   getSchoolClassroomByIdHandler
 );
 
 app.put(
   '/:id',
-  permission(),
+  // permission(),
   validate(idParamSchema, 'param'),
   validate(CreateSchoolClassroomSchema),
   updateSchoolClassroomHandler
@@ -54,14 +54,14 @@ app.put(
 
 app.delete(
   '/:id',
-  permission(),
+  // permission(),
   validate(idParamSchema, 'param'),
   deleteSchoolClassroomHandler
 );
 
 app.patch(
   '/bulk-update',
-  permission(),
+  // permission(),
   validate(BulkUpdateTotalStudentSchema),
   bulkUpdateTotalStudentsHandler
 );
