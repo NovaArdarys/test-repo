@@ -32,10 +32,11 @@ export const stepKeyEnum = pgEnum("step_key_enum", [
   "delivery",
   "confirmation",
   "receive",
+  "receive_big_class",
+  "receive_small_class",
   "inspection",
   "distribution",
 ]);
-
 
 export const analysisTypeEnum = pgEnum('analysis_type', [
   'food_authenticity',  // computer vision check makanan asli atau bukan

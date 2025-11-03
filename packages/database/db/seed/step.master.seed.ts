@@ -24,7 +24,8 @@ const stepsByEntity: Record<
   ],
   school: [
     { stepKey: "inspection", stepName: "Foto Murid", stepOrder: 1 },
-    { stepKey: "receive", stepName: "Konfirmasi Penerimaan", stepOrder: 2 },
+    { stepKey: "receive_big_class", stepName: "Konfirmasi Penerimaan", stepOrder: 2 },
+    { stepKey: "receive_small_class", stepName: "Konfirmasi Penerimaan", stepOrder: 3 },
   ],
 };
 
