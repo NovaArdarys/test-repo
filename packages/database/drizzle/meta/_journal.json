@@ -288,6 +288,20 @@
       "when": 1762080503356,
       "tag": "0040_outgoing_jubilee",
       "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1762127752598,
+      "tag": "0041_sloppy_quentin_quire",
+      "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1762128206687,
+      "tag": "0042_tidy_the_hood",
+      "breakpoints": true
     }
   ]
 }

@@ -3,7 +3,7 @@ import { menusApp, permissions, rolePermissions, roles, userDetails, userRoles, 
 import { appLogs, tokenLogs } from "../log.schema";
 import { kitchens, userKitchens } from "../kitchen.schema";
 import { driverLocations, drivers } from "../driver.schema";
-import { schools, userSchools } from "../school.schema";
+import { schoolClassroom, schools, userSchools } from "../school.schema";
 import { foodItems, menuPlans, menuPlanSchoolsKitchen, menuFoodItem } from "../food.schema";
 import { suppliers, suppliersFoodItems, suppliersProducts } from "../supplier.schema";
 import { deliveries, deliverySchools } from "../delivery.schema";
@@ -55,6 +55,7 @@ export const usersRelations = relations(users, ({ one, many }) => ({
 export const storageRelations = relations(storage, ({ many }) => ({
   userDetails: many(userDetails),
   dailyReports: many(stepReports),
+  schoolClassRoom: many(schoolClassroom),
   kitchens: many(kitchens),
   suppliers: many(suppliers),
   schools: many(schools),
@@ -177,6 +178,12 @@ export const schoolsRelations = relations(schools, ({ many, one }) => ({
   deliverySchools: many(deliverySchools),
 }));
 
+export const schoolClassRoomRelations = relations(schoolClassroom, ({ one, many }) => ({
+  menuPlans: one(menuPlans, { fields: [schoolClassroom.menuPlanId], references: [menuPlans.id] }),
+  school: one(schools, { fields: [schoolClassroom.schoolId], references: [schools.id] }),
+  createdBy: one(users, { fields: [schoolClassroom.createdBy], references: [users.id], relationName: 'created_by' }),
+}));
+
 export const userKitchensRelations = relations(userKitchens, ({ one }) => ({
   user: one(users, {
     fields: [userKitchens.userId],
@@ -282,6 +289,7 @@ export const menuPlansRelations = relations(menuPlans, ({ one, many }) => ({
   village: one(villages, { fields: [menuPlans.villageId], references: [villages.id] }),
   menuFoodItem: many(menuFoodItem),
   dailyReports: many(dailyReports),
+  schoolClassRoom: many(schoolClassroom),
   menuPlanSchoolsKitchen: many(menuPlanSchoolsKitchen),
   deliverySchools: many(deliverySchools),
   createdBy: one(users, { fields: [menuPlans.createdBy], references: [users.id], relationName: 'created_by' }),
