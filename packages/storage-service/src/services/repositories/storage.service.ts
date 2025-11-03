@@ -19,17 +19,24 @@ export interface StorageCreatePayload {
   meta?: Record<string, any>;
 }
 
-
 export async function saveStorageRecord(data: StorageCreatePayload): Promise<StorageRecord> {
   try {
     const [record] = await db.insert(storage)
       .values({
         ...data,
-        entityType: data?.entityType as any,
+        entityType: data.entityType as any,
         entityId: data.entityId ?? null,
         createdAt: new Date(),
         createdBy: data.createdBy ?? null,
       })
+      // .onConflictDoUpdate({
+      //   target: [storage.entityType, storage.entityId],
+      //   set: {
+      //     fileName: data.fileName,
+      //     fileUrl: data.fileUrl,
+      //     path: data.path,
+      //   },
+      // })
       .returning();
 
     return record;

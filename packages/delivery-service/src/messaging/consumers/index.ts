@@ -1,11 +1,13 @@
 // /user-service/src/messaging/consumers/index.ts
 import * as amqplib from 'amqplib';
+import { setupDeliveryServiceConsumers } from './delivery.consumer';
 
 
 export async function initializeConsumers(channel: amqplib.Channel): Promise<void> {
   try {
     console.log("Initializing all message consumers...");
 
+    await setupDeliveryServiceConsumers(channel);
 
 
     console.log("All consumers are successfully listening.");

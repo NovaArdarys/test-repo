@@ -1,8 +1,9 @@
 
 import { db } from "@/db";
-import { deliveries, } from "@/db/schemas";
+import { deliveries, deliverySchools, drivers, kitchens, schools, userDetails, } from "@/db/schemas";
 import { APIPagination } from "@/types/paginations.type";
-import { eq, and, sql, desc, SQLWrapper, InferSelectModel, InferInsertModel } from "drizzle-orm";
+import { eq, and, sql, desc, SQLWrapper, InferSelectModel, InferInsertModel, inArray } from "drizzle-orm";
+import { isEmpty } from "lodash";
 
 export type Delivery = InferSelectModel<typeof deliveries>;
 export type DeliveryStatus = Delivery['status'];
@@ -14,30 +15,144 @@ export type NewDelivery = Omit<
 
 export type UpdateDelivery = Partial<Omit<NewDelivery, 'createdBy'>> & { updatedBy: string; };
 
+
 export async function getDeliveriesList({
-  page, limit, kitchenId, driverId, status, isDeleted = false
+  page,
+  limit,
+  kitchenId,
+  driverId,
+  status,
+  isDeleted = false,
+  startDate,
+  endDate,
 }: {
-  page: number; limit: number; kitchenId?: string; driverId?: string; status?: DeliveryStatus; isDeleted?: boolean;
-}): Promise<APIPagination<Delivery>> {
-
+  page: number;
+  limit: number;
+  kitchenId?: string[];
+  driverId?: string;
+  status?: string;
+  isDeleted?: boolean;
+  startDate?: string | null;
+  endDate?: string | null;
+}) {
   const offset = (page - 1) * limit;
-  const whereConditions: SQLWrapper[] = [eq(deliveries.isDeleted, isDeleted)];
+  const today = new Date();
+  const defaultStart = new Date(today);
+  defaultStart.setHours(0, 0, 0, 0);
+  const defaultEnd = new Date(today);
+  defaultEnd.setHours(23, 59, 59, 999);
 
-  if (kitchenId) whereConditions.push(eq(deliveries.kitchenId, kitchenId));
-  if (driverId) whereConditions.push(eq(deliveries.driverId, driverId));
-  if (status) whereConditions.push(eq(deliveries.status, status));
+  const start = startDate ? new Date(startDate) : defaultStart;
+  const end = endDate ? new Date(endDate) : defaultEnd;
 
-  const dataPromise = db.select().from(deliveries).where(and(...whereConditions))
-    .limit(limit).offset(offset).orderBy(desc(deliveries.startTime));
+  const conditions: string[] = [`d.is_deleted = ${isDeleted}`];
+  if (!isEmpty(kitchenId)) conditions.push(`d.kitchen_id = ANY(ARRAY[${kitchenId?.map((id) => `'${id}'`).join(",")}]::uuid[])`);
+  if (driverId) conditions.push(`d.driver_id = '${driverId}'`);
+  if (status) conditions.push(`d.status = '${status}'`);
 
-  const countPromise = db.select({ count: sql<number>`count(*)` }).from(deliveries)
-    .where(and(...whereConditions));
+  conditions.push(`
+    EXISTS (
+      SELECT 1
+      FROM delivery_schools ds
+      JOIN menu_plans mp ON ds.menu_plan_id = mp.id
+      WHERE ds.delivery_id = d.id
+      AND mp.plan_start_date BETWEEN '${start.toISOString()}' AND '${end.toISOString()}'
+    )
+  `);
 
-  const [data, countResult] = await Promise.all([dataPromise, countPromise.execute()]);
-  const total = Number(countResult[0].count);
+  const whereSql = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
 
-  return { data: data as Delivery[], meta: { page, limit, total, totalPages: Math.ceil(total / limit) } };
+  const data = await db.execute(sql`
+    SELECT
+      d.id,
+      d.kitchen_id AS "kitchenId",
+      d.driver_id AS "driverId",
+      d.start_time AS "startTime",
+      d.end_time AS "endTime",
+      d.estimated_delivery_time AS "estimatedDeliveryTime",
+      d.notes,
+      d.created_at AS "createdAt",
+      json_build_object(
+        'id', k.id,
+        'name', k.name,
+        'address', k.address,
+        'phoneNumber', k.phone_number,
+        'lon', k.lon,
+        'lat', k.lat,
+        'provinceId', k.province_id,
+        'regencyId', k.regency_id,
+        'districtId', k.district_id,
+        'villageId', k.village_id,
+        'storageId', k.storage_id,
+        'imageURL', k.image_url,
+        'driver', json_build_object(
+          'id', dr.id,
+          'userId', dr.user_id,
+          'kitchenId', dr.kitchen_id,
+          'licenseNumber', dr.license_number,
+          'profile', json_build_object(
+            'userId', ud.user_id,
+            'firstName', ud.first_name,
+            'lastName', ud.last_name,
+            'phoneNumber', ud.phone_number,
+            'address', ud.address,
+            'dateOfBirth', ud.date_of_birth,
+            'storageId', ud.storage_id,
+            'imageURL', ud.image_url
+          )
+        )
+      ) AS kitchen,
+      (SELECT json_agg(
+          json_build_object(
+            'id', s.id,
+            'name', s.name,
+            'address', s.address,
+            'phoneNumber', s.phone_number,
+            'lon', s.lon,
+            'lat', s.lat,
+            'provinceId', s.province_id,
+            'regencyId', s.regency_id,
+            'districtId', s.district_id,
+            'villageId', s.village_id,
+            'storageId', s.storage_id,
+            'imageURL', s.image_url
+          )
+      )
+      FROM delivery_schools ds
+      JOIN schools s ON ds.school_id = s.id
+      JOIN menu_plans mp ON ds.menu_plan_id = mp.id
+      WHERE ds.delivery_id = d.id
+      ) AS school
+    FROM deliveries d
+    LEFT JOIN kitchens k ON d.kitchen_id = k.id
+    LEFT JOIN drivers dr ON d.driver_id = dr.id
+    LEFT JOIN user_details ud ON dr.user_id = ud.user_id
+    ${sql.raw(whereSql)}
+    ORDER BY d.start_time DESC
+    LIMIT ${limit}
+    OFFSET ${offset}
+  `);
+
+  const totalResult = await db.execute<{ total: number; }>(sql`
+    SELECT COUNT(*)::int AS total
+    FROM deliveries d
+    ${sql.raw(whereSql)}
+  `);
+
+  const total = Number(totalResult.rows?.[0]?.total ?? 0);
+
+  return {
+    data: data.rows,
+    meta: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+    },
+  };
 }
+
+
 
 export async function getDeliveryById(id: string): Promise<Delivery | null> {
   const item = await db.query.deliveries.findFirst({

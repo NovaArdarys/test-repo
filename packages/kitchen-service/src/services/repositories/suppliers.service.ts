@@ -1,40 +1,64 @@
 import { db } from "@/db";
 import { foodItems, menuFoodItem, suppliers, suppliersFoodItems, suppliersProducts } from "@/db/schemas";
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { buildPaginatedWhere } from "@/utils/pagination";
+import { and, eq, ilike, inArray, like, or, sql } from "drizzle-orm";
 import { InferSelectModel, InferInsertModel } from "drizzle-orm";
 import { isEmpty } from "lodash";
 
 export type Supplier = InferSelectModel<typeof suppliers>;
 export type SupplierInsert = InferInsertModel<typeof suppliers>;
 
-export async function getSuppliers({ kitchenIds = [], limit, page }: {
-  kitchenIds?: string[]; page: number;
+export async function getSuppliers({
+  kitchenIds = [],
+  limit = 10,
+  page = 1,
+  search,
+}: {
+  kitchenIds?: string[];
+  search?: string;
+  page: number;
   limit: number;
 }) {
+  const normalizedSearch = search?.toLowerCase().trim();
+  const keywords = normalizedSearch ? normalizedSearch.split(/\s+/) : [];
+
+  const baseCondition = and(
+    kitchenIds.length > 0 ? inArray(suppliers.kitchenId, kitchenIds) : undefined,
+    eq(suppliers.isDeleted, false),
+    eq(suppliersProducts.isDeleted, false)
+  );
+
+  const searchCondition =
+    keywords.length > 0
+      ? and(
+        ...keywords.map(
+          (word) =>
+            sql`LOWER(${suppliers.name} || ' ' || COALESCE(${foodItems.name}, '')) LIKE ${'%' + word + '%'}`
+        )
+      )
+      : undefined;
+
+  const whereCondition = and(baseCondition, searchCondition);
 
   const totalData = await db
     .select({
-      total: sql<number>`COUNT(DISTINCT ${suppliers.id})`.mapWith(Number)
+      total: sql<number>`COUNT(DISTINCT ${suppliers.id})`.mapWith(Number),
     })
     .from(suppliers)
     .leftJoin(suppliersProducts, eq(suppliersProducts.supplierId, suppliers.id))
     .leftJoin(foodItems, eq(foodItems.id, suppliersProducts.foodItemId))
-    .where(
-      and(
-        kitchenIds.length > 0 ? inArray(suppliers.kitchenId, kitchenIds) : undefined,
-        eq(suppliers.isDeleted, false),
-        eq(foodItems.isDeleted, false)
-      )
-    );
+    .where(whereCondition);
 
-  const data = await db.select({
-    id: suppliers.id,
-    supplierName: suppliers.name,
-    supplierKitchenId: suppliers.kitchenId,
-    supplierPhone: suppliers.phoneNumber,
-    supplierAddress: suppliers.address,
-    supplierDescription: suppliers.description,
-    foodItems: sql`json_agg(
+  const data = await db
+    .select({
+      id: suppliers.id,
+      name: suppliers.name,
+      kitchenId: suppliers.kitchenId,
+      phone: suppliers.phoneNumber,
+      address: suppliers.address,
+      description: suppliers.description,
+      imageURL: sql`COALESCE('', '')`,
+      foodItems: sql`json_agg(
         json_build_object(
           'id', ${foodItems.id},
           'name', ${foodItems.name},
@@ -47,44 +71,71 @@ export async function getSuppliers({ kitchenIds = [], limit, page }: {
           'updatedAt', ${foodItems.updatedAt},
           'updatedBy', ${foodItems.updatedBy}
         )
-      ) FILTER (WHERE ${foodItems.id} IS NOT NULL)`
-  }).from(suppliers)
+      ) FILTER (WHERE ${foodItems.id} IS NOT NULL)`,
+    })
+    .from(suppliers)
     .leftJoin(suppliersProducts, eq(suppliersProducts.supplierId, suppliers.id))
     .leftJoin(foodItems, eq(foodItems.id, suppliersProducts.foodItemId))
-    .where(
-      and(
-        inArray(suppliers.kitchenId, kitchenIds),
-        eq(suppliers.isDeleted, false),
-        eq(foodItems.isDeleted, false)
-      )
-    ).groupBy(
-      suppliers.id,
-      suppliers.kitchenId,
-      foodItems.id,
-      suppliersProducts.id
-    );
+    .where(whereCondition)
+    .groupBy(suppliers.id)
+    .limit(limit)
+    .offset((page - 1) * limit);
 
   const total = totalData[0]?.total ?? 0;
-
 
   return {
     data,
     meta: {
       page,
       limit,
-      total: total,
+      total,
       totalPages: Math.ceil(total / limit),
     },
   };
 }
 
 
-export async function getSupplierById(id: string): Promise<Supplier | null> {
-  const supplier = await db.query.suppliers.findFirst({
-    where: (t) => eq(t.id, id),
-  });
-  return supplier ?? null;
+export async function getSupplierById(id: string) {
+  const data = await db
+    .select({
+      id: suppliers.id,
+      name: suppliers.name,
+      kitchenId: suppliers.kitchenId,
+      phone: suppliers.phoneNumber,
+      address: suppliers.address,
+      description: suppliers.description,
+      imageURL: sql`COALESCE('', '')`,
+      foodItems: sql`json_agg(
+        json_build_object(
+          'id', ${foodItems.id},
+          'name', ${foodItems.name},
+          'type', ${foodItems.type},
+          'description', ${foodItems.description},
+          'isAvailable', ${foodItems.isAvailable},
+          'isDeleted', ${foodItems.isDeleted},
+          'createdAt', ${foodItems.createdAt},
+          'createdBy', ${foodItems.createdBy},
+          'updatedAt', ${foodItems.updatedAt},
+          'updatedBy', ${foodItems.updatedBy}
+        )
+      ) FILTER (WHERE ${foodItems.id} IS NOT NULL)`,
+    })
+    .from(suppliers)
+    .leftJoin(suppliersProducts, eq(suppliersProducts.supplierId, suppliers.id))
+    .leftJoin(foodItems, eq(foodItems.id, suppliersProducts.foodItemId))
+    .where(
+      and(
+        eq(suppliers.id, id),
+        eq(suppliers.isDeleted, false),
+        eq(suppliersProducts.isDeleted, false)
+      )
+    )
+    .groupBy(suppliers.id)
+    .limit(1);
+
+  return data[0] ?? null;
 }
+
 
 export async function createSupplier(
   data: SupplierInsert,

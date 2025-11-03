@@ -4,8 +4,12 @@
     "dev": "bun run --hot src/index.ts"
   },
   "dependencies": {
+    "@jsquash/jpeg": "^1.6.0",
+    "@jsquash/png": "^3.1.1",
+    "@jsquash/webp": "^1.5.0",
+    "@napi-rs/canvas": "^0.1.81",
     "amqplib": "^0.10.9",
-    "axios": "^1.12.2",
+    "browser-image-compression": "^2.0.2",
     "date-fns": "^4.1.0",
     "drizzle-kit": "^0.31.4",
     "hono": "^4.9.8",
@@ -17,6 +21,7 @@
     "lodash": "^4.17.21",
     "minio": "^8.0.6",
     "ua-parser-js": "^2.0.6",
+    "uuid": "^13.0.0",
     "zod": "^4.1.11"
   },
   "devDependencies": {

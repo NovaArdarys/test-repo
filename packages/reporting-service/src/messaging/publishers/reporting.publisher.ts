@@ -1,20 +1,18 @@
-import { EXCHANGE_NAME } from "@/constants/config";
-import { getRabbitMQChannel } from "../broker";
+import { EXCHANGES } from "../events/exchanges";
+import { safePublish } from "../utils/publisherHelper";
 
+export interface StorageUploadEvent {
+  menuPlanId: string;
+  entityType?: string;
+  entityId?: string;
+  allStepCompleted: boolean;
+}
 
-export async function publishUserRegistered(data: { userId: string, email: string; }) {
+export async function publishStepUpdate(data: StorageUploadEvent) {
   try {
-    const channel = getRabbitMQChannel();
-    await channel.assertExchange(EXCHANGE_NAME.REPORTING_EVENTS, 'topic', { durable: true });
-
-    channel.publish(
-      EXCHANGE_NAME.REPORTING_EVENTS,
-      'user.registered',
-      Buffer.from(JSON.stringify(data)),
-      { persistent: true }
-    );
-    console.log(`Published UserRegistered event for ID: ${data.userId}`);
-  } catch (error) {
-    console.error("Failed to publish message:", error);
+    await safePublish(EXCHANGES.REPORT, "report.step.commit", data);
+    console.log(`Published ${data.entityType}`);
+  } catch (err) {
+    console.error("[STORAGE PUBLISH ERROR]", err);
   }
 }

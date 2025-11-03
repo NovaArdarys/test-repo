@@ -22,6 +22,7 @@ services:
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}
       - DB_NAME=${DB_NAME}
+      - DB_PORT=${DB_PORT}
     ports:
       - "${SERVICE_HOST_PORT:-3000}:${SERVICE_INTERNAL_PORT:-3000}"
     volumes:

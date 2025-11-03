@@ -10,9 +10,11 @@ import { errorHandler } from '@/middleware/error.middleware';
 import { join } from 'path';
 import { checkBroker, connectRabbitMQ } from './messaging/broker';
 import { checkDatabase } from '@/db';
+import { initializeConsumers } from './messaging/consumers';
+import { eventMonitorRoute } from './routes/event.monitor.route';
+import { compressImageToBase64 } from './utils/imageCompress';
 
 type Variables = JwtVariables;
-
 
 export const clients = new Set<WebSocket>();
 
@@ -22,8 +24,7 @@ const app = new Hono<{ Variables: Variables; }>()
   .use(
     '/api/*',
     cors({
-      origin: ['localhost', '*', 'http://localhost:5173', 'http://128.199.77.145:3001',],
-      allowHeaders: ['X-Custom-Header', 'Upgrade-Insecure-Requests', 'Authorization', 'Content-Type'],
+      origin: ['localhost', 'http://localhost:5173', 'http://128.199.77.145:3001', 'https://dev-mbg.midigi.id'], allowHeaders: ['X-Custom-Header', 'Upgrade-Insecure-Requests', 'Authorization', 'Content-Type'],
       allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
       exposeHeaders: ['Content-Length', 'X-Kuma-Revision'],
       maxAge: 600,
@@ -67,26 +68,70 @@ const app = new Hono<{ Variables: Variables; }>()
       broker: rabbitStatus,
     });
   })
+  .get("/api/compress", async (c) => {
+    try {
+      const url = c.req.query("url");
+      const target = Number(c.req.query("target") || 60);
+
+      if (!url) {
+        return c.text("Missing 'url' query param", 400);
+      }
+
+      // Panggil fungsi kompresi
+      const base64 = await compressImageToBase64(url, target);
+
+      const binary = Buffer.from(base64, "base64");
+
+      const contentType = url.endsWith(".png") ? "image/png" : "image/jpeg";
+
+      return new Response(binary, {
+        headers: {
+          "Content-Type": contentType,
+          "Content-Length": binary.length.toString(),
+        },
+      });
+    } catch (err: any) {
+      console.error("❌ Compression failed:", err);
+      return c.text(`Error: ${err.message}`, 500);
+    }
+  })
+  .post("/api/compress", async (c) => {
+    const { url } = await c.req.json();
+    const result = await compressImageToBase64(url, 60);
+
+    return c.json({
+      success: true,
+      preview: result,
+    });
+  })
+  .route("/api/events", eventMonitorRoute)
   .route('/api', routes)
 
   .onError(errorHandler);
 
 async function bootstrap() {
   try {
-    await connectRabbitMQ();
-    console.log("RabbitMQ ready for publishing.");
+    console.log("Starting application initialization...");
+
+    const channel = await connectRabbitMQ();
+
+    console.log("RabbitMQ connected and ready.");
+
+    await initializeConsumers(channel);
+
+    console.log("All RabbitMQ Consumers are successfully listening.");
 
   } catch (error) {
-    console.error("🚨 FATAL ERROR: Gagal menginisialisasi layanan (DB/Broker). Keluar dari aplikasi.", error);
+    console.error("🚨 FATAL ERROR: Application setup failed. Exiting...", error);
     process.exit(1);
   }
 }
 
 bootstrap();
-
 export default {
   port: 3004,
   fetch: app.fetch,
+
 };
 
 export type AppType = typeof app;

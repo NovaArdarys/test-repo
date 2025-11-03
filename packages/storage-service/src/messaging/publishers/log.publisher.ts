@@ -1,6 +1,7 @@
-import { getRabbitMQChannel } from '../broker';
-import { EXCHANGES } from '../events/exchanges';
-export type LogLevel = 'DEBUG' | 'INFO' | 'WARN' | 'ERROR' | 'FATAL';
+import { safePublish } from "../utils/publisherHelper";
+import { EXCHANGES } from "../events/exchanges";
+
+export type LogLevel = "DEBUG" | "INFO" | "WARN" | "ERROR" | "FATAL";
 
 export interface TokenLogEvent {
   tokenId: string;
@@ -12,7 +13,6 @@ export interface TokenLogEvent {
   userAgent?: string;
 }
 
-
 export interface AppLogEvent {
   userId?: string;
   message: string;
@@ -21,87 +21,57 @@ export interface AppLogEvent {
   userAgent?: string;
 }
 
-
-async function publishLogEvent(routingKey: string, data: any): Promise<void> {
-  try {
-    const channel = getRabbitMQChannel();
-
-    await channel.assertExchange(EXCHANGES.LOG, 'topic', { durable: true });
-
-    channel.publish(
-      EXCHANGES.LOG,
-      routingKey,
-      Buffer.from(JSON.stringify(data)),
-      { persistent: true }
-    );
-    console.log(`[LOG PUBLISH] Sent: ${routingKey}`);
-  } catch (error) {
-    console.error(`[LOG PUBLISH FAILED] Event ${routingKey}:`, error);
-  }
-}
-
 export type AppLogPublishPayload = {
   userId: string;
   message: string;
   path: string;
   ipAddress: string;
-  userAgent: string | undefined;
+  userAgent?: string;
   payload?: object;
   level?: LogLevel;
 };
 
-
-export async function sendAppLog(level: LogLevel, data: AppLogPublishPayload): Promise<void> {
+/**
+ * publishLogEvent - helper untuk semua event log berbasis routing key
+ */
+async function publishLogEvent(routingKey: string, data: any): Promise<void> {
   try {
-    const channel = await getRabbitMQChannel();
-    await channel.assertExchange(EXCHANGES.LOG, 'topic', { durable: true });
-
-
-    const routingKey = `log.app.${level.toLowerCase()}`;
-
-    const success = channel.publish(
-      EXCHANGES.LOG,
-      routingKey,
-      Buffer.from(JSON.stringify(data)),
-      { persistent: true }
-    );
-
-    if (!success) {
-      console.error(`[RABBITMQ] Failed to publish app log to key: ${routingKey}`);
-    }
-
-    // await channel.close();
-
+    await safePublish(EXCHANGES.LOG, routingKey, data);
+    console.log(`[LOG PUBLISH] ✅ Sent: ${routingKey}`);
   } catch (error) {
-    console.error('[RABBITMQ FATAL] Could not send log message:', error);
+    console.error(`[LOG PUBLISH FAILED] ❌ ${routingKey}:`, error);
   }
 }
 
+/**
+ * sendAppLog - kirim log aplikasi dengan level tertentu
+ */
+export async function sendAppLog(level: LogLevel, data: AppLogPublishPayload): Promise<void> {
+  const routingKey = `log.app.${level.toLowerCase()}`;
+  try {
+    await safePublish(EXCHANGES.LOG, routingKey, data);
+    console.log(`[LOG PUBLISH] ✅ App log sent with level ${level}`);
+  } catch (error) {
+    console.error(`[RABBITMQ FATAL] ❌ Could not send app log:`, error);
+  }
+}
+
+/**
+ * logToken - helper group untuk log event token
+ */
 export const logToken = {
-  issued: (data: TokenLogEvent) =>
-    publishLogEvent('log.token.issued', data),
-
-  used: (data: TokenLogEvent) =>
-    publishLogEvent('log.token.used', data),
-
-  revoked: (data: TokenLogEvent) =>
-    publishLogEvent('log.token.revoked', data),
+  issued: (data: TokenLogEvent) => publishLogEvent("log.token.issued", data),
+  used: (data: TokenLogEvent) => publishLogEvent("log.token.used", data),
+  revoked: (data: TokenLogEvent) => publishLogEvent("log.token.revoked", data),
 };
 
-
+/**
+ * logApp - helper group untuk log event aplikasi
+ */
 export const logApp = {
-  debug: (data: AppLogEvent) =>
-    publishLogEvent('log.app.debug', data),
-
-  info: (data: AppLogEvent) =>
-    publishLogEvent('log.app.info', data),
-
-  warn: (data: AppLogEvent) =>
-    publishLogEvent('log.app.warn', data),
-
-  error: (data: AppLogEvent) =>
-    publishLogEvent('log.app.error', data),
-
-  fatal: (data: AppLogEvent) =>
-    publishLogEvent('log.app.fatal', data),
+  debug: (data: AppLogEvent) => publishLogEvent("log.app.debug", data),
+  info: (data: AppLogEvent) => publishLogEvent("log.app.info", data),
+  warn: (data: AppLogEvent) => publishLogEvent("log.app.warn", data),
+  error: (data: AppLogEvent) => publishLogEvent("log.app.error", data),
+  fatal: (data: AppLogEvent) => publishLogEvent("log.app.fatal", data),
 };

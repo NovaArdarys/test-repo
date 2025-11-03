@@ -22,6 +22,10 @@ app.use(checkAccessToken)
   .get('/profile',
     getUserProfile
   )
+  .put('/profile',
+    validate(userDetailSchema),
+    updateUserDetailsHandler
+  )
   .post('/',
     permission(),
     validate(createUserSchema),

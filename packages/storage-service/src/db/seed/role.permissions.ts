@@ -1,13 +1,10 @@
 import { db } from "..";
 import { permissions, rolePermissions, roles } from "../schemas";
-import { initialPermissionsData } from "./initialData/initialPermissionsData";
-import { initialRolesData } from "./initialData/initialRoleData";
-import { getRolePermissionMappings } from "./mapping/rolePermissionMap";
+import { initialPermissionsData } from "./data/initialPermissionsData";
+import { initialRolesData } from "./data/initialRoleData";
 
 export async function runRolePermissionSeeder() {
   console.log('[SEED] Starting Role and Permission Seeding...');
-
-  let insertedPermissions: any[] = [];
   let rolePermissionMappingsCount = 0;
 
   try {
@@ -44,7 +41,7 @@ export async function runRolePermissionSeeder() {
         updatedAt: now,
       }));
 
-      insertedPermissions = await tx
+      const insertedPermissions = await tx
         .insert(permissions)
         .values(permissionsToInsert)
         .returning({
@@ -58,14 +55,21 @@ export async function runRolePermissionSeeder() {
 
       // 3. Seed Role-Permissions (Mapping)
       if (insertedPermissions.length > 0) {
-        const rolePermissionData = getRolePermissionMappings(insertedPermissions, rolesToinsert);
-
-        if (rolePermissionData.length > 0) {
-          await tx
-            .insert(rolePermissions)
-            .values(rolePermissionData);
-          rolePermissionMappingsCount = rolePermissionData.length;
+        for (const role of rolesToinsert) {
+          for (const permission of insertedPermissions) {
+            const data = await tx
+              .insert(rolePermissions)
+              .values({
+                permissionId: permission.id,
+                roleId: role.id,
+                isDeleted: false,
+                createdAt: new Date(),
+                createdBy: "00000000-0000-0000-0000-000000000000"
+              }).returning();
+            rolePermissionMappingsCount = data.length;
+          }
         }
+
       } else {
         console.log('[SEED] Skipping role_permissions mapping as no new permissions were inserted.');
       }
@@ -74,7 +78,7 @@ export async function runRolePermissionSeeder() {
     });
 
     console.log('[SEED] Role and Permission Seeding process finished successfully.');
-    return { success: true, permissionsCount: insertedPermissions.length, mappingsCount: rolePermissionMappingsCount };
+    return { success: true, mappingsCount: rolePermissionMappingsCount };
 
   } catch (error) {
     console.error('[SEED ERROR] Seeding transaction failed:', error);

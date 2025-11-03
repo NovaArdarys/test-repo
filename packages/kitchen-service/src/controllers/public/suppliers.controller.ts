@@ -26,6 +26,7 @@ export const listSuppliersHandler = catchAsync(async (c: Context) => {
 
   const page = parseInt(String(query.page || 1));
   const limit = parseInt(String(query.limit || 10));
+  const search = query.search;
   const audit = getAuditFields(c);
 
   console.log(audit.kitchenId, '-----audit.kitchenId-----');
@@ -33,7 +34,8 @@ export const listSuppliersHandler = catchAsync(async (c: Context) => {
   const data = await getSuppliers({
     kitchenIds: audit.kitchenId,
     limit,
-    page
+    page,
+    search
   });
 
   return c.json({ ...data }, 200);

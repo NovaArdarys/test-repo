@@ -21,6 +21,9 @@ import { assignSchoolToDelivery, getSchoolsByDeliveryId, unassignSchoolFromDeliv
 const getAuditFields = (c: Context) => ({
   createdBy: c.get('userId') as string,
   updatedBy: c.get('userId') as string,
+  kitchenId: c.get("kitchenId") as string[],
+  driverId: c.get("driverId") as string[],
+  schoolId: c.get("schoolId") as string[],
 });
 
 export const listDeliveriesHandler = catchAsync(async (c: Context) => {
@@ -28,13 +31,18 @@ export const listDeliveriesHandler = catchAsync(async (c: Context) => {
 
   const page = parseInt(String(query.page || '1'));
   const limit = parseInt(String(query.limit || '10'));
+  const audit = getAuditFields(c);
+  const startDate = query.startDate || null;
+  const endDate = query.endDate || null;
 
   const data = await getDeliveriesList({
     page,
     limit,
     status: query.status,
-    kitchenId: query.kitchenId,
+    kitchenId: audit.kitchenId,
     driverId: query.driverId,
+    startDate,
+    endDate
   });
 
   return c.json({ data: data.data, meta: data.meta }, 200);

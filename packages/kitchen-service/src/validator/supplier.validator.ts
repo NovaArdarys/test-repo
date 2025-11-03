@@ -33,7 +33,7 @@ export type CreateSupplierFoodItemSchemaType = z.infer<typeof createSupplierFood
 export type UpdateSupplierFoodItemSchemaType = z.infer<typeof updateSupplierFoodItemSchema>;
 
 export const ItemsQuerySchema = paginationSchema.extend({
-  name: z.string().optional(),
+  search: z.string().optional(),
 });
 
 export type ItemsQuerySchemaType = z.infer<typeof ItemsQuerySchema>;

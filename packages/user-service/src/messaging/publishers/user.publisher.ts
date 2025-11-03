@@ -1,20 +1,29 @@
-import { getRabbitMQChannel } from "../broker";
+import { EXCHANGES } from "../events/exchanges";
+import { safePublish } from "../utils/publisherHelper";
 
-const EXCHANGE_NAME = 'user_events';
-
-export async function publishUserRegistered(data: { userId: string, email: string; }) {
+export async function publishUserRegistered(data: { userId: string; email: string; }) {
   try {
-    const channel = getRabbitMQChannel();
-    await channel.assertExchange(EXCHANGE_NAME, 'topic', { durable: true });
-
-    channel.publish(
-      EXCHANGE_NAME,
-      'user.registered',
-      Buffer.from(JSON.stringify(data)),
-      { persistent: true }
-    );
-    console.log(`Published UserRegistered event for ID: ${data.userId}`);
+    await safePublish(EXCHANGES.USER, "user.registered", data);
+    console.log(`[PUBLISH] UserRegistered event for ID: ${data.userId}`);
   } catch (error) {
-    console.error("Failed to publish message:", error);
+    console.error("[PUBLISH ERROR] Failed to publish user.registered:", error);
+  }
+}
+
+export async function publishAssignUserToKitchen(data: { userId: string; kitchenId: string; createdBy: string; }) {
+  try {
+    await safePublish(EXCHANGES.USER, "kitchen.assign.commit", data);
+    console.log(`[PUBLISH] AssignUserToKitchen event for user: ${data.userId}`);
+  } catch (error) {
+    console.error("[PUBLISH ERROR] Failed to publish kitchen.assign.commit:", error);
+  }
+}
+
+export async function publishAssignUserToSchool(data: { userId: string; schoolId: string; createdBy: string; }) {
+  try {
+    await safePublish(EXCHANGES.USER, "school.assign.commit", data);
+    console.log(`[PUBLISH] AssignUserToSchool event for user: ${data.userId}`);
+  } catch (error) {
+    console.error("[PUBLISH ERROR] Failed to publish school.assign.commit:", error);
   }
 }

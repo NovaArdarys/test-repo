@@ -1,0 +1,1 @@
+ALTER TABLE "ai_analysis_logs" DROP COLUMN "entity_type";

@@ -13,16 +13,11 @@ import { httpPublishHandler } from './websocket/publish';
 import { checkBroker } from './messaging/broker';
 import type { ServerWebSocket } from 'bun';
 import { handleUpgrade } from './websocket/handler';
+import { eventMonitorRoute } from './routes/event.monitor.route';
 
-// --------------------
-// Type & Globals
-// --------------------
 type Variables = JwtVariables;
 export const clients = new Set<ServerWebSocket<unknown>>();
 
-// --------------------
-// Hono App
-// --------------------
 const app = new Hono<{ Variables: Variables; }>();
 
 app
@@ -31,8 +26,7 @@ app
   .use(
     '/api/*',
     cors({
-      origin: ['localhost', '*', 'http://localhost:5173', 'http://128.199.77.145:3001',],
-      allowHeaders: ['X-Custom-Header', 'Upgrade-Insecure-Requests', 'Authorization', 'Content-Type'],
+      origin: ['localhost', 'http://localhost:5173', 'http://128.199.77.145:3001', 'https://dev-mbg.midigi.id'], allowHeaders: ['X-Custom-Header', 'Upgrade-Insecure-Requests', 'Authorization', 'Content-Type'],
       allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
       exposeHeaders: ['Content-Length', 'X-Kuma-Revision'],
       credentials: true,
@@ -63,7 +57,8 @@ app
     }),
   )
   .get('/api/health', async (c) => {
-    const [dbStatus, rabbitStatus] = await Promise.all([checkDatabase(), checkBroker()]);
+    const dbStatus = await checkDatabase();
+    const rabbitStatus = await checkBroker();
 
     return c.json({
       status: 'Running',
@@ -72,11 +67,9 @@ app
       broker: rabbitStatus,
     });
   })
+  .route("/api/events", eventMonitorRoute)
   .onError(errorHandler);
 
-// --------------------
-// Server Setup
-// --------------------
 const port = Number(3002);
 
 (async () => {
@@ -87,20 +80,17 @@ const port = Number(3002);
     async fetch(req, server) {
       const url = new URL(req.url);
 
-      // --- WebSocket upgrade
       if (url.pathname === '/ws') {
-        if (server.upgrade(req, { data: { url: req.url } })) {
+        if (server.upgrade(req, { data: { url: req?.url || "" } } as any)) {
           return;
         }
         return new Response('Upgrade failed', { status: 400 });
       }
 
-      // --- HTTP publish
       if (url.pathname === '/publish' && req.method === 'POST') {
         return httpPublishHandler(req);
       }
 
-      // --- Hono routes
       return app.fetch(req, server);
     },
   });

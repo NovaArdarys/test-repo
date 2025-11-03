@@ -1,0 +1,1 @@
+ALTER TABLE "ai_analysis_logs" ALTER COLUMN "entity_type" SET NOT NULL;

@@ -11,8 +11,11 @@ import {
   getStepReportsByDailyReport,
   updateStepReport,
   deleteStepReport,
+  getDailyReportWithoutMaskById,
 } from "@/services/repositories/daily.report.service";
 import { CreateDailyReportSchemaType, CreateStepReportSchemaType, UpdateDailyReportSchemaType } from "@/validator/daily.report.validator";
+import { publishStepUpdate } from "@/messaging/publishers/reporting.publisher";
+import { every } from "lodash";
 
 const getAuditFields = (c: Context) => ({
   createdBy: c.get("userId") as string,
@@ -27,6 +30,7 @@ export const listDailyReportsHandler = catchAsync(async (c: Context) => {
   const audit = getAuditFields(c);
   const page = parseInt(query.page || '1');
   const limit = parseInt(query.limit || '10');
+  const search = query.search || '';
 
   const data = await getDailyReportsList({
     entityType: query.entityType,
@@ -37,7 +41,8 @@ export const listDailyReportsHandler = catchAsync(async (c: Context) => {
     kitchenIds: audit.kitchenId,
     schoolIds: audit.schoolId,
     page,
-    limit
+    limit,
+    menuPlanName: search
   });
   return c.json(data);
 });
@@ -93,6 +98,18 @@ export const updateStepReportHandler = catchAsync(async (c: Context) => {
   const id = c.req.param("id");
   const body = await c.req.parseBody();
   const updated = await updateStepReport(id, { ...body, updatedBy: c.get("userId") });
+  const report = await getDailyReportWithoutMaskById(updated.dailyReportId);
+
+  if (report) {
+    const allCompleted = every(report.steps, 'isCompleted');
+    await publishStepUpdate({
+      menuPlanId: report.menuPlan.id,
+      allStepCompleted: allCompleted,
+      entityId: report.entityId,
+      entityType: report.entityType,
+    });
+  }
+
   return c.json({ data: updated });
 });
 

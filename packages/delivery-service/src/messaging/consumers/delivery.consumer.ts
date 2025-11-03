@@ -1,0 +1,69 @@
+import { z } from "zod";
+import { Channel } from "amqplib";
+import { EXCHANGES } from "../events/exchanges";
+import { entityTypeEnum } from "@/db/schemas";
+import { createAutoDelivery } from "@/services/repositories/delivery.school.driver.service";
+import { safeConsume } from "../utils/consumerHelper";
+
+// ===== VALIDATORS =====
+const entityTypeValidator = z.enum(entityTypeEnum.enumValues);
+
+const stepCommittedSchema = z.object({
+  menuPlanId: z.string(),
+  entityType: entityTypeValidator,
+  entityId: z.string(),
+  allStepCompleted: z.boolean(),
+});
+
+// ===== QUEUES =====
+const STEP_QUEUE_NAME = "delivery_service_step_queue";
+const STEP_ROUTING_KEY = "delivery.step.commit";
+
+const LOG_QUEUE_NAME = "delivery_service_log_queue";
+const LOG_ROUTING_KEY = "log.#";
+
+// ================= HANDLERS =================
+
+// Handle Step Commit (trigger delivery)
+async function handleStepCommit(data: z.infer<typeof stepCommittedSchema>) {
+  const parsed = stepCommittedSchema.parse(data);
+  console.log("🪅 [DELIVERY EVENT IN] Parsed:", parsed);
+
+  // Jika step berasal dari kitchen dan sudah complete → buat delivery otomatis
+  if (parsed.entityType === "kitchen" && parsed.allStepCompleted) {
+    const result = await createAutoDelivery({
+      kitchenId: parsed.entityId,
+      menuPlanId: parsed.menuPlanId,
+      status: "PENDING",
+      createdBy: "00000000-0000-0000-0000-000000000000", // system user
+    });
+
+    console.log(`[DELIVERY EVENT] ✅ Auto delivery created for kitchen ${parsed.entityId}`, result);
+  } else {
+    console.log(`[DELIVERY EVENT] ⚠️ Skipped: entityType=${parsed.entityType}, allStepCompleted=${parsed.allStepCompleted}`);
+  }
+}
+
+// Handle Log Events
+async function handleLogEvent(data: any) {
+  console.warn(`[LOG EVENT IN] [${data._meta?.routingKey ?? "log"}]`, data);
+}
+
+
+export async function setupDeliveryServiceConsumers(channel: Channel) {
+  // LOG Listener
+  await channel.assertExchange(EXCHANGES.LOG, "topic", { durable: true });
+  const logQueue = await channel.assertQueue(LOG_QUEUE_NAME, { durable: true });
+  await channel.bindQueue(logQueue.queue, EXCHANGES.LOG, LOG_ROUTING_KEY);
+  channel.prefetch(10);
+  channel.consume(logQueue.queue, safeConsume(handleLogEvent, channel), { noAck: false });
+  console.log(`[*] Delivery Service listening for LOG events in ${logQueue.queue}`);
+
+  // STEP Listener (delivery.step.commit)
+  await channel.assertExchange(EXCHANGES.STORAGE, "topic", { durable: true });
+  const stepQueue = await channel.assertQueue(STEP_QUEUE_NAME, { durable: true });
+  await channel.bindQueue(stepQueue.queue, EXCHANGES.STORAGE, STEP_ROUTING_KEY);
+  channel.prefetch(10);
+  channel.consume(stepQueue.queue, safeConsume(handleStepCommit, channel), { noAck: false });
+  console.log(`[*] Delivery Service listening for STEP COMMIT events in ${stepQueue.queue}`);
+}

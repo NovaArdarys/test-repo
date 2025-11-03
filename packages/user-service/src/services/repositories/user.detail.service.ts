@@ -7,13 +7,16 @@ import {
   type UpdateUserDetailInput,
   userKitchens,
   kitchens,
-  provinces
+  provinces,
+  schools,
+  userSchools
 } from "@/db/schemas";
 import { and, eq, desc, sql, or, SQL } from "drizzle-orm";
 import { db } from "@/db";
 import { APIPagination, } from "@/types/paginations.type";
 import ApiError from "@/utils/ApiError";
 import * as HttpStatus from "http-status";
+import { buildPaginatedWhere } from "@/utils/pagination";
 
 
 type UserRead = {
@@ -66,32 +69,40 @@ export async function getUsersList({
   name?: string;
   email?: string;
 }): Promise<APIPagination<UserRead>> {
-  const offset = (page - 1) * limit;
-  const whereConditions: SQL[] = [eq(users.isDeleted, false)];
+  const { where, meta } = await buildPaginatedWhere({
+    table: users,
+    tableName: "users",
+    base: {
+      isDeleted: false,
+      isActive,
+      email: email ? { ilike: `%${email}%` } : undefined,
+    },
+    extra: [
+      name
+        ? sql`${users.id} IN (
+            SELECT user_id
+            FROM user_details
+            WHERE LOWER(first_name) ILIKE ${"%" + name.toLowerCase() + "%"}
+            OR LOWER(last_name) ILIKE ${"%" + name.toLowerCase() + "%"}
+          )`
+        : undefined,
+    ],
+    page,
+    limit,
+  });
 
-  if (isActive !== undefined) {
-    whereConditions.push(eq(users.isActive, isActive));
-  }
-
-  if (name) {
-    whereConditions.push(
-      sql`${users.email} ILIKE ${"%" + name.toLowerCase() + "%"}`
-    );
-  }
-
-  // if (name) {
-  //   whereConditions.push(
-  //     or(
-  //       sql`${userDetails.firstName} ILIKE ${"%" + name.toLowerCase() + "%"}`,
-  //       sql`${userDetails.lastName} ILIKE ${"%" + name.toLowerCase() + "%"}`
-  //     )
-  //   );
-  // }
-
-  const finalWhere = whereConditions.length ? and(...whereConditions) : undefined;
-
-  const dataPromise = db.query.users.findMany({
-    where: finalWhere,
+  const data = await db.query.users.findMany({
+    where: () => where,
+    columns: {
+      id: true,
+      email: true,
+      isActive: true,
+      createdAt: true,
+      createdBy: true,
+      updatedAt: true,
+      updatedBy: true,
+      isDeleted: true
+    },
     with: {
       userDetails: true,
       userRoles: {
@@ -100,19 +111,10 @@ export async function getUsersList({
         },
       },
     },
-    orderBy: desc(users.createdAt),
+    orderBy: (table) => desc(table.createdAt),
+    offset: (page - 1) * limit,
     limit,
-    offset,
   });
-
-  const countPromise = db
-    .select({ count: sql<number>`count(*)` })
-    .from(users)
-    .where(finalWhere)
-    .execute();
-
-  const [data, countResult] = await Promise.all([dataPromise, countPromise]);
-  const total = Number(countResult[0].count);
 
   const normalizedData = data.map((user) => ({
     ...user,
@@ -124,12 +126,7 @@ export async function getUsersList({
 
   return {
     data: normalizedData,
-    meta: {
-      page,
-      limit,
-      total,
-      totalPages: Math.ceil(total / limit),
-    },
+    meta,
   };
 }
 
@@ -168,35 +165,42 @@ export async function getUserById(id: string) {
       lon: kitchens.lon,
       lat: kitchens.lat,
       province: provinces.name,
+      schoolId: schools.id,
+      schoolName: schools.name,
+      schoolAddress: schools.address,
+      imageURL: userDetails.imageURL
     })
     .from(users)
     .innerJoin(userDetails, eq(userDetails.userId, users.id))
-    .innerJoin(userKitchens, eq(userKitchens.userId, users.id))
-    .innerJoin(kitchens, eq(kitchens.id, userKitchens.kitchenId))
-    .innerJoin(provinces, eq(provinces.id, kitchens.provinceId))
-    .where(and(
-      eq(users.id, id),
-      eq(users.isDeleted, false)
-    ))
+    .leftJoin(userKitchens, eq(userKitchens.userId, users.id))
+    .leftJoin(kitchens, eq(kitchens.id, userKitchens.kitchenId))
+    .leftJoin(provinces, eq(provinces.id, kitchens.provinceId))
+    .leftJoin(userSchools, eq(userSchools.userId, users.id))
+    .leftJoin(schools, eq(schools.id, userSchools.schoolId))
+    .where(and(eq(users.id, id), eq(users.isDeleted, false)))
     .limit(1);
 
-  return user.length
-    ? {
-      id: user?.[0]?.id,
-      email: user?.[0]?.email,
-      dateOfBirth: user?.[0]?.dateOfBirth,
-      phoneNumber: user?.[0]?.phoneNumber,
-      fullName: user?.[0]?.fullName,
-      kitchenName: user?.[0]?.kitchenName,
-      kitchenId: user?.[0]?.kitchenId,
-      kitchenAddress: user?.[0]?.kitchenAddress,
-      lon: user?.[0]?.lon,
-      lat: user?.[0]?.lat,
-      province: user?.[0]?.province,
-    }
-    : null;
-}
+  const u = user[0];
+  if (!u) return null;
 
+  return {
+    id: u.id,
+    email: u.email,
+    dateOfBirth: u.dateOfBirth,
+    phoneNumber: u.phoneNumber,
+    fullName: u.fullName,
+    kitchenId: u.kitchenId ?? null,
+    kitchenName: u.kitchenName ?? null,
+    kitchenAddress: u.kitchenAddress ?? null,
+    lon: u.lon ?? null,
+    lat: u.lat ?? null,
+    province: u.province ?? null,
+    schoolId: u.schoolId ?? null,
+    schoolName: u.schoolName ?? null,
+    schoolAddress: u.schoolAddress ?? null,
+    imageURL: u.imageURL,
+  };
+}
 
 export async function updateUser(id: string, data: UpdateUserInput & { updated_by: string; }) {
   if (data.email) {
@@ -245,7 +249,7 @@ export async function deleteUser(id: string, updatedBy: string) {
   return { id: deletedUser.id };
 }
 
-export async function getUserDetails(userId: string): Promise<UserDetailRead | null> {
+export async function getUserDetails(profileId: string): Promise<UserDetailRead | null> {
   const details = await db
     .select({
       firstName: userDetails.firstName,
@@ -256,7 +260,7 @@ export async function getUserDetails(userId: string): Promise<UserDetailRead | n
     })
     .from(userDetails)
     .where(and(
-      eq(userDetails.userId, userId),
+      eq(userDetails.userId, profileId),
       eq(userDetails.isDeleted, false)
     ))
     .limit(1);
@@ -268,7 +272,6 @@ export async function getUserDetails(userId: string): Promise<UserDetailRead | n
     }
     : null;
 }
-
 
 export async function updateOrCreateUserDetails(userId: string, data: UpdateUserDetailInput & { created_by: string, updated_by: string; }) {
 

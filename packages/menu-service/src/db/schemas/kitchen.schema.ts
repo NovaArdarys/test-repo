@@ -1,4 +1,5 @@
-import { pgTable, uuid, varchar, text, decimal, boolean, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, uuid, varchar, text, decimal, boolean, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
+import { storage } from "./storage.schema";
 
 export const kitchens = pgTable('kitchens', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -11,6 +12,8 @@ export const kitchens = pgTable('kitchens', {
   regencyId: uuid('regency_id'),
   districtId: uuid('district_id'),
   villageId: uuid('village_id'),
+  storageId: uuid('storage_id').references(() => storage.id),
+  imageURL: text('image_url'),
   isDeleted: boolean('is_deleted').default(false).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   createdBy: uuid('created_by').notNull(),
@@ -18,10 +21,18 @@ export const kitchens = pgTable('kitchens', {
   updatedBy: uuid('updated_by'),
 });
 
-export const userKitchens = pgTable('user_kitchens', {
-  userId: uuid('user_id').notNull(),
-  kitchenId: uuid('kitchen_id').notNull(),
-  isDeleted: boolean('is_deleted').default(false).notNull(),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  createdBy: uuid('created_by'),
-});
+export const userKitchens = pgTable(
+  "user_kitchens",
+  {
+    userId: uuid("user_id").notNull(),
+    kitchenId: uuid("kitchen_id").notNull(),
+    isDeleted: boolean("is_deleted").default(false).notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    createdBy: uuid("created_by"),
+  },
+  (table) => {
+    return {
+      uniqueUser: uniqueIndex("user_kitchens_user_unique").on(table.userId),
+    };
+  }
+);

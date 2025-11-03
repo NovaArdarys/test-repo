@@ -2,7 +2,7 @@ import { Context } from "hono";
 import ApiError from "@/utils/ApiError";
 import { createKitchen, getKitchenById, getKitchensList, softDeleteKitchen, updateKitchen } from "@/services/repositories/kitchen.service";
 import { catchAsync } from "@/utils/catchAsync";
-import { assignUserToKitchen, syncUserKitchenByMerge, unassignUserFromKitchen } from "@/services/repositories/user.kitchen.service";
+import { assignUserToKitchen, isUserAssignedToKitchen, syncUserKitchenByMerge, unassignUserFromKitchen } from "@/services/repositories/user.kitchen.service";
 import { AssignUserToKitchenSchemaType, CreateKitchenSchemaType } from "@/validator/kitchen.validator";
 import { updateSchoolServiceClient } from "../../services/clients/school.service";
 import { isEmpty } from "lodash";
@@ -122,6 +122,11 @@ export const deleteKitchenHandler = catchAsync(async (c: Context) => {
 export const assignUserToKitchenHandler = catchAsync(async (c: Context) => {
   const { id: kitchenId } = c.req.param();
   const { userId } = await c.req.parseBody() as unknown as AssignUserToKitchenSchemaType;
+
+  const alreadyAssigned = await isUserAssignedToKitchen(userId, kitchenId);
+  if (alreadyAssigned) {
+    throw new ApiError(409, { message: "Failed Assign To Kitchen" });
+  }
   const audit = getAuditFields(c);
 
   await assignUserToKitchen({
@@ -136,6 +141,12 @@ export const assignUserToKitchenHandler = catchAsync(async (c: Context) => {
 
 export const unassignUserFromKitchenHandler = catchAsync(async (c: Context) => {
   const { id: kitchenId, userId } = c.req.param();
+
+  const isAssigned = await isUserAssignedToKitchen(userId, kitchenId);
+  if (!isAssigned) {
+    throw new ApiError(404, { message: "Assigned Not Found" });
+  }
+
 
   await unassignUserFromKitchen(userId, kitchenId);
 

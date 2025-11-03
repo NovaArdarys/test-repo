@@ -43,6 +43,18 @@ export async function hasUserAccessToKitchen(userId: string, kitchenId: string):
     return !!result;
 }
 
+export async function isUserAssignedToKitchen(userId: string, kitchenId: string): Promise<boolean> {
+    const result = await db.select({ userId: userKitchens.userId })
+        .from(userKitchens)
+        .where(and(
+            eq(userKitchens.userId, userId),
+            eq(userKitchens.kitchenId, kitchenId),
+            eq(userKitchens.isDeleted, false)
+        ))
+        .limit(1);
+    return result.length > 0;
+}
+
 
 export async function assignUserToKitchen(data: NewUserKitchen): Promise<void> {
     await db.insert(userKitchens)

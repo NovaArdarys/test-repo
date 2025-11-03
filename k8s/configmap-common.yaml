@@ -15,9 +15,9 @@ data:
   REDIS_MANAGEMENT_HOST_PORT: '5544'
 
   # Supabase
-  DB_HOST: 'aws-1-ap-southeast-1.pooler.supabase.com'
-  DB_PORT: '6543'
-  DB_NAME: 'postgres'
+  DB_HOST: '128.199.77.145'
+  DB_PORT: '5481'
+  DB_NAME: 'mbgreport'
 
   # List Port
   PORT_AUTH: '3000'
@@ -28,6 +28,18 @@ data:
   USER_SERVICE: 'http://user-service:3001/api'
 
   # smtp
-  EMAIL_HOST: 'mail.ptn-techlabs.com'
+  EMAIL_HOST: 'smtp.office365.com'
   EMAIL_PORT: '587'
   EMAIL_SECURE: 'false'
+
+  # minio
+  # MINIO_ENDPOINT_SERVER: 'minio'
+  # MINIO_PORT: '9000'
+  # MINIO_CONSOLE_PORT: '9001'
+  MINIO_ENDPOINT_SERVER: '128.199.77.145'
+  MINIO_ENDPOINT: '128.199.77.145'
+  MINIO_PORT: '9000'
+  MINIO_CONSOLE_PORT: '9001'
+
+  # frontend
+  FRONTEND_URL: 'https://dev-mbg.midigi.id'

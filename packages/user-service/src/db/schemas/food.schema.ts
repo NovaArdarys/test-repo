@@ -3,9 +3,11 @@ import { boolean, date, pgTable, text, timestamp, uuid, varchar } from "drizzle-
 
 export const foodItems = pgTable('food_items', {
   id: uuid('id').primaryKey().defaultRandom(),
-  name: varchar('name', { length: 100 }).notNull(),
+  name: varchar('name', { length: 100 }).notNull().unique(),
+  nameEn: varchar('name_en', { length: 100 }),
   type: foodTypeEnum('type').notNull(),
   description: text('description'),
+  descriptionEn: text('description_en'),
   isAvailable: boolean('is_available').default(true).notNull(),
   isDeleted: boolean('is_deleted').default(false).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
@@ -13,7 +15,6 @@ export const foodItems = pgTable('food_items', {
   updatedAt: timestamp('updated_at').notNull(),
   updatedBy: uuid('updated_by'),
 });
-
 export const menuFoodItem = pgTable('menu_food_item', {
   id: uuid('id').primaryKey().defaultRandom(),
   foodItemId: uuid('food_item_id').notNull(),

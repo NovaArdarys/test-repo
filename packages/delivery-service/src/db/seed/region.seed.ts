@@ -2,15 +2,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import { provinces, regencies, districts, villages } from '../schemas/master.schema';
 import { db } from '../index';
-
-export const region = {
-  "region": [
-    { "kode": "11", "nama": "ACEH" },
-    { "kode": "11.01", "nama": "KAB. ACEH SELATAN" },
-    { "kode": "11.01.01", "nama": "Bakongan" },
-    { "kode": "11.01.01.2001", "nama": "Keude Bakongan" },
-  ]
-};
+import { region } from './data/regionData';
 
 interface IdMap {
   [kode: string]: string;

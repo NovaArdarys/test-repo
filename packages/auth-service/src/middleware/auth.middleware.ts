@@ -20,6 +20,10 @@ export const checkAccessToken = async (c: Context, next: Next) => {
     ) as tokenParams;
 
     c.set('userId', id);
+    c.set('roleId', roleId);
+    c.set('schoolId', data?.school?.schoolIds || []);
+    c.set('kitchenId', data?.kitchen?.kitchenIds || []);
+    c.set('driverId', data?.driver?.driverIds || []);
     c.set('userEmail', email);
 
     await next();

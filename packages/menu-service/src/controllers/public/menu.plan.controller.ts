@@ -31,6 +31,7 @@ export const listMenuPlansHandler = catchAsync(async (c: Context) => {
   const startDate = query.startDate || null;
   const endDate = query.endDate || null;
   const entityType = query.entityType || null;
+  const search = query.search || null;
 
   const audit = getAuditFields(c);
 
@@ -43,7 +44,8 @@ export const listMenuPlansHandler = catchAsync(async (c: Context) => {
     endDate,
     kitchenIds: audit.kitchenId,
     schoolIds: audit.schoolId,
-    entityType
+    entityType,
+    menuPlanName: search || ''
   });
 
   return c.json({ data: data.data, meta: data.meta }, 200);
@@ -73,7 +75,7 @@ export const getMenuPlanByIdHandler = catchAsync(async (c: Context) => {
 
   const plan = await getMenuPlanById(id, audit.kitchenId);
 
-  return c.json({ data: plan }, 200);
+  return c.json({ data: plan.data }, 200);
 });
 
 export const updateMenuPlanHandler = catchAsync(async (c: Context) => {

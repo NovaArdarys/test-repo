@@ -1,18 +1,39 @@
+import { sql } from "drizzle-orm";
 import { entityTypeEnum } from "./enums/enums";
-import { pgTable, uuid, text, varchar, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, uuid, text, varchar, timestamp, index, uniqueIndex } from "drizzle-orm/pg-core";
 
-export const storage = pgTable("storages", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  fileName: text("file_name").notNull(),
-  path: text("path").notNull(),
-  fileUrl: text("file_url").notNull(),
-  mimeType: varchar("mime_type", { length: 100 }),
-  size: varchar("size", { length: 50 }),
-  entityType: entityTypeEnum("entity_type").notNull(),
-  entityId: uuid("entity_id"),
-  createdAt: timestamp("created_at").defaultNow(),
-  createdBy: uuid("created_by"),
-});
+export const storage = pgTable(
+  "storages",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    fileName: text("file_name").notNull(),
+    path: text("path").notNull(),
+    fileUrl: text("file_url").notNull(),
+    mimeType: varchar("mime_type", { length: 100 }),
+    size: varchar("size", { length: 50 }),
+    entityType: entityTypeEnum("entity_type").notNull(),
+    entityId: uuid("entity_id"),
+    createdAt: timestamp("created_at").defaultNow(),
+    createdBy: uuid("created_by"),
+  },
+  (table) => {
+    return {
+      entityIndex: index("storages_entity_idx").on(table.entityType, table.entityId),
+      createdByIndex: index("storages_created_by_idx").on(table.createdBy),
+      createdAtIndex: index("storages_created_at_idx").on(table.createdAt),
+
+      uniqueEntityFile: uniqueIndex("storages_entity_unique_idx").on(table.entityType, table.entityId).where(
+        sql`
+            ${table.entityType} NOT IN (
+                'kitchen_daily_report', 
+                'driver_daily_report', 
+                'school_daily_report'
+            )
+        `
+      ),
+    };
+  }
+);
 
 
 

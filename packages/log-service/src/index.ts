@@ -12,6 +12,7 @@ import { join } from 'path';
 import { checkBroker, connectRabbitMQ } from './messaging/broker';
 import { checkDatabase } from '@/db';
 import { initializeConsumers } from './messaging/consumers';
+import { eventMonitorRoute } from './routes/event.monitor.route';
 
 type Variables = JwtVariables;
 
@@ -24,8 +25,7 @@ const app = new Hono<{ Variables: Variables; }>()
   .use(
     '/api/*',
     cors({
-      origin: ['localhost', '*', 'http://localhost:5173', 'http://128.199.77.145:3001',],
-      allowHeaders: ['X-Custom-Header', 'Upgrade-Insecure-Requests', 'Authorization', 'Content-Type'],
+      origin: ['localhost', 'http://localhost:5173', 'http://128.199.77.145:3001', 'https://dev-mbg.midigi.id'], allowHeaders: ['X-Custom-Header', 'Upgrade-Insecure-Requests', 'Authorization', 'Content-Type'],
       allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
       exposeHeaders: ['Content-Length', 'X-Kuma-Revision'],
       maxAge: 600,
@@ -69,6 +69,7 @@ const app = new Hono<{ Variables: Variables; }>()
       broker: rabbitStatus,
     });
   })
+  .route("/api/events", eventMonitorRoute)
   .route('/api/private', routesprivate)
   .route('/api', routespublic)
 
@@ -97,6 +98,7 @@ bootstrap();
 export default {
   port: 3003,
   fetch: app.fetch,
+
 };
 
 export type AppType = typeof app;

@@ -1,6 +1,7 @@
 import { pgTable, uuid, text, boolean, timestamp, varchar, jsonb, integer, decimal, bigint, pgEnum, date, uniqueIndex } from 'drizzle-orm/pg-core';
 import { permissionTypeEnum, userTokenTypeEnum } from './enums/enums';
 import type { InferInsertModel } from 'drizzle-orm';
+import { storage } from './storage.schema';
 
 export const users = pgTable('users', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -26,6 +27,8 @@ export const userDetails = pgTable('user_details', {
   createdBy: uuid('created_by').notNull(),
   updatedAt: timestamp('updated_at').notNull(),
   updatedBy: uuid('updated_by'),
+  storageId: uuid('storage_id').references(() => storage.id),
+  imageURL: text('image_url'),
 });
 
 export const userSessions = pgTable('user_sessions', {

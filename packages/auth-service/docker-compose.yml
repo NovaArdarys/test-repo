@@ -21,6 +21,7 @@ services:
       - DB_HOST=${DB_HOST}
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}
+      - DB_PORT=${DB_PORT}
       - DB_NAME=${DB_NAME}
     ports:
       - "${SERVICE_HOST_PORT:-3000}:${SERVICE_INTERNAL_PORT:-3000}"
