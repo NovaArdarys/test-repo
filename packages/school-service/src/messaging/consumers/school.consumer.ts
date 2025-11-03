@@ -70,9 +70,6 @@ async function handleAssignToSchool(data: z.infer<typeof baseUserSchool>) {
   console.log(`[USER EVENT] Assign user ${parsed.userId} to school ${parsed.schoolId}`);
 }
 
-// ========================
-// 🚀 SETUP CONSUMERS
-// ========================
 export async function setupSchoolServiceConsumers(channel: Channel) {
   // LOG listener
   await channel.assertExchange(EXCHANGES.LOG, "topic", { durable: true });

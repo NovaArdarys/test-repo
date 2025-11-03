@@ -1,6 +1,7 @@
 import { db } from "@/db";
 import { entityTypeEnum } from "@/db/schemas";
 import { storage } from "@/db/schemas/storage.schema";
+import { minioClient } from "@/utils/minioClient";
 import { InferSelectModel, sql } from "drizzle-orm";
 
 export type StorageRecord = InferSelectModel<typeof storage>;
@@ -55,4 +56,26 @@ export async function linkStorageToEntity(entityId: string, entityType: EntityTy
     console.error("[STORAGE SERVICE] Failed to link storage to entity:", err);
     throw err;
   }
+}
+
+export async function moveFileFromTmp(
+  filePath: string,
+  fileName: string,
+  targetBucket: string
+): Promise<string> {
+  const tmpBucket = "temporary";
+
+  const sourceObject = filePath || fileName;
+  const targetObject = fileName;
+
+  await minioClient.copyObject(
+    targetBucket,
+    targetObject,
+    `/${tmpBucket}/${sourceObject}`
+  );
+
+  await minioClient.removeObject(tmpBucket, sourceObject);
+
+  const newUrl = `${process.env.MINIO_PUBLIC_URL}/${targetBucket}/${targetObject}`;
+  return newUrl;
 }
