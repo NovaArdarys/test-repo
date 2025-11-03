@@ -2,7 +2,8 @@ import { z } from "zod";
 
 export const CreateSchoolClassroomSchema = z.object({
   schoolId: z.string(),
-  menuPlanId: z.string(),
+  menuPlanId: z.string().optional(),
+  date: z.string().optional(),
   name: z.string().min(1, "Class name is required").max(100),
   totalStudent: z.number().min(0).optional(),
   storageId: z.string().nullable().optional(),
