@@ -179,7 +179,8 @@ export const schoolsRelations = relations(schools, ({ many, one }) => ({
 }));
 
 export const schoolClassRoomRelations = relations(schoolClassroom, ({ one, many }) => ({
-  menuPlans: one(menuPlans, { fields: [schoolClassroom.menuPlanId], references: [menuPlans.id] }),
+  menuPlan: one(menuPlans, { fields: [schoolClassroom.menuPlanId], references: [menuPlans.id] }),
+  storage: many(storage),
   school: one(schools, { fields: [schoolClassroom.schoolId], references: [schools.id] }),
   createdBy: one(users, { fields: [schoolClassroom.createdBy], references: [users.id], relationName: 'created_by' }),
 }));
