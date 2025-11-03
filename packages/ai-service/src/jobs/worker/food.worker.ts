@@ -10,7 +10,7 @@ import { Worker } from 'bullmq';
 export const foodWorker = new Worker<StorageCommittedType>(
   'food-detect-queue',
   async (job) => {
-    console.log(`🍳 [Worker] Processing job ${job.id}`);
+    console.log(`🍳 [Worker] Processing job ${job.id} - ${JSON.stringify(job.data)}`);
     const start = performance.now();
 
     try {
@@ -55,7 +55,10 @@ export const foodWorker = new Worker<StorageCommittedType>(
         throw new Error("Step report not found or missing step data.");
       }
 
-      const aiType = getAITypeFromStepOrder(stepReportData.step.stepOrder);
+      console.log(stepReportData.step.stepOrder, "===== 👣 steps =====", job.data.entityType);
+
+
+      const aiType = getAITypeFromStepOrder(stepReportData.step.stepOrder, job.data.entityType);
       if (!aiType) {
         return null;
       }

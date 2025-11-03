@@ -5,6 +5,7 @@ const entityTypeValidator = z.enum(entityTypeEnum.enumValues, {
   error: () => ({ message: `Invalid type ${entityTypeEnum.enumValues.join(', ')}` }),
 });
 
+export type EntityType = z.infer<typeof entityTypeValidator>;
 
 export const storageCommittedSchema = z.object({
   storageId: z.string(),

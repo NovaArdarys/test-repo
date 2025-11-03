@@ -1,11 +1,13 @@
 import aiClient from "@/utils/api";
+import { EntityType } from "@/validator/storage.validator";
 
 export type AIAnalysisType =
   | "food"
   | "cleanliness"
   | "mealbox"
   | "people-counting"
-  | "liveness";
+  | "liveness"
+  | "people";
 
 export interface BaseAIInput {
   image: string;
@@ -16,18 +18,29 @@ export interface DetectInput extends BaseAIInput {
 }
 
 
-export function getAITypeFromStepOrder(stepOrder: number) {
-  switch (stepOrder) {
-    case 1:
-      return "food";
-    case 2:
-      return "cleanliness";
-    case 3:
-      return "food";
-    case 4:
-      return "mealbox";
-    default:
-      return null;
+export function getAITypeFromStepOrder(stepOrder: number, entityType: EntityType) {
+  if (entityType === "kitchen") {
+    switch (stepOrder) {
+      case 1:
+        return "food";
+      case 2:
+        return "cleanliness";
+      case 3:
+        return "food";
+      case 4:
+        return "mealbox";
+      default:
+        return null;
+    }
+  }
+
+  if (entityType === "school") {
+    switch (stepOrder) {
+      case 1:
+        return "people";
+      default:
+        return null;
+    }
   }
 }
 
