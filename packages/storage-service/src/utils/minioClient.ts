@@ -10,16 +10,8 @@ export const minioClient = new Client({
   secretKey: process.env.MINIO_ROOT_PASSWORD || "minioadmin123",
 });
 
-// export const minioClient = new Client({
-//   endPoint: "128.199.77.145",
-//   port: parseInt("9000", 10),
-//   useSSL: false,
-//   accessKey: "xxxxxxxx",
-//   secretKey: "xxxxxxxx",
-// });
-
 export interface MinioUploadResult {
-  tmpId: string;
+  tmpId?: string;
   fileName: string;
   path: string;
   fileUrl: string;
@@ -64,7 +56,6 @@ export async function uploadToMinio(
   const tmpId = randomUUID();
   const fileName = `${tmpId}-${file instanceof File ? file.name : file.name}`;
 
-  // buat Node.js stream dari file
   let nodeStream: Readable;
   let contentType = "application/octet-stream";
 
@@ -77,7 +68,6 @@ export async function uploadToMinio(
     if (file.type) contentType = file.type;
   }
 
-  // pastikan bucket ada
   await ensureBucket(bucket, makePublic);
 
   await minioClient.putObject(bucket, fileName, nodeStream, undefined, {
@@ -97,29 +87,40 @@ export async function uploadToMinio(
   };
 }
 
-export async function commitFileToMinio(
-  tempPath: string,
-  targetPath: string,
-  meta?: any
-) {
-  const bucket = process.env.MINIO_BUCKET || "app-storage";
-  await ensureBucket(bucket);
-  await minioClient.fPutObject(bucket, targetPath, tempPath, meta);
-  console.log(`📤 File uploaded to ${bucket}/${targetPath}`);
-}
+/**
+ *
+ *
+ * @export
+ * @param {string} filePath
+ * @param {string} fileName
+ * @param {string} targetBucket
+ * @return {*}  {Promise<string>}
+ */
+export async function moveFileFromTmp(
+  filePath: string,
+  fileName: string,
+  targetBucket: string
+): Promise<MinioUploadResult> {
+  const tmpBucket = "temporary";
 
+  const sourceObject = filePath || fileName;
+  const targetObject = fileName;
 
-export async function deleteBucket(bucketName: string) {
-  const objectsStream = minioClient.listObjects(bucketName, "", true);
+  await ensureBucket(targetBucket, true);
 
-  const objects: string[] = [];
-  for await (const obj of objectsStream) {
-    if (obj.name) objects.push(obj.name);
-  }
+  await minioClient.copyObject(
+    targetBucket,
+    targetObject,
+    `/${tmpBucket}/${sourceObject}`
+  );
 
-  if (objects.length) {
-    await minioClient.removeObjects(bucketName, objects);
-  }
+  await minioClient.removeObject(tmpBucket, sourceObject);
 
-  await minioClient.removeBucket(bucketName);
+  const newUrl = `${process.env.MINIO_PUBLIC_URL}/${targetBucket}/${targetObject}`;
+  return {
+    fileName,
+    path: `${targetBucket}/${fileName}`,
+    fileUrl: newUrl,
+    bucket: targetBucket,
+  };
 }

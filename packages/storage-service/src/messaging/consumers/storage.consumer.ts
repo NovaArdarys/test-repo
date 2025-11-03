@@ -1,9 +1,9 @@
 import { z } from "zod";
 import { Channel } from "amqplib";
-import { commitFileToMinio } from "@/utils/minioClient";
-import { linkStorageToEntity } from "@/services/repositories/storage.service";
 import { EXCHANGES } from "../events/exchanges";
 import { safeConsume } from "../utils/consumerHelper";
+import { storageClientCommittedSchema } from "@/validator/storage.validator";
+import { storageQueue } from "@/jobs/queue/storage.queue";
 
 // ===== VALIDATORS =====
 const storageCommitSchema = z.object({
@@ -16,27 +16,25 @@ const storageCommitSchema = z.object({
 });
 
 // ===== QUEUES =====
-const STORAGE_QUEUE_NAME = "storage_service_upload_commit_queue";
-const STORAGE_ROUTING_KEY = "storage.upload.commit";
+const CLIENT_STORAGE_QUEUE_NAME = "client_storage_commit_queue";
+const CLIENT_STORAGE_ROUTING_KEY = "client.storage.commit";
+
 const LOG_QUEUE_NAME = "storage_service_log_queue";
 const LOG_ROUTING_KEY = "log.#";
 
 // ================= HANDLERS =================
 
-// Storage Upload
-async function handleStorageCommit(data: z.infer<typeof storageCommitSchema>) {
-  const parsed = storageCommitSchema.parse(data);
+// Storage Listener from clinet
+async function handleClientStorageCommit(data: z.infer<typeof storageClientCommittedSchema>) {
+  const parsed = storageClientCommittedSchema.parse(data);
 
-  console.log("🪅 [STORAGE EVENT IN] Upload Commit:", parsed);
-
-  await commitFileToMinio(parsed.tempPath, parsed.targetPath, parsed.meta);
-
-  if (parsed.entityType && parsed.entityId) {
-    await linkStorageToEntity(parsed.entityId, parsed.entityType as any);
-    console.log(`[STORAGE WORKER] Linked file to ${parsed.entityType} (${parsed.entityId})`);
-  }
-
-  console.log(`[STORAGE WORKER] ✅ File committed: ${parsed.targetPath}`);
+  // move file
+  await storageQueue.add("storage.commit", parsed, {
+    attempts: 3,
+    backoff: { type: "exponential", delay: 3000 },
+    removeOnComplete: true,
+    removeOnFail: false,
+  });
 }
 
 // Log 
@@ -52,11 +50,18 @@ export async function setupStorageConsumer(channel: Channel) {
   channel.consume(logQueue.queue, safeConsume(handleLogEvent, channel), { noAck: false });
   console.log(`[*] Storage Service listening for LOG events in ${logQueue.queue}`);
 
-  // Storage
-  await channel.assertExchange(EXCHANGES.STORAGE, "topic", { durable: true });
-  const storageQueue = await channel.assertQueue(STORAGE_QUEUE_NAME, { durable: true });
-  await channel.bindQueue(storageQueue.queue, EXCHANGES.STORAGE, STORAGE_ROUTING_KEY);
-  channel.prefetch(10);
-  channel.consume(storageQueue.queue, safeConsume(handleStorageCommit, channel), { noAck: false });
-  console.log(`[*] Storage Service listening for STORAGE events in ${storageQueue.queue}`);
+  const clientQueue = await channel.assertQueue(CLIENT_STORAGE_QUEUE_NAME, { durable: true });
+
+  await channel.bindQueue(clientQueue.queue, EXCHANGES.SCHOOL, CLIENT_STORAGE_ROUTING_KEY);
+  await channel.bindQueue(clientQueue.queue, EXCHANGES.REPORT, CLIENT_STORAGE_ROUTING_KEY);
+  await channel.bindQueue(clientQueue.queue, EXCHANGES.STORAGE, CLIENT_STORAGE_ROUTING_KEY);
+  await channel.bindQueue(clientQueue.queue, EXCHANGES.USER, CLIENT_STORAGE_ROUTING_KEY);
+  await channel.bindQueue(clientQueue.queue, EXCHANGES.KITCHEN, CLIENT_STORAGE_ROUTING_KEY);
+
+  channel.consume(
+    clientQueue.queue,
+    safeConsume(handleClientStorageCommit, channel),
+    { noAck: false }
+  );
+  console.log(`[*] Storage Service listening for CLIENT STORAGE commits from SCHOOL, REPORT, STORAGE exchanges`);
 }

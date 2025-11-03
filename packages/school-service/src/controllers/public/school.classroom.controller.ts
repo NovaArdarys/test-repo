@@ -13,6 +13,7 @@ import {
   CreateSchoolClassroomSchemaType,
   BulkUpdateTotalStudentSchemaType
 } from "@/validator/school.classroom.validator";
+import { publishClientCommitStorage } from "@/messaging/publishers/school.publisher";
 
 const getAuditFields = (c: Context) => ({
   createdBy: c.get("userId") as string,
@@ -59,6 +60,8 @@ export const createSchoolClassroomHandler = catchAsync(async (c: Context) => {
     createdBy: audit.createdBy,
   });
 
+  await publishClientCommitStorage({ entityId: newClassroom.id, storageId: newClassroom.storageId || "" });
+
   return c.json({ data: newClassroom, message: "Classroom Created" }, 201);
 });
 
@@ -92,6 +95,8 @@ export const updateSchoolClassroomHandler = catchAsync(async (c: Context) => {
   if (!updated) {
     throw new ApiError(500, { message: "Failed Update Classroom" });
   }
+  await publishClientCommitStorage({ entityId: updated.id, storageId: updated.storageId || "" });
+
 
   return c.json({ data: updated, message: "Updated Classroom" }, 200);
 });

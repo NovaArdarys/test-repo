@@ -2,7 +2,7 @@ import { db } from "@/db";
 import { entityTypeEnum } from "@/db/schemas";
 import { storage } from "@/db/schemas/storage.schema";
 import { minioClient } from "@/utils/minioClient";
-import { InferSelectModel, sql } from "drizzle-orm";
+import { eq, InferSelectModel, sql } from "drizzle-orm";
 
 export type StorageRecord = InferSelectModel<typeof storage>;
 export type EntityType = keyof typeof entityTypeEnum;
@@ -47,35 +47,23 @@ export async function saveStorageRecord(data: StorageCreatePayload): Promise<Sto
   }
 }
 
-export async function linkStorageToEntity(entityId: string, entityType: EntityType) {
+export async function linkStorageToEntity(storageId: string, entityId: string, path: string, fileUrl: string, fileName: string, entityType: EntityType) {
   try {
     await db.update(storage)
-      .set({ entityType: entityType as any, entityId })
-      .where(sql`${storage.entityId} = ${entityId}`);
+      .set({ entityType: entityType as any, entityId, path, fileUrl, fileName })
+      .where(sql`${storage.id} = ${storageId}`);
   } catch (err) {
     console.error("[STORAGE SERVICE] Failed to link storage to entity:", err);
     throw err;
   }
 }
 
-export async function moveFileFromTmp(
-  filePath: string,
-  fileName: string,
-  targetBucket: string
-): Promise<string> {
-  const tmpBucket = "temporary";
+export async function getByStorageId(storageId: string) {
+  const result = await db
+    .select()
+    .from(storage)
+    .where(eq(storage.id, storageId))
+    .limit(1);
 
-  const sourceObject = filePath || fileName;
-  const targetObject = fileName;
-
-  await minioClient.copyObject(
-    targetBucket,
-    targetObject,
-    `/${tmpBucket}/${sourceObject}`
-  );
-
-  await minioClient.removeObject(tmpBucket, sourceObject);
-
-  const newUrl = `${process.env.MINIO_PUBLIC_URL}/${targetBucket}/${targetObject}`;
-  return newUrl;
+  return result[0] ?? null;
 }
