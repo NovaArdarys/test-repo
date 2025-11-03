@@ -45,10 +45,9 @@ export const schoolClassroom = pgTable(
     id: uuid("id").primaryKey().defaultRandom(),
     schoolId: uuid("school_id").notNull(),
     menuPlanId: uuid("menu_plan_id")
-      .references(() => menuPlans.id, { onDelete: "set null" })
-      .default(''),
+      .references(() => menuPlans.id, { onDelete: "set null" }),
     name: varchar("name", { length: 100 }).notNull().unique(),
-    date: date("classroom_date").defaultNow(),
+    date: date("classroom_date").defaultNow().notNull(),
     totalStudent: integer("total_student").default(0).notNull(),
     storageId: uuid("storage_id").references(() => storage.id, { onDelete: "set null" }),
     isLargeClass: boolean("is_large_class").default(false).notNull(),
