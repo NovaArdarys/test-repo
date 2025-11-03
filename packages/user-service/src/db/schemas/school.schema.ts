@@ -1,4 +1,4 @@
-import { boolean, decimal, pgTable, text, timestamp, uuid, varchar, uniqueIndex, index, integer } from "drizzle-orm/pg-core";
+import { boolean, decimal, pgTable, text, timestamp, uuid, varchar, uniqueIndex, index, integer, date } from "drizzle-orm/pg-core";
 import { storage } from "./storage.schema";
 import { menuPlans } from "./food.schema";
 
@@ -45,16 +45,15 @@ export const schoolClassroom = pgTable(
     id: uuid("id").primaryKey().defaultRandom(),
     schoolId: uuid("school_id").notNull(),
     menuPlanId: uuid("menu_plan_id")
-      .notNull()
-      .references(() => menuPlans.id, { onDelete: "cascade" }),
+      .references(() => menuPlans.id, { onDelete: "set null" })
+      .default(''),
     name: varchar("name", { length: 100 }).notNull().unique(),
+    data: date("class_date").defaultNow(),
     totalStudent: integer("total_student").default(0).notNull(),
     storageId: uuid("storage_id").references(() => storage.id, { onDelete: "set null" }),
     isLargeClass: boolean("is_large_class").default(false).notNull(),
     isDeleted: boolean("is_deleted").default(false).notNull(),
-
     createdAt: timestamp("created_at").defaultNow().notNull(),
-
     createdBy: uuid("created_by"),
   },
   (table) => {
