@@ -68,6 +68,10 @@ export const loginHandler = catchAsync(async (c) => {
       driverIds: findUser.drivers.map((d: any) => d.id).slice(0, 5),
       kitchenIds: findUser.drivers.map((d: any) => d.kitchenId).slice(0, 5),
     };
+    context.kitchen = {
+      type: 'kitchen',
+      kitchenIds: findUser.drivers.map((d: any) => d.kitchenId).slice(0, 5),
+    };
   }
 
   // Buat payload token
