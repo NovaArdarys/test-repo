@@ -19,7 +19,9 @@ export const entityTypeEnum = pgEnum("entity_type_enum", [
   "school_daily_report", // khusus daily report school
   "profile", // entah ini untuk profile kitchen, school, atau user
   "profile_supplier", // entah ini untuk profile kitchen, school, atau user
-  "incidentReport", // ini kalau ada laporan kejadian di suatu hari
+  "incident_report_kitchen", // ini kalau ada laporan kejadian di suatu hari
+  "incident_report_driver", // ini kalau ada laporan kejadian di suatu hari
+  "incident_report_", // ini kalau ada laporan kejadian di suatu hari
   "other"
 ]);
 
@@ -44,4 +46,11 @@ export const analysisTypeEnum = pgEnum('analysis_type', [
   'cleanliness',        // cek kebersihan dapur
   'mealbox_count',      // hitung jumlah kotak makan
   'food_detection',     // deteksi makanan berdasarkan label
+]);
+
+export const roleDomainEnum = pgEnum('role_domain', [
+  'kitchen',
+  'beneficiary',
+  'driver',
+  'app_manager'
 ]);
