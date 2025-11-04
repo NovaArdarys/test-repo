@@ -29,8 +29,6 @@ export const checkAccessToken = async (c: Context, next: Next) => {
     await next();
 
   } catch (error) {
-    console.log(error, '------error------');
-
     let errorMessage = 'Invalid or expired Access Token';
     if (error instanceof Error && error.name === 'JWTExpired') {
       errorMessage = 'Access Token expired. Please use your Refresh Token.';
