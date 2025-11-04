@@ -6,7 +6,8 @@ import {
   type UpdateRoleInput,
   type CreatePermissionInput,
   type UpdatePermissionInput,
-  PermissionType
+  PermissionType,
+  entityTypeEnum
 } from "@/db/schemas";
 import {
   and,
@@ -21,11 +22,13 @@ import { db } from "@/db";
 import { APIPagination } from "@/types/paginations.type"; // Import tipe yang Anda definisikan
 import ApiError from "@/utils/ApiError";
 import * as HttpStatus from "http-status";
+export type EntityType = (typeof entityTypeEnum.enumValues)[number];
 
 type RoleRead = {
   id: string;
   name: string;
   description: string | null;
+  domain: EntityType;
 };
 
 type PermissionRead = {
@@ -42,7 +45,7 @@ type PermissionRead = {
 export async function getRolesList({ page, limit }: {
   page: number;
   limit: number;
-}): Promise<APIPagination<RoleRead>> {
+}) {
   const offset = (page - 1) * limit;
 
   const whereCondition = eq(roles.isDeleted, false);
@@ -52,6 +55,7 @@ export async function getRolesList({ page, limit }: {
       id: roles.id,
       name: roles.name,
       description: roles.description,
+      domain: roles.domain
     })
     .from(roles)
     .where(whereCondition)
@@ -98,7 +102,7 @@ export async function createRole(data: CreateRoleInput & { createdBy: string; })
   return { id: newRole.id, name: newRole.name };
 }
 
-export async function getRoleById(id: string): Promise<RoleRead | null> {
+export async function getRoleById(id: string) {
   const role = await db
     .select({
       id: roles.id,
@@ -107,6 +111,7 @@ export async function getRoleById(id: string): Promise<RoleRead | null> {
       isDeleted: roles.isDeleted,
       createdAt: roles.createdAt,
       updatedAt: roles.updatedAt,
+      domain: roles.domain
     })
     .from(roles)
     .where(and(

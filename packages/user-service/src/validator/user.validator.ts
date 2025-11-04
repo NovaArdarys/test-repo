@@ -74,8 +74,7 @@ export const registerSchema = userDetailSchema.safeExtend({
   email: z.string({ message: "Email wajib diisi" }),
   password: z.string().min(6, { message: "Minimal 6 karakter mengandung 1 huruf besar dan 1 angka" }),
   roleId: z.string().optional(),
-  kitchenId: z.string().optional(),
-  schoolId: z.string().optional(),
+  domainId: z.string().optional(),
   isActive: z.coerce.boolean().optional(),
   createdBy: z.string().optional()
 });

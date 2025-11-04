@@ -12,7 +12,7 @@ const getAuditFields = (c: Context) => ({
 
 export const registerHandler = catchAsync(async (c) => {
 
-  const { email, password, address, dateOfBirth, fullName, phoneNumber, roleId, isActive, kitchenId, schoolId } = await c.req.parseBody() as unknown as registerSchemaType;
+  const { email, password, address, dateOfBirth, fullName, phoneNumber, roleId, isActive, domainId } = await c.req.parseBody() as unknown as registerSchemaType;
   const audit = getAuditFields(c);
 
   const [firstName, lastName] = fullName?.split(" ") || ["", ""];
@@ -26,8 +26,7 @@ export const registerHandler = catchAsync(async (c) => {
     dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : new Date(),
     firstName,
     lastName,
-    kitchenId: kitchenId ?? "",
-    schoolId: schoolId ?? "",
+    domainId: domainId ?? "",
     createdBy: audit.createdBy,
     updatedAt: new Date(),
   });

@@ -5,6 +5,7 @@ import { isEmpty } from "lodash";
 import * as HttpStatus from "http-status";
 import { createUser, getUser, revokeTokenStatus, saveRefreshToken, updateUser, validateTokenStatus } from "@/services/repositories/user.service";
 import { publishAssignUserToKitchen, publishAssignUserToSchool } from "@/messaging/publishers/user.publisher";
+import { getRoleById } from "@/services/repositories/role.permission.service";
 
 export const userInfoHandler = catchAsync(async (c) => {
   const { username }: UserInfoShemaType = await c.req.parseBody();
@@ -35,7 +36,7 @@ export const userSaveTokenHandler = catchAsync(async (c) => {
 
 export const registerHandler = catchAsync(async (c) => {
 
-  const { email, password, address, dateOfBirth, firstName, lastName, phoneNumber, roleId, isActive, kitchenId, schoolId, createdBy } = await c.req.parseBody() as unknown as registerSchemaType;
+  const { email, password, address, dateOfBirth, firstName, lastName, phoneNumber, roleId, isActive, domainId, createdBy } = await c.req.parseBody() as unknown as registerSchemaType;
 
   const result = await createUser({
     email,
@@ -53,23 +54,31 @@ export const registerHandler = catchAsync(async (c) => {
     phoneNumber: phoneNumber || "",
   }, roleId || "");
 
-  if (kitchenId) {
-    await publishAssignUserToKitchen({
-      kitchenId: kitchenId,
-      userId: "",
-      createdBy: createdBy || ""
-    });
+  if (roleId) {
+
+    const role = await getRoleById(roleId);
+
+    if (role?.domain === "kitchen" && domainId) {
+      await publishAssignUserToKitchen({
+        kitchenId: domainId,
+        userId: "",
+        createdBy: createdBy || ""
+      });
+    }
+
+    if (role?.domain === "beneficiary" && domainId) {
+      await publishAssignUserToSchool({
+        schoolId: domainId,
+        userId: "",
+        createdBy: createdBy || ""
+      });
+    }
+
+    return c.json({ data: { ...result, [role?.domain || "domainId"]: domainId } });
   }
 
-  if (schoolId) {
-    await publishAssignUserToSchool({
-      schoolId: schoolId,
-      userId: "",
-      createdBy: createdBy || ""
-    });
-  }
+  return c.json({ data: { ...result } });
 
-  return c.json({ data: { ...result, kitchenId, schoolId } });
 });
 
 export const removeTokenHandler = catchAsync(async (c) => {
