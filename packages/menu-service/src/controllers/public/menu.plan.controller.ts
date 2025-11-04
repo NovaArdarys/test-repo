@@ -19,6 +19,8 @@ const getAuditFields = (c: Context) => ({
   kitchenId: c.get("kitchenId") as string[],
   driverId: c.get("driverId") as string[],
   schoolId: c.get("schoolId") as string[],
+  driverKitchenId: c.get("driverKitchenId") as string[],
+
 });
 
 export const listMenuPlansHandler = catchAsync(async (c: Context) => {

@@ -18,8 +18,6 @@ export const loginHandler = catchAsync(async (c) => {
 
   const findUser = await getUserInfoServiceClient({ username });
 
-  console.log(findUser.userKitchens, '-----findUser-----', findUser.drivers, findUser.userSchools);
-
   if (isEmpty(findUser)) {
     throw new ApiError(HttpStatus.default.UNAUTHORIZED, { message: "Unauthorized" });
   }
@@ -52,6 +50,8 @@ export const loginHandler = catchAsync(async (c) => {
     driver: {},
   };
 
+  console.log(findUser.drivers);
+
   if (findUser.userKitchens?.length > 0) {
     context.kitchen = {
       type: 'kitchen',
@@ -66,6 +66,7 @@ export const loginHandler = catchAsync(async (c) => {
     context.driver = {
       type: 'driver',
       driverIds: findUser.drivers.map((d: any) => d.id).slice(0, 5),
+      kitchenIds: findUser.drivers.map((d: any) => d.kitchenId).slice(0, 5),
     };
   }
 
