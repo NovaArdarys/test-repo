@@ -263,11 +263,11 @@ export async function getMenuPlanById(
 async function validateEntity(entityType: string, entityId: string) {
     switch (entityType) {
         case "kitchen":
-            return db.query.kitchens.findFirst({ where: eq(kitchens.id, entityId) });
+            return db.query.kitchens.findMany({ where: eq(kitchens.id, entityId) });
         case "driver":
-            return db.query.drivers.findFirst({ where: eq(drivers.id, entityId) });
+            return db.query.drivers.findMany({ where: eq(drivers.id, entityId) });
         case "school":
-            return db.query.schools.findFirst({ where: eq(schools.id, entityId) });
+            return db.query.schools.findMany({ where: eq(schools.id, entityId) });
         default:
             throw new Error(`Unknown entity type: ${entityType}`);
     }
@@ -305,6 +305,10 @@ export async function createMenuPlan(
             .select()
             .from(schools)
             .where(eq(schools.kitchenId, kitchenId));
+        const driverByKitchen = await trx
+            .select()
+            .from(drivers)
+            .where(eq(drivers.kitchenId, kitchenId));
         const planDates = (dates || []).map((d) => new Date(d));
 
         const allDailyReports: any[] = [];
@@ -404,6 +408,33 @@ export async function createMenuPlan(
                 await trx.insert(stepReports).values(
                     schoolSteps.map((step) => ({
                         dailyReportId: dailySchool.id,
+                        stepId: step.id,
+                        isCompleted: false,
+                        createdBy: newPlan.createdBy,
+                    }))
+                );
+            }
+            // driver(s)
+            for (const driver of driverByKitchen) {
+                const [dailyDriver] = await trx
+                    .insert(dailyReports)
+                    .values({
+                        date: newPlan.planStartDate,
+                        entityId: driver.id,
+                        entityType: "driver",
+                        menuPlanId: newPlan.id,
+                        status: "PENDING",
+                        createdAt: newPlan.createdAt,
+                        createdBy: newPlan.createdBy,
+                    })
+                    .returning();
+
+                allDailyReports.push(dailyDriver);
+
+                const schoolSteps = await planEntity("driver");
+                await trx.insert(stepReports).values(
+                    schoolSteps.map((step) => ({
+                        dailyReportId: dailyDriver.id,
                         stepId: step.id,
                         isCompleted: false,
                         createdBy: newPlan.createdBy,
