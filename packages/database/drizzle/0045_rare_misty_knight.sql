@@ -1,0 +1,2 @@
+CREATE TYPE "public"."role_domain" AS ENUM('kitchen', 'beneficiary', 'driver', 'app_manager', 'other');--> statement-breakpoint
+ALTER TABLE "roles" ADD COLUMN "domain" "role_domain" DEFAULT 'other' NOT NULL;
