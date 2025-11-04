@@ -4,7 +4,7 @@ import { catchAsync } from "../../utils/catchAsync";
 import { isEmpty } from "lodash";
 import * as HttpStatus from "http-status";
 import { createUser, getUser, revokeTokenStatus, saveRefreshToken, updateUser, validateTokenStatus } from "@/services/repositories/user.service";
-import { publishAssignUserToKitchen, publishAssignUserToSchool } from "@/messaging/publishers/user.publisher";
+import { publishAssignProfileDriver, publishAssignUserToKitchen, publishAssignUserToSchool } from "@/messaging/publishers/user.publisher";
 import { getRoleById } from "@/services/repositories/role.permission.service";
 
 export const userInfoHandler = catchAsync(async (c) => {
@@ -61,7 +61,7 @@ export const registerHandler = catchAsync(async (c) => {
     if (role?.domain === "kitchen" && domainId) {
       await publishAssignUserToKitchen({
         kitchenId: domainId,
-        userId: "",
+        userId: result.userId,
         createdBy: createdBy || ""
       });
     }
@@ -69,7 +69,15 @@ export const registerHandler = catchAsync(async (c) => {
     if (role?.domain === "beneficiary" && domainId) {
       await publishAssignUserToSchool({
         schoolId: domainId,
-        userId: "",
+        userId: result.userId,
+        createdBy: createdBy || ""
+      });
+    }
+
+    if (role?.domain === "driver" && domainId) {
+      await publishAssignProfileDriver({
+        kitchenId: domainId,
+        userId: result.userId,
         createdBy: createdBy || ""
       });
     }

@@ -27,3 +27,13 @@ export async function publishAssignUserToSchool(data: { userId: string; schoolId
     console.error("[PUBLISH ERROR] Failed to publish school.assign.commit:", error);
   }
 }
+
+export async function publishAssignProfileDriver(data: { userId: string; kitchenId: string; createdBy: string; }) {
+  try {
+    await safePublish(EXCHANGES.USER, "driver.assign.commit", data);
+    console.log(`[PUBLISH] AssignProfileDriver event for user: ${data.userId}`);
+  } catch (error) {
+    console.error("[PUBLISH ERROR] Failed to publish driver.assign.commit:", error);
+  }
+}
+

@@ -6,6 +6,7 @@ import { updateKitchen } from "@/services/repositories/kitchen.service";
 import { updateSupplier } from "@/services/repositories/suppliers.service";
 import { safeConsume } from "../utils/consumerHelper";
 import { assignUserToKitchen, isUserAssignedToKitchen } from "@/services/repositories/user.kitchen.service";
+import { createDriver, isUserAlreadyHaveDriverRole } from "@/services/repositories/driver.service";
 
 // ===== VALIDATORS =====
 const entityTypeValidator = z.enum(entityTypeEnum.enumValues);
@@ -25,8 +26,13 @@ const baseUserKitchen = z.object({
 // ===== QUEUES =====
 const STORAGE_QUEUE_NAME = "kitchen_service_storage_queue";
 const STORAGE_ROUTING_KEY = "storage.upload.commit";
+
 const USER_ASSIGN_KITCHEN_QUEUE_NAME = "kitchen_service_assign_user_queue";
 const USER_ASSIGN_KITCHEN_ROUTING_KEY = "kitchen.assign.commit";
+
+const USER_DRIVER_ASSIGN_KITCHEN_QUEUE_NAME = "driver_assign_user_queue";
+const USER_DRIVER_ASSIGN_KITCHEN_ROUTING_KEY = "driver.assign.commit";
+
 const LOG_QUEUE_NAME = "kitchen_service_log_queue";
 const LOG_ROUTING_KEY = "log.#";
 
@@ -66,6 +72,21 @@ async function handleAssignToKitchen(data: z.infer<typeof baseUserKitchen>) {
 
   const alreadyAssigned = await isUserAssignedToKitchen(parsed.userId, parsed.kitchenId);
   if (!alreadyAssigned) {
+    await createDriver({
+      kitchenId: parsed.kitchenId,
+      userId: parsed.userId,
+      createdBy: parsed.createdBy || "",
+    });
+  }
+
+  console.log(`[USER EVENT] Assign user ${parsed.userId} to kitchen ${parsed.kitchenId}`);
+}
+
+async function handleAssignProfileDriver(data: z.infer<typeof baseUserKitchen>) {
+  const parsed = baseUserKitchen.parse(data);
+
+  const alreadyAssigned = await isUserAlreadyHaveDriverRole(parsed.userId, parsed.kitchenId);
+  if (!alreadyAssigned) {
     await assignUserToKitchen({
       kitchenId: parsed.kitchenId,
       userId: parsed.userId,
@@ -101,4 +122,12 @@ export async function setupKitchenServiceConsumers(channel: Channel) {
   channel.prefetch(10);
   channel.consume(userQueue.queue, safeConsume(handleAssignToKitchen, channel), { noAck: false });
   console.log(`[*] Listening for USER events on ${userQueue.queue}`);
+
+  // Driver
+  await channel.assertExchange(EXCHANGES.USER, "topic", { durable: true });
+  const userDriverQueue = await channel.assertQueue(USER_DRIVER_ASSIGN_KITCHEN_QUEUE_NAME, { durable: true });
+  await channel.bindQueue(userDriverQueue.queue, EXCHANGES.USER, USER_DRIVER_ASSIGN_KITCHEN_ROUTING_KEY);
+  channel.prefetch(10);
+  channel.consume(userDriverQueue.queue, safeConsume(handleAssignProfileDriver, channel), { noAck: false });
+  console.log(`[*] Listening for USER Driver events on ${userDriverQueue.queue}`);
 }
