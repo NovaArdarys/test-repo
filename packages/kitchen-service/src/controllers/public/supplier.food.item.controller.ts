@@ -9,8 +9,8 @@ import {
 } from "@/services/repositories/suppliers.food.items.service";
 
 const getAuditFields = (c: Context) => ({
-  created_by: c.get('userId'),
-  updated_by: c.get('userId'),
+  createdBy: c.get('userId'),
+  updatedBy: c.get('userId'),
   userId: c.get('userId'),
   kitchenId: c.get("kitchenId") as string[],
   driverId: c.get("driverId") as string[],

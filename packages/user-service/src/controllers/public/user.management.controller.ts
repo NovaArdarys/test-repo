@@ -9,8 +9,8 @@ import {
 import { catchAsync } from '@/utils/catchAsync';
 
 const getAuditFields = (c: Context) => ({
-  created_by: c.get('userId'),
-  updated_by: c.get('userId'),
+  createdBy: c.get('userId'),
+  updatedBy: c.get('userId'),
   userId: c.get('userId'),
   kitchenId: c.get("kitchenId") as string[],
   driverId: c.get("driverId") as string[],
@@ -53,7 +53,10 @@ export const createUserHandler = catchAsync(async (c) => {
   const data = await c.req.parseBody() as unknown as CreateUserInput;
   const audit = getAuditFields(c);
 
-  const newUser = await UserService.createUser({ ...data, ...audit });
+  const newUser = await UserService.createUser({
+    ...data,
+    created_by: audit.createdBy,
+  });
   return c.json({ message: 'User created successfully', data: newUser }, 201);
 });
 
@@ -72,7 +75,7 @@ export const updateUserHandler = catchAsync(async (c) => {
   const data = await c.req.parseBody() as unknown as UpdateUserInput;
   const audit = getAuditFields(c);
 
-  const result = await UserService.updateUser(id, { ...data, updated_by: audit.updated_by });
+  const result = await UserService.updateUser(id, { ...data, updated_by: audit.updatedBy });
   return c.json({ message: 'User updated successfully', data: { ...result, ...data } }, 200);
 });
 
@@ -80,7 +83,7 @@ export const deleteUserHandler = catchAsync(async (c) => {
   const id = c.req.param('id');
   const audit = getAuditFields(c);
 
-  const result = await UserService.deleteUser(id, audit.updated_by);
+  const result = await UserService.deleteUser(id, audit.updatedBy);
   return c.json({ message: 'User soft deleted successfully', data: { id: result.id } }, 200);
 });
 
@@ -101,11 +104,11 @@ export const updateUserDetailsHandler = catchAsync(async (c) => {
   const data = await c.req.parseBody() as unknown as UpdateUserDetailInput;
   const audit = getAuditFields(c);
 
-  const user = await UserService.updateUser(audit.userId, { ...data, updated_by: audit.updated_by });
+  const user = await UserService.updateUser(audit.userId, { ...data, updated_by: audit.updatedBy });
   const profile = await UserService.getUserById(audit.userId);
 
   if (profile) {
-    const result = await UserService.updateOrCreateUserDetails(profile?.id, { ...data, ...audit });
+    const result = await UserService.updateOrCreateUserDetails(profile?.id, { ...data, updated_by: audit.updatedBy, created_by: audit.createdBy, });
 
     if (!result) {
       return c.json({ error: 'Failed to update or create user details' }, 500);

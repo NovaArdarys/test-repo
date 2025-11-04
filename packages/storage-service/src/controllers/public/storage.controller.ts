@@ -6,8 +6,8 @@ import { uploadBodySchema, uploadBodyType } from "@/validator/storage.validator"
 import { Context } from "hono";
 
 const getAuditFields = (c: Context) => ({
-  created_by: c.get('userId'),
-  updated_by: c.get('userId'),
+  createdBy: c.get('userId'),
+  updatedBy: c.get('userId'),
   userId: c.get('userId'),
   kitchenId: c.get("kitchenId") as string[],
   driverId: c.get("driverId") as string[],
@@ -35,7 +35,7 @@ export const storageHandler = catchAsync(async (c) => {
         fileName: file.name,
         path: result.path,
         fileUrl: result.fileUrl,
-        createdBy: audit.created_by,
+        createdBy: audit.createdBy,
         entityId: body?.entityId ?? "00000000-0000-0000-0000-000000000000",
         entityType: (body.entityType as any) ?? "other",
         meta: body.meta ?? {},
@@ -53,8 +53,8 @@ export const storageHandler = catchAsync(async (c) => {
         entityId: body.entityId,
         meta: {
           ...body.meta,
-          updated_by: audit.updated_by,
-          created_by: audit.created_by,
+          updated_by: audit.updatedBy,
+          created_by: audit.createdBy,
         },
       };
 
