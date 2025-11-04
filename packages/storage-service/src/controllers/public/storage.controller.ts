@@ -13,7 +13,8 @@ const getAuditFields = (c: Context) => ({
   driverId: c.get("driverId") as string[],
   schoolId: c.get("schoolId") as string[],
   driverKitchenId: c.get("driverKitchenId") as string[],
-
+  updatedAt: new Date(),
+  createdAt: new Date()
 });
 
 export const storageHandler = catchAsync(async (c) => {

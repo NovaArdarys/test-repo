@@ -4,7 +4,15 @@ import { RecordLocationSchemaType } from "@/validator/delivery.validator";
 import { getDriverLocationHistoryByDeliveryId, recordDriverLocation } from "@/services/repositories/driver.location.service"; // Asumsi service pelacakan
 
 const getAuditFields = (c: Context) => ({
-  createdBy: c.get('userId') as string,
+  created_by: c.get('userId'),
+  updated_by: c.get('userId'),
+  userId: c.get('userId'),
+  kitchenId: c.get("kitchenId") as string[],
+  driverId: c.get("driverId") as string[],
+  schoolId: c.get("schoolId") as string[],
+  driverKitchenId: c.get("driverKitchenId") as string[],
+  updatedAt: new Date(),
+  createdAt: new Date()
 });
 
 export const recordDriverLocationHandler = catchAsync(async (c: Context) => {
