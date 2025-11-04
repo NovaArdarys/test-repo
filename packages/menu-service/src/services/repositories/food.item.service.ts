@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { foodItems, menuFoodItem, } from "@/db/schemas"; // Asumsi skema Anda di sini
+import { foodItems, } from "@/db/schemas"; // Asumsi skema Anda di sini
 import { APIPagination } from "@/types/paginations.type";
 import { eq, and, sql, desc, SQLWrapper, InferSelectModel, InferInsertModel } from "drizzle-orm";
 import { MenuPlan } from "./menu.plan.service";
@@ -67,27 +67,6 @@ export async function getFoodItemById(id: string): Promise<FoodItem | null> {
     ),
   });
   return item ?? null;
-}
-
-export async function getFoodItemsByMenuPlanId(menuFoodPlanId: string): Promise<FoodItem[]> {
-  const assignedItems = await db.select({
-    id: foodItems.id,
-    name: foodItems.name,
-    type: foodItems.type,
-    description: foodItems.description,
-    isAvailable: foodItems.isAvailable,
-    createdAt: foodItems.createdAt,
-  })
-    .from(menuFoodItem)
-    .innerJoin(foodItems, eq(menuFoodItem.foodItemId, foodItems.id))
-    .where(and(
-      eq(menuFoodItem.menuFoodPlanId, menuFoodPlanId),
-      eq(menuFoodItem.isDeleted, false),
-      eq(foodItems.isDeleted, false)
-    ))
-    .orderBy(desc(foodItems.createdAt));
-
-  return assignedItems as FoodItem[];
 }
 
 export async function createFoodItem(data: NewFoodItem): Promise<FoodItem> {
