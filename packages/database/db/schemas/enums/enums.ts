@@ -21,6 +21,7 @@ export const entityTypeEnum = pgEnum("entity_type_enum", [
   "profile_supplier", // entah ini untuk profile kitchen, school, atau user
   "incident_report_kitchen", // ini kalau ada laporan kejadian di suatu hari
   "incident_report_driver", // ini kalau ada laporan kejadian di suatu hari
+  "incident_report_beneficiary", // ini kalau ada laporan kejadian di suatu hari
   "other"
 ]);
 
