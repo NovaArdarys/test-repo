@@ -1,5 +1,6 @@
 import { foodTypeEnum, planStatusEnum } from "./enums/enums";
 import { boolean, date, pgTable, text, timestamp, uuid, varchar } from "drizzle-orm/pg-core";
+import { kitchens } from "./kitchen.schema";
 
 export const foodItems = pgTable('food_items', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -15,6 +16,7 @@ export const foodItems = pgTable('food_items', {
   updatedAt: timestamp('updated_at').notNull(),
   updatedBy: uuid('updated_by'),
 });
+
 export const menuFoodItem = pgTable('menu_food_item', {
   id: uuid('id').primaryKey().defaultRandom(),
   foodItemId: uuid('food_item_id').notNull(),
@@ -26,6 +28,7 @@ export const menuFoodItem = pgTable('menu_food_item', {
 
 export const menuPlans = pgTable('menu_plans', {
   id: uuid('id').primaryKey().defaultRandom(),
+  kitchenId: uuid('kitchen_id').references(() => kitchens.id),
   name: text('name'),
   planStartDate: date('plan_start_date').notNull(),
   planEndDate: date('plan_end_date').notNull(),
@@ -38,11 +41,10 @@ export const menuPlans = pgTable('menu_plans', {
   updatedBy: uuid('updated_by'),
 });
 
-export const menuPlanSchoolsKitchen = pgTable('menu_plan_schools_kitchen', {
+export const menuPlanSchools = pgTable('menu_plan_schools_kitchen', {
   id: uuid('id').primaryKey().defaultRandom(),
   menuPlanId: uuid('menu_plan_id').notNull(),
   schoolId: uuid('school_id').notNull(),
-  kitchenId: uuid('kitchen_id').notNull(),
   isDeleted: boolean('is_deleted').default(false).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   createdBy: uuid('created_by'),

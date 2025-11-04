@@ -4,7 +4,7 @@ import { appLogs, tokenLogs } from "../log.schema";
 import { kitchens, userKitchens } from "../kitchen.schema";
 import { driverLocations, drivers } from "../driver.schema";
 import { schoolClassroom, schools, userSchools } from "../school.schema";
-import { foodItems, menuPlans, menuPlanSchoolsKitchen, menuFoodItem } from "../food.schema";
+import { foodItems, menuPlans, menuPlanSchools } from "../food.schema";
 import { suppliers, suppliersFoodItems, suppliersProducts } from "../supplier.schema";
 import { deliveries, deliverySchools } from "../delivery.schema";
 import { districts, provinces, regencies, villages } from "../master.schema";
@@ -43,10 +43,9 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   updatedFoodItems: many(foodItems, { relationName: 'updated_by' }),
   createdSuppliers: many(suppliers, { relationName: 'created_by' }),
   updatedSuppliers: many(suppliers, { relationName: 'updated_by' }),
-  createdmenuFoodItem: many(menuFoodItem, { relationName: 'created_by' }),
   createdMenuPlans: many(menuPlans, { relationName: 'created_by' }),
   updatedMenuPlans: many(menuPlans, { relationName: 'updated_by' }),
-  createdMenuPlanSchoolsKitchen: many(menuPlanSchoolsKitchen, { relationName: 'created_by' }),
+  createdMenuPlanSchools: many(menuPlanSchools, { relationName: 'created_by' }),
   createdDeliveries: many(deliveries, { relationName: 'created_by' }),
   updatedDeliveries: many(deliveries, { relationName: 'updated_by' }),
   createdDeliverySchools: many(deliverySchools, { relationName: 'created_by' }),
@@ -146,7 +145,7 @@ export const kitchensRelations = relations(kitchens, ({ many, one }) => ({
   suppliers: many(suppliers),
   updatedBy: one(users, { fields: [kitchens.updatedBy], references: [users.id], relationName: 'updated_by' }),
   deliveries: many(deliveries),
-  menuPlanSchoolsKitchen: many(menuPlanSchoolsKitchen),
+  menuPlanKitchen: many(menuPlans),
 }));
 
 export const driversRelations = relations(drivers, ({ one, many }) => ({
@@ -174,7 +173,7 @@ export const schoolsRelations = relations(schools, ({ many, one }) => ({
   village: one(villages, { fields: [schools.villageId], references: [villages.id] }),
   createdBy: one(users, { fields: [schools.createdBy], references: [users.id], relationName: 'created_by' }),
   updatedBy: one(users, { fields: [schools.updatedBy], references: [users.id], relationName: 'updated_by' }),
-  menuPlanSchoolsKitchen: many(menuPlanSchoolsKitchen),
+  menuPlanSchools: many(menuPlanSchools),
   deliverySchools: many(deliverySchools),
 }));
 
@@ -232,7 +231,6 @@ export const villagesRelations = relations(villages, ({ one, many }) => ({
 }));
 
 export const foodItemsRelations = relations(foodItems, ({ many, one }) => ({
-  menuFoodItem: many(menuFoodItem),
   menuFoodProducts: many(foodItems),
   suppliersFoodItems: many(suppliersFoodItems),
   suppliers: many(suppliersFoodItems),
@@ -280,29 +278,22 @@ export const suppliersFoodItemsRelations = relations(suppliersFoodItems, ({ one 
   }),
 }));
 
-export const menusFoodRelations = relations(menuFoodItem, ({ one }) => ({
-  foodItem: one(foodItems, { fields: [menuFoodItem.foodItemId], references: [foodItems.id] }),
-  menuPlan: one(menuPlans, { fields: [menuFoodItem.menuFoodPlanId], references: [menuPlans.id] }),
-  createdBy: one(users, { fields: [menuFoodItem.createdBy], references: [users.id], relationName: 'created_by' }),
-}));
-
 export const menuPlansRelations = relations(menuPlans, ({ one, many }) => ({
   village: one(villages, { fields: [menuPlans.villageId], references: [villages.id] }),
-  menuFoodItem: many(menuFoodItem),
   dailyReports: many(dailyReports),
   schoolClassRoom: many(schoolClassroom),
-  menuPlanSchoolsKitchen: many(menuPlanSchoolsKitchen),
+  menuPlanSchools: many(menuPlanSchools),
   deliverySchools: many(deliverySchools),
+  menuPlankitchen: one(kitchens, { fields: [menuPlans.kitchenId], references: [kitchens.id], relationName: 'kitchen_id' }),
   createdBy: one(users, { fields: [menuPlans.createdBy], references: [users.id], relationName: 'created_by' }),
   updatedBy: one(users, { fields: [menuPlans.updatedBy], references: [users.id], relationName: 'updated_by' }),
   suppliersFoodItems: many(suppliersFoodItems),
 }));
 
-export const menuPlanSchoolsKitchenRelations = relations(menuPlanSchoolsKitchen, ({ one }) => ({
-  menuPlan: one(menuPlans, { fields: [menuPlanSchoolsKitchen.menuPlanId], references: [menuPlans.id] }),
-  school: one(schools, { fields: [menuPlanSchoolsKitchen.schoolId], references: [schools.id] }),
-  kitchen: one(kitchens, { fields: [menuPlanSchoolsKitchen.kitchenId], references: [kitchens.id] }),
-  createdBy: one(users, { fields: [menuPlanSchoolsKitchen.createdBy], references: [users.id], relationName: 'created_by' }),
+export const menuPlanSchoolsRelations = relations(menuPlanSchools, ({ one }) => ({
+  menuPlan: one(menuPlans, { fields: [menuPlanSchools.menuPlanId], references: [menuPlans.id] }),
+  school: one(schools, { fields: [menuPlanSchools.schoolId], references: [schools.id] }),
+  createdBy: one(users, { fields: [menuPlanSchools.createdBy], references: [users.id], relationName: 'created_by' }),
 }));
 
 export const deliveriesRelations = relations(deliveries, ({ one, many }) => ({
@@ -321,17 +312,13 @@ export const deliverySchoolsRelations = relations(deliverySchools, ({ one }) => 
   createdBy: one(users, { fields: [deliverySchools.createdBy], references: [users.id], relationName: 'created_by' }),
 }));
 
-/* ==============================
-   DAILY REPORT RELATIONS
-   ============================== */
+
 export const dailyReportsRelations = relations(dailyReports, ({ many, one }) => ({
-  // Relasi ke step reports
   steps: many(stepReports),
   menuPlan: one(menuPlans, {
     fields: [dailyReports.menuPlanId],
     references: [menuPlans.id],
   }),
-  // Relasi ke user (pembuat & pengupdate)
   createdByUser: one(users, {
     fields: [dailyReports.createdBy],
     references: [users.id],
@@ -342,11 +329,7 @@ export const dailyReportsRelations = relations(dailyReports, ({ many, one }) => 
   }),
 }));
 
-/* ==============================
-   STEP REPORT RELATIONS
-   ============================== */
 export const stepReportsRelations = relations(stepReports, ({ one }) => ({
-  // Relasi ke daily report induknya
   storage: one(storage, { fields: [stepReports.storageId], references: [storage.id] }),
   dailyReport: one(dailyReports, {
     fields: [stepReports.dailyReportId],
