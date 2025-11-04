@@ -52,5 +52,6 @@ export const roleDomainEnum = pgEnum('role_domain', [
   'kitchen',
   'beneficiary',
   'driver',
-  'app_manager'
+  'app_manager',
+  'other',
 ]);

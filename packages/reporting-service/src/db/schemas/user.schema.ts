@@ -1,5 +1,5 @@
 import { pgTable, uuid, text, boolean, timestamp, varchar, jsonb, integer, decimal, bigint, pgEnum, date, uniqueIndex } from 'drizzle-orm/pg-core';
-import { permissionTypeEnum, userTokenTypeEnum } from './enums/enums';
+import { permissionTypeEnum, roleDomainEnum, userTokenTypeEnum } from './enums/enums';
 import type { InferInsertModel } from 'drizzle-orm';
 import { storage } from './storage.schema';
 
@@ -63,6 +63,7 @@ export const roles = pgTable('roles', {
   name: varchar('name', { length: 100 }).notNull().unique(),
   description: text('description'),
   isDeleted: boolean('is_deleted').default(false).notNull(),
+  domain: roleDomainEnum('domain').default('other').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   createdBy: uuid('created_by').notNull(),
   updatedAt: timestamp('updated_at').notNull(),
