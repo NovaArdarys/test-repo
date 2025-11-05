@@ -11,7 +11,7 @@ export const storageCommittedSchema = z.object({
   storageId: z.string(),
   url: z.string(),
   entityType: entityTypeValidator,
-  entityId: z.string(),
+  entityId: z.string().optional(),
   meta: z.record(z.string(), z.any()).optional(),
 });
 
