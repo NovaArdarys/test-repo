@@ -42,7 +42,7 @@ const LOG_ROUTING_KEY = "log.#";
 async function handleStorageEvent(data: z.infer<typeof storageCommittedSchema>) {
   const parsed = storageCommittedSchema.parse(data);
 
-  if (parsed.entityType === "kitchen") {
+  if (parsed.entityType === "kitchen" && parsed.storageId) {
     await updateKitchen(parsed.entityId, {
       storageId: parsed.storageId,
       imageURL: parsed.url,
@@ -51,7 +51,7 @@ async function handleStorageEvent(data: z.infer<typeof storageCommittedSchema>) 
     console.log(`[STORAGE EVENT] ✅ Updated kitchen ${parsed.entityId}`);
   }
 
-  if (parsed.entityType === "profile_supplier") {
+  if (parsed.entityType === "profile_supplier" && parsed.storageId) {
     await updateSupplier(parsed.entityId, {
       storageId: parsed.storageId,
       imageURL: parsed.url,
@@ -70,14 +70,18 @@ async function handleLogEvent(data: any) {
 async function handleAssignToKitchen(data: z.infer<typeof baseUserKitchen>) {
   const parsed = baseUserKitchen.parse(data);
 
-  const alreadyAssigned = await isUserAssignedToKitchen(parsed.userId, parsed.kitchenId);
-  if (!alreadyAssigned) {
-    await createDriver({
-      kitchenId: parsed.kitchenId,
-      userId: parsed.userId,
-      createdBy: parsed.createdBy || "",
-    });
+  if (parsed?.userId && parsed?.kitchenId) {
+
+    const alreadyAssigned = await isUserAssignedToKitchen(parsed?.userId, parsed?.kitchenId);
+    if (!alreadyAssigned) {
+      await createDriver({
+        kitchenId: parsed.kitchenId,
+        userId: parsed.userId,
+        createdBy: parsed.createdBy || "00000000-0000-0000-0000-000000000000",
+      });
+    }
   }
+
 
   console.log(`[USER EVENT] Assign user ${parsed.userId} to kitchen ${parsed.kitchenId}`);
 }

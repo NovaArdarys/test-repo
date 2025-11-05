@@ -4,7 +4,7 @@ import { appLogs, tokenLogs } from "../log.schema";
 import { kitchens, userKitchens } from "../kitchen.schema";
 import { driverLocations, drivers } from "../driver.schema";
 import { schoolClassroom, schools, userSchools } from "../school.schema";
-import { foodItems, menuPlans, menuPlanSchools } from "../food.schema";
+import { foodItems, menuFoodItem, menuPlans, menuPlanSchools } from "../food.schema";
 import { suppliers, suppliersFoodItems, suppliersProducts } from "../supplier.schema";
 import { deliveries, deliverySchools } from "../delivery.schema";
 import { districts, provinces, regencies, villages } from "../master.schema";
@@ -231,6 +231,7 @@ export const villagesRelations = relations(villages, ({ one, many }) => ({
 }));
 
 export const foodItemsRelations = relations(foodItems, ({ many, one }) => ({
+  menuFoodItem: many(menuFoodItem),
   menuFoodProducts: many(foodItems),
   suppliersFoodItems: many(suppliersFoodItems),
   suppliers: many(suppliersFoodItems),
@@ -278,8 +279,15 @@ export const suppliersFoodItemsRelations = relations(suppliersFoodItems, ({ one 
   }),
 }));
 
+export const menusFoodRelations = relations(menuFoodItem, ({ one }) => ({
+  foodItem: one(foodItems, { fields: [menuFoodItem.foodItemId], references: [foodItems.id] }),
+  menuPlan: one(menuPlans, { fields: [menuFoodItem.menuFoodPlanId], references: [menuPlans.id] }),
+  createdBy: one(users, { fields: [menuFoodItem.createdBy], references: [users.id], relationName: 'created_by' }),
+}));
+
 export const menuPlansRelations = relations(menuPlans, ({ one, many }) => ({
   village: one(villages, { fields: [menuPlans.villageId], references: [villages.id] }),
+  menuFoodItem: many(menuFoodItem),
   dailyReports: many(dailyReports),
   schoolClassRoom: many(schoolClassroom),
   menuPlanSchools: many(menuPlanSchools),

@@ -26,7 +26,7 @@ export async function saveStorageRecord(data: StorageCreatePayload): Promise<Sto
       .values({
         ...data,
         entityType: data.entityType as any,
-        entityId: data.entityId ?? null,
+        entityId: data?.entityId ?? null,
         createdAt: new Date(),
         createdBy: data.createdBy ?? null,
       })

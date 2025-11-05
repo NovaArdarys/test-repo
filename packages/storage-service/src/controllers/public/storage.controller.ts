@@ -36,7 +36,7 @@ export const storageHandler = catchAsync(async (c) => {
         path: result.path,
         fileUrl: result.fileUrl,
         createdBy: audit.createdBy,
-        entityId: body?.entityId ?? "00000000-0000-0000-0000-000000000000",
+        entityId: body?.entityId,
         entityType: (body.entityType as any) ?? "other",
         meta: body.meta ?? {},
         mimeType: file.type,
@@ -50,7 +50,7 @@ export const storageHandler = catchAsync(async (c) => {
         targetPath: result.fileUrl,
         storageId: id,
         entityType: body.entityType,
-        entityId: body.entityId,
+        entityId: body?.entityId,
         meta: {
           ...body.meta,
           updated_by: audit.updatedBy,

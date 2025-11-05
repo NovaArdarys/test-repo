@@ -59,13 +59,15 @@ async function handleLogEvent(data: any) {
 // User Assign Event
 async function handleAssignToSchool(data: z.infer<typeof baseUserSchool>) {
   const parsed = baseUserSchool.parse(data);
-  const alreadyAssigned = await isUserAssignedToSchool(parsed.userId, parsed.schoolId);
-  if (!alreadyAssigned) {
-    await assignUserToSchool({
-      schoolId: parsed.schoolId,
-      userId: parsed.userId,
-      createdBy: parsed.createdBy,
-    });
+  if (parsed.userId && parsed.schoolId) {
+    const alreadyAssigned = await isUserAssignedToSchool(parsed.userId, parsed.schoolId);
+    if (!alreadyAssigned) {
+      await assignUserToSchool({
+        schoolId: parsed.schoolId,
+        userId: parsed.userId,
+        createdBy: parsed.createdBy,
+      });
+    }
   }
   console.log(`[USER EVENT] Assign user ${parsed.userId} to school ${parsed.schoolId}`);
 }
