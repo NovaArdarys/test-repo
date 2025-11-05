@@ -1,35 +1,34 @@
 import { db } from "@/db";
-import { menuPlanSchoolsKitchen, } from "@/db/schemas";
+import { menuPlanSchools, } from "@/db/schemas";
 import { eq, and, sql, InferSelectModel, InferInsertModel } from "drizzle-orm";
 
-export type MenuPlanSchoolsKitchen = InferSelectModel<typeof menuPlanSchoolsKitchen>;
-export type NewMenuPlanSchoolsKitchen = Omit<
-  InferInsertModel<typeof menuPlanSchoolsKitchen>,
+export type MenuPlanSchools = InferSelectModel<typeof menuPlanSchools>;
+export type NewMenuPlanSchools = Omit<
+  InferInsertModel<typeof menuPlanSchools>,
   'id' | 'createdAt' | 'isDeleted'
 >;
 
-export async function assignPlanDistribution(data: NewMenuPlanSchoolsKitchen): Promise<MenuPlanSchoolsKitchen> {
-  const [newItem] = await db.insert(menuPlanSchoolsKitchen).values(data).returning();
+export async function assignPlanDistribution(data: NewMenuPlanSchools): Promise<MenuPlanSchools> {
+  const [newItem] = await db.insert(menuPlanSchools).values(data).returning();
   return newItem;
 }
 
-export async function unassignPlanDistribution(menuPlanId: string, schoolId: string, kitchenId: string): Promise<void> {
-  await db.update(menuPlanSchoolsKitchen)
+export async function unassignPlanDistribution(menuPlanId: string, schoolId: string): Promise<void> {
+  await db.update(menuPlanSchools)
     .set({ isDeleted: true })
     .where(and(
-      eq(menuPlanSchoolsKitchen.menuPlanId, menuPlanId),
-      eq(menuPlanSchoolsKitchen.schoolId, schoolId),
-      eq(menuPlanSchoolsKitchen.kitchenId, kitchenId)
+      eq(menuPlanSchools.menuPlanId, menuPlanId),
+      eq(menuPlanSchools.schoolId, schoolId),
     ));
 }
 
 export async function isPlanDistributionAssigned(menuPlanId: string, schoolId: string): Promise<boolean> {
-  const result = await db.select({ id: menuPlanSchoolsKitchen.id })
-    .from(menuPlanSchoolsKitchen)
+  const result = await db.select({ id: menuPlanSchools.id })
+    .from(menuPlanSchools)
     .where(and(
-      eq(menuPlanSchoolsKitchen.menuPlanId, menuPlanId),
-      eq(menuPlanSchoolsKitchen.schoolId, schoolId),
-      eq(menuPlanSchoolsKitchen.isDeleted, false)
+      eq(menuPlanSchools.menuPlanId, menuPlanId),
+      eq(menuPlanSchools.schoolId, schoolId),
+      eq(menuPlanSchools.isDeleted, false)
     ))
     .limit(1);
   return result.length > 0;

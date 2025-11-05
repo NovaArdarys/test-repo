@@ -39,6 +39,19 @@ export const listMenuPlansHandler = catchAsync(async (c: Context) => {
 
   const audit = getAuditFields(c);
 
+  console.log({
+    page,
+    limit,
+    villageId,
+    status,
+    startDate,
+    endDate,
+    kitchenIds: audit.kitchenId,
+    schoolIds: audit.schoolId,
+    entityType,
+    menuPlanName: search || ''
+  }, "===== param =====");
+
   const data = await getMenuPlansList({
     page,
     limit,
@@ -157,13 +170,12 @@ export const listPlanDistributionHandler = catchAsync(async (c: Context) => {
 
 export const assignPlanDistributionHandler = catchAsync(async (c: Context) => {
   const { id: menuPlanId } = c.req.param();
-  const { schoolId, kitchenId } = await c.req.parseBody() as unknown as AssignPlanDistributionSchemaType;
+  const { schoolId } = await c.req.parseBody() as unknown as AssignPlanDistributionSchemaType;
   const audit = getAuditFields(c);
 
   const newDistribution = await assignPlanDistribution({
     menuPlanId,
     schoolId,
-    kitchenId,
     createdBy: audit.createdBy,
   });
 
@@ -172,9 +184,9 @@ export const assignPlanDistributionHandler = catchAsync(async (c: Context) => {
 
 export const unassignPlanDistributionHandler = catchAsync(async (c: Context) => {
   const { id: menuPlanId } = c.req.param();
-  const { schoolId, kitchenId } = c.req.query() as unknown as UnassignPlanDistributionQuerySchemaType;
+  const { schoolId } = c.req.query() as unknown as UnassignPlanDistributionQuerySchemaType;
 
-  await unassignPlanDistribution(menuPlanId, schoolId, kitchenId);
+  await unassignPlanDistribution(menuPlanId, schoolId);
 
   return c.json({ message: "Remove plan from school ." }, 200);
 });

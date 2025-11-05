@@ -9,7 +9,9 @@ import {
   kitchens,
   provinces,
   schools,
-  userSchools
+  userSchools,
+  userRoles,
+  roles
 } from "@/db/schemas";
 import { and, eq, desc, sql, or, SQL } from "drizzle-orm";
 import { db } from "@/db";
@@ -159,16 +161,27 @@ export async function getUserById(id: string) {
       dateOfBirth: userDetails.dateOfBirth,
       phoneNumber: userDetails.phoneNumber,
       fullName: sql<string>`CONCAT(${userDetails.firstName}, ' ', ${userDetails.lastName})`,
-      kitchenId: kitchens.id,
-      kitchenName: kitchens.name,
-      kitchenAddress: kitchens.address,
-      lon: kitchens.lon,
-      lat: kitchens.lat,
-      province: provinces.name,
-      schoolId: schools.id,
-      schoolName: schools.name,
-      schoolAddress: schools.address,
-      imageURL: userDetails.imageURL
+      kitchen: {
+        id: kitchens.id,
+        name: kitchens.name,
+        address: kitchens.address,
+        lon: kitchens.lon,
+        lat: kitchens.lat,
+        province: provinces.name,
+        imageURL: kitchens.imageURL
+      },
+      school: {
+        id: schools.id,
+        name: schools.name,
+        address: schools.address,
+        kitchenId: schools.kitchenId,
+        phoneNumber: schools.phoneNumber
+      },
+      role: {
+        id: roles.id,
+        name: roles.name,
+        domain: roles.domain,
+      }
     })
     .from(users)
     .innerJoin(userDetails, eq(userDetails.userId, users.id))
@@ -177,29 +190,15 @@ export async function getUserById(id: string) {
     .leftJoin(provinces, eq(provinces.id, kitchens.provinceId))
     .leftJoin(userSchools, eq(userSchools.userId, users.id))
     .leftJoin(schools, eq(schools.id, userSchools.schoolId))
+    .leftJoin(userRoles, eq(userRoles.userId, users.id))
+    .leftJoin(roles, eq(roles.id, userRoles.roleId))
     .where(and(eq(users.id, id), eq(users.isDeleted, false)))
     .limit(1);
 
   const u = user[0];
   if (!u) return null;
 
-  return {
-    id: u.id,
-    email: u.email,
-    dateOfBirth: u.dateOfBirth,
-    phoneNumber: u.phoneNumber,
-    fullName: u.fullName,
-    kitchenId: u.kitchenId ?? null,
-    kitchenName: u.kitchenName ?? null,
-    kitchenAddress: u.kitchenAddress ?? null,
-    lon: u.lon ?? null,
-    lat: u.lat ?? null,
-    province: u.province ?? null,
-    schoolId: u.schoolId ?? null,
-    schoolName: u.schoolName ?? null,
-    schoolAddress: u.schoolAddress ?? null,
-    imageURL: u.imageURL,
-  };
+  return u;
 }
 
 export async function updateUser(id: string, data: UpdateUserInput & { updated_by: string; }) {

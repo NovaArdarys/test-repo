@@ -6,7 +6,7 @@ import {
   drivers,
   kitchens,
   menuPlans,
-  menuPlanSchoolsKitchen,
+  menuPlanSchools,
   schools,
 } from '@/db/schemas';
 import { eq, InferInsertModel } from 'drizzle-orm';
@@ -48,15 +48,15 @@ export async function createAutoDelivery(data: CreateAutoDeliveryInput) {
 
     const planSchools = await tx
       .select({
-        schoolId: menuPlanSchoolsKitchen.schoolId,
-        menuPlanId: menuPlanSchoolsKitchen.menuPlanId,
+        schoolId: menuPlanSchools.schoolId,
+        menuPlanId: menuPlanSchools.menuPlanId,
         lat: schools.lat,
         lon: schools.lon,
         name: schools.name,
       })
-      .from(menuPlanSchoolsKitchen)
-      .innerJoin(schools, eq(menuPlanSchoolsKitchen.schoolId, schools.id))
-      .where(eq(menuPlanSchoolsKitchen.menuPlanId, data.menuPlanId));
+      .from(menuPlanSchools)
+      .innerJoin(schools, eq(menuPlanSchools.schoolId, schools.id))
+      .where(eq(menuPlanSchools.menuPlanId, data.menuPlanId));
 
     if (!planSchools.length)
       throw new Error('No schools found for this menu plan');

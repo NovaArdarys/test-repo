@@ -63,7 +63,6 @@ export type AssignFoodToMenuPlanSchemaType = z.infer<typeof assignFoodToMenuPlan
 
 export const assignPlanDistributionSchema = z.object({
   schoolId: z.string().nonempty("School required"),
-  kitchenId: z.string().nonempty("Kitchen required"),
 });
 
 export type AssignPlanDistributionSchemaType = z.infer<typeof assignPlanDistributionSchema>;
@@ -71,7 +70,6 @@ export type AssignPlanDistributionSchemaType = z.infer<typeof assignPlanDistribu
 
 export const unassignPlanDistributionQuerySchema = z.object({
   schoolId: z.string().nonempty("Query param required"),
-  kitchenId: z.string().nonempty("Query param required"),
 });
 
 export type UnassignPlanDistributionQuerySchemaType = z.infer<typeof unassignPlanDistributionQuerySchema>;

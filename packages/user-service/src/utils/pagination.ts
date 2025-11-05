@@ -1,4 +1,4 @@
-import { sql, SQL } from "drizzle-orm";
+import { inArray, notInArray, sql, SQL } from "drizzle-orm";
 import { db } from "../db";
 
 export interface PaginationMeta {
@@ -17,13 +17,7 @@ export interface PaginatedWhereParams<T extends Record<string, any>> {
   limit: number;
 }
 
-type FilterValue =
-  | string
-  | number
-  | boolean
-  | Array<string | number | boolean>
-  | SQL;
-
+type FilterValue = string | number | boolean | Array<string | number | boolean> | SQL;
 
 type ConditionOperator =
   | { eq?: FilterValue; }
@@ -41,9 +35,18 @@ type FieldCondition<T> = FilterValue | ConditionOperator;
 
 export function buildWhere<T extends Record<string, any>>(
   table: T,
-  conditions: Partial<Record<keyof T, FieldCondition<T>>>
+  conditions: Partial<Record<keyof T, any>>
 ): SQL | undefined {
   const clauses: SQL[] = [];
+
+  for (const [k, v] of Object.entries(conditions)) {
+    if (v && typeof v === 'object') {
+      const validKeys = Object.entries((v: any) => v).filter(([_, val]) =>
+        Array.isArray(val) ? val.length > 0 : val !== undefined && val !== null
+      );
+      if (validKeys.length === 0) delete (conditions as any)[k];
+    }
+  }
 
   for (const [key, rawValue] of Object.entries(conditions)) {
     if (rawValue === undefined || rawValue === null) continue;
@@ -55,16 +58,12 @@ export function buildWhere<T extends Record<string, any>>(
       continue;
     }
 
-    if (
-      typeof rawValue === "string" ||
-      typeof rawValue === "number" ||
-      typeof rawValue === "boolean"
-    ) {
+    if (["string", "number", "boolean"].includes(typeof rawValue)) {
       clauses.push(sql`${column} = ${rawValue}`);
       continue;
     }
 
-    const condition = rawValue as ConditionOperator;
+    const condition = rawValue as any;
 
     if ("eq" in condition) clauses.push(sql`${column} = ${condition.eq}`);
     if ("ne" in condition) clauses.push(sql`${column} <> ${condition.ne}`);
@@ -73,21 +72,18 @@ export function buildWhere<T extends Record<string, any>>(
     if ("gt" in condition) clauses.push(sql`${column} > ${condition.gt}`);
     if ("gte" in condition) clauses.push(sql`${column} >= ${condition.gte}`);
     if ("like" in condition) clauses.push(sql`${column} LIKE ${condition.like}`);
-    if ("ilike" in condition)
-      clauses.push(sql`${column} ILIKE ${condition.ilike}`);
-    if ("in" in condition && Array.isArray(condition.in))
-      clauses.push(sql`${column} = ANY(${sql.raw(
-        `ARRAY[${condition.in.map((v) => `'${v}'`).join(",")}]`
-      )})`);
-    if ("nin" in condition && Array.isArray(condition.nin))
-      clauses.push(sql`${column} <> ALL(${sql.raw(
-        `ARRAY[${condition.nin.map((v) => `'${v}'`).join(",")}]`
-      )})`);
+    if ("ilike" in condition) clauses.push(sql`${column} ILIKE ${condition.ilike}`);
+
+    if ("in" in condition && Array.isArray(condition.in) && condition.in.length > 0)
+      clauses.push(sql`${inArray(column, condition.in)}`);
+
+    if ("nin" in condition && Array.isArray(condition.nin) && condition.nin.length > 0)
+      clauses.push(sql`${notInArray(column, condition.nin)}`);
   }
 
-  if (clauses.length === 0) return undefined;
-  return sql.join(clauses, sql` AND `);
+  return clauses.length > 0 ? sql.join(clauses, sql` AND `) : undefined;
 }
+
 export async function buildPaginatedWhere<T extends Record<string, any>>({
   table,
   tableName,
@@ -96,22 +92,29 @@ export async function buildPaginatedWhere<T extends Record<string, any>>({
   page,
   limit,
 }: PaginatedWhereParams<T>): Promise<{ where?: SQL; meta: PaginationMeta; }> {
-  let where = buildWhere(table, base);
+  const baseWhere = buildWhere(table, base);
+  const validExtras = (extra || []).filter((x): x is SQL => Boolean(x));
 
-  const validExtras = extra.filter(Boolean) as SQL[];
-  if (validExtras.length > 0) {
-    const combined = sql.join(validExtras, sql` AND `);
-    where = where ? sql`${where} AND ${combined}` : combined;
+  const allConditions: SQL[] = [];
+  if (baseWhere) allConditions.push(baseWhere);
+  if (validExtras.length > 0) allConditions.push(sql.join(validExtras, sql` AND `));
+
+  const hasConditions = allConditions.length > 0;
+  const where = hasConditions ? sql.join(allConditions, sql` AND `) : undefined;
+
+  let query: SQL;
+  if (hasConditions && where) {
+    query = sql`SELECT COUNT(*)::int AS total FROM ${sql.raw(tableName)} WHERE ${where}`;
+  } else {
+    query = sql`SELECT COUNT(*)::int AS total FROM ${sql.raw(tableName)}`;
   }
 
-  const totalResult = await db.execute<{ total: number; }>(
-    sql`
-      SELECT COUNT(*)::int AS total
-      FROM ${sql.raw(tableName)}
-      ${where ? sql`WHERE ${where}` : sql``}
-    `
-  );
+  try {
+    const q = (query as any).getSQL?.() ?? (query as any).toQuery?.();
+    console.log("🧩 FINAL SQL:", q?.text ?? "(no text)");
+  } catch { }
 
+  const totalResult = await db.execute<{ total: number; }>(query);
   const total = totalResult.rows?.[0]?.total ?? 0;
 
   return {

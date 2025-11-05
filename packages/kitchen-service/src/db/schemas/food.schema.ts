@@ -41,7 +41,7 @@ export const menuPlans = pgTable('menu_plans', {
   updatedBy: uuid('updated_by'),
 });
 
-export const menuPlanSchools = pgTable('menu_plan_schools_kitchen', {
+export const menuPlanSchools = pgTable('menu_plan_schools', {
   id: uuid('id').primaryKey().defaultRandom(),
   menuPlanId: uuid('menu_plan_id').notNull(),
   schoolId: uuid('school_id').notNull(),

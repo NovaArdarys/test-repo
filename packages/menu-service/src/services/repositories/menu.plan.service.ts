@@ -1,8 +1,8 @@
 import { db } from "@/db";
-import { foodItems, kitchens, menuPlans, menuPlanSchoolsKitchen, menuFoodItem, schools, dailyReports, stepReports, drivers, masterSteps, suppliersFoodItems } from "@/db/schemas";
+import { foodItems, kitchens, menuPlans, menuPlanSchools, menuFoodItem, schools, dailyReports, stepReports, drivers, masterSteps, suppliersFoodItems } from "@/db/schemas";
 import { eq, and, sql, desc, InferSelectModel, InferInsertModel } from "drizzle-orm";
 import { FoodItem } from "./food.item.service";
-import { MenuPlanSchoolsKitchen } from "./menu.plan.schools.kitchen.service";
+import { MenuPlanSchools } from "./menu.plan.schools.kitchen.service";
 import { isEmpty } from "lodash";
 import { buildPaginatedWhere } from "@/utils/pagination";
 
@@ -51,21 +51,18 @@ export async function getMenuPlansList({
             planStartDate: { gte: startDate ?? undefined },
             planEndDate: { lte: endDate ?? undefined },
             name: menuPlanName ? { ilike: `%${menuPlanName}%` } : undefined,
+            // kitchenId: !isEmpty(kitchenIds) && entityType === "kitchen"
+            //     ? { in: kitchenIds }
+            //     : sql`${menuPlans.kitchenId} IS NOT NULL`,
         },
         extra: [
-            !isEmpty(kitchenIds) && entityType === "kitchen"
-                ? sql`${menuPlans.id} IN (
-          SELECT menu_plan_id 
-          FROM menu_plan_schools_kitchen 
-          WHERE kitchen_id = ANY(ARRAY[${sql.raw(
-                    kitchenIds.map((id) => `'${id}'`).join(",")
-                )}]::uuid[])
-        )`
+            entityType === "kitchen" && isEmpty(kitchenIds)
+                ? sql`${menuPlans.kitchenId} IS NOT NULL`
                 : undefined,
             !isEmpty(schoolIds) && entityType === "school"
                 ? sql`${menuPlans.id} IN (
           SELECT menu_plan_id 
-          FROM menu_plan_schools_kitchen 
+          FROM menu_plan_schools
           WHERE school_id = ANY(ARRAY[${sql.raw(
                     schoolIds.map((id) => `'${id}'`).join(",")
                 )}]::uuid[])
@@ -76,11 +73,15 @@ export async function getMenuPlansList({
         limit,
     });
 
+    console.log(where?.getSQL(), "==== sql ======");
+
+
     const data = await db.query.menuPlans.findMany({
         where: () => where,
         columns: {
             id: true,
             name: true,
+            kitchenId: true,
             planEndDate: true,
             planStartDate: true,
         },
@@ -106,7 +107,7 @@ export async function getMenuPlansList({
                     },
                 }
             },
-            menuPlanSchoolsKitchen: {
+            menuPlanSchools: {
                 with: {
                     school: {
                         columns: {
@@ -117,7 +118,6 @@ export async function getMenuPlansList({
                             updatedAt: true
                         }
                     },
-                    kitchen: true,
                 }
             },
         },
@@ -139,11 +139,11 @@ export async function getMenuPlansList({
         });
 
         const schoolMap = new Map<string, any>();
-        report.menuPlanSchoolsKitchen.forEach((mpsk) => {
+        report.menuPlanSchools.forEach((mpsk) => {
             if (mpsk.school?.id) schoolMap.set(mpsk.school.id, { ...mpsk.school, portion: 0 });
         });
 
-        const { menuPlanSchoolsKitchen, suppliersFoodItems, planEndDate, planStartDate, ...menuPlan } = report;
+        const { menuPlanSchools, suppliersFoodItems, planEndDate, planStartDate, ...menuPlan } = report;
 
         return {
             ...menuPlan,
@@ -195,7 +195,8 @@ export async function getMenuPlanById(
                     }
                 }
             },
-            menuPlanSchoolsKitchen: {
+            menuPlankitchen: true,
+            menuPlanSchools: {
                 with: {
                     school: {
                         columns: {
@@ -206,7 +207,6 @@ export async function getMenuPlanById(
                             updatedAt: true
                         }
                     },
-                    kitchen: true
                 }
             }
         }
@@ -231,7 +231,7 @@ export async function getMenuPlanById(
     });
 
     const schoolMap = new Map<string, any>();
-    data.menuPlanSchoolsKitchen.forEach((mpsk) => {
+    data.menuPlanSchools.forEach((mpsk) => {
         if (mpsk.school?.id)
             schoolMap.set(mpsk.school.id, {
                 ...mpsk.school,
@@ -239,7 +239,7 @@ export async function getMenuPlanById(
             });
     });
 
-    const { menuPlanSchoolsKitchen, suppliersFoodItems, planEndDate, planStartDate, ...menuPlan } = data;
+    const { menuPlanSchools, suppliersFoodItems, planEndDate, planStartDate, ...menuPlan } = data;
 
     const formattedData = {
         ...menuPlan,
@@ -325,13 +325,13 @@ export async function createMenuPlan(
                     status: data.status!,
                     updatedAt: new Date(),
                     updatedBy: data.createdBy,
+                    kitchenId: kitchenId
                 })
                 .returning();
 
             if (schoolsByKitchen.length > 0) {
-                await trx.insert(menuPlanSchoolsKitchen).values(
+                await trx.insert(menuPlanSchools).values(
                     schoolsByKitchen.map((school) => ({
-                        kitchenId,
                         schoolId: school.id,
                         menuPlanId: newPlan.id,
                         createdAt: newPlan.createdAt,
@@ -483,15 +483,14 @@ export async function updateMenuPlan(
             );
         }
 
-        await trx.delete(menuPlanSchoolsKitchen).where(eq(menuPlanSchoolsKitchen.menuPlanId, id));
+        await trx.delete(menuPlanSchools).where(eq(menuPlanSchools.menuPlanId, id));
         if (kitchenId) {
             const schoolsByKitchen = await trx.select().from(schools).where(eq(schools.kitchenId, kitchenId));
             if (schoolsByKitchen.length > 0) {
                 await Promise.all(
                     schoolsByKitchen.map((school) =>
-                        trx.insert(menuPlanSchoolsKitchen).values({
+                        trx.insert(menuPlanSchools).values({
                             menuPlanId: updatedPlan.id,
-                            kitchenId,
                             schoolId: school.id,
                             createdAt: updatedPlan.updatedAt,
                             createdBy: updatedBy!,
@@ -590,21 +589,22 @@ export async function getFoodItemsByMenuPlanId(menuFoodPlanId: string): Promise<
 export async function getDistributionByMenuPlanId(menuPlanId: string): Promise<
     Array<{
         distributionId: string;
-        school: MenuPlanSchoolsKitchen;
-        kitchen: MenuPlanSchoolsKitchen;
+        school: MenuPlanSchools;
+        kitchen: MenuPlanSchools;
     }>
 > {
     const distributionDetails = await db.select({
-        distributionId: menuPlanSchoolsKitchen.id,
+        distributionId: menuPlanSchools.id,
         school: schools,
         kitchen: kitchens,
     })
-        .from(menuPlanSchoolsKitchen)
-        .innerJoin(schools, eq(menuPlanSchoolsKitchen.schoolId, schools.id))
-        .innerJoin(kitchens, eq(menuPlanSchoolsKitchen.kitchenId, kitchens.id))
+        .from(menuPlanSchools)
+        .innerJoin(schools, eq(menuPlanSchools.schoolId, schools.id))
+        .innerJoin(menuPlans, eq(menuPlanSchools.menuPlanId, menuPlans.id))
+        .innerJoin(kitchens, eq(menuPlans.kitchenId, kitchens.id))
         .where(and(
-            eq(menuPlanSchoolsKitchen.menuPlanId, menuPlanId),
-            eq(menuPlanSchoolsKitchen.isDeleted, false),
+            eq(menuPlanSchools.menuPlanId, menuPlanId),
+            eq(menuPlanSchools.isDeleted, false),
             eq(schools.isDeleted, false),
             eq(kitchens.isDeleted, false)
         ));

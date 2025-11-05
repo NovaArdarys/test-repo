@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { dailyReports, foodItems, masterSteps, menuFoodItem, menuPlans, menuPlanSchoolsKitchen, schoolClassroom, stepReports, storage, suppliers, suppliersFoodItems } from "@/db/schemas";
+import { dailyReports, foodItems, masterSteps, menuFoodItem, menuPlans, menuPlanSchools, schoolClassroom, stepReports, storage, suppliers, suppliersFoodItems } from "@/db/schemas";
 import { kitchens, drivers, schools } from "@/db/schemas";
 import { APIPagination } from "@/types/paginations.type";
 import { buildPaginatedWhere } from "@/utils/pagination";
@@ -33,11 +33,11 @@ async function getMenuPlanDate(
   entityType: "school" | "kitchen",
   entityId: string
 ) {
-  const menuPlanByEntity = await db.query.menuPlanSchoolsKitchen.findFirst({
+  const menuPlanByEntity = await db.query.menuPlanSchools.findFirst({
     where:
       entityType === "school"
-        ? eq(menuPlanSchoolsKitchen.schoolId, entityId)
-        : eq(menuPlanSchoolsKitchen.kitchenId, entityId),
+        ? eq(menuPlanSchools.schoolId, entityId)
+        : undefined,
   });
 
   if (!menuPlanByEntity) return null;
@@ -45,6 +45,7 @@ async function getMenuPlanDate(
   const menuPlan = await db.query.menuPlans.findFirst({
     where: and(
       eq(menuPlans.id, menuPlanByEntity.menuPlanId),
+      eq(menuPlans.kitchenId, entityId),
       gte(menuPlans.planStartDate, sql`${date}`),
       lte(menuPlans.planEndDate, sql`${date}`)
     ),

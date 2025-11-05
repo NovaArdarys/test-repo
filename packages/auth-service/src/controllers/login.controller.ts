@@ -50,7 +50,7 @@ export const loginHandler = catchAsync(async (c) => {
     driver: {},
   };
 
-  console.log(findUser.drivers);
+  console.log(JSON.stringify(findUser));
 
   if (findUser.userKitchens?.length > 0) {
     context.kitchen = {
