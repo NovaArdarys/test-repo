@@ -72,6 +72,7 @@ export const eventReports = pgTable("event_reports", {
   date: date('date').notNull(),
   locaation: text('location'),
   description: text('location'),
+  isDeleted: boolean('is_deleted').default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   createdBy: uuid("created_by")
     .notNull()
