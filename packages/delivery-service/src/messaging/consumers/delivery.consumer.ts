@@ -30,14 +30,7 @@ async function handleStepCommit(data: z.infer<typeof stepCommittedSchema>) {
       removeOnFail: false,
     });
 
-    const result = await createAutoDelivery({
-      kitchenId: parsed.entityId,
-      menuPlanId: parsed.menuPlanId,
-      status: "PENDING",
-      createdBy: "00000000-0000-0000-0000-000000000000", // system user
-    });
-
-    console.log(`[DELIVERY EVENT] ✅ Auto delivery created for kitchen ${parsed.entityId}`, result);
+    console.log(`[DELIVERY EVENT] ✅ Auto delivery created for kitchen ${parsed.entityId}`);
   } else {
     console.log(`[DELIVERY EVENT] ⚠️ Skipped: entityType=${parsed.entityType}, allStepCompleted=${parsed.allStepCompleted}`);
   }
