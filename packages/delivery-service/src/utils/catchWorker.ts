@@ -1,6 +1,7 @@
 import { Worker, WorkerOptions } from "bullmq";
 import redis from "@/constants/redis";
 import { sendAppLog } from "@/messaging/publishers/log.publisher";
+import { handleDuplicateJob } from "./safeError";
 
 export function createLoggedWorker<T>(
   queueName: string,
@@ -26,6 +27,9 @@ export function createLoggedWorker<T>(
         });
       } catch (error: any) {
         console.error(`💥 [Worker] Job ${job.name} failed:`, error);
+        const handled = await handleDuplicateJob(job, error);
+        if (handled) return;
+
 
         await sendAppLog("ERROR", {
           userId: "system",

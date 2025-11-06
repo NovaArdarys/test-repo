@@ -58,6 +58,8 @@ export async function createAutoDelivery(data: CreateAutoDeliveryInput) {
       where: (mp, { eq }) => eq(mp.id, data.menuPlanId),
     });
 
+    if (!menuPlan) throw new Error("Menu plan not found");
+
     const planSchools = await tx
       .select({
         schoolId: menuPlanSchools.schoolId,
@@ -91,6 +93,7 @@ export async function createAutoDelivery(data: CreateAutoDeliveryInput) {
       assignments[driver.id].push(school);
     });
 
+    const stepsTemplate = await planEntity("driver");
     const deliveriesResult = [];
     const AVERAGE_SPEED_KMH = 30;
     const BUFFER_MINUTES = 10;
@@ -99,96 +102,85 @@ export async function createAutoDelivery(data: CreateAutoDeliveryInput) {
       const assigned = assignments[driver.id];
       if (!assigned.length) continue;
 
-      const totalDistance = assigned.reduce(
-        (sum, s) => sum + (s.distance ?? 0),
-        0
-      );
-
+      const totalDistance = assigned.reduce((sum, s) => sum + (s.distance ?? 0), 0);
       const estimatedMinutes = Math.round(
         (totalDistance / AVERAGE_SPEED_KMH) * 60 + BUFFER_MINUTES
       );
+      const estimatedDeliveryTime = new Date(Date.now() + estimatedMinutes * 60000);
 
-      const estimatedDeliveryTime = new Date();
-      estimatedDeliveryTime.setMinutes(
-        estimatedDeliveryTime.getMinutes() + estimatedMinutes
-      );
-
+      // 🧩 INSERT DELIVERY
       const [newDelivery] = await tx
         .insert(deliveries)
         .values({
           kitchenId: data.kitchenId,
           driverId: driver.id,
           startTime: new Date(),
-          estimatedDeliveryTime: estimatedDeliveryTime,
-          notes: `Pengiriman untuk ${schools.name}`,
-          status: data.status || 'PENDING',
+          estimatedDeliveryTime,
+          notes: `Pengiriman ${menuPlan.name}`,
+          status: data.status || "PENDING",
           createdAt: new Date(),
           updatedAt: new Date(),
           createdBy: data.createdBy,
           updatedBy: data.createdBy,
-          deliveryDate: menuPlan?.id
+          deliveryDate: menuPlan.planStartDate,
         })
         .returning();
 
-      const deliverySchoolsResult = await Promise.all(
-        assigned.map((s) =>
-          tx
-            .insert(deliverySchools)
-            .values({
-              deliveryId: newDelivery.id,
-              schoolId: s.schoolId,
-              menuPlanId: s.menuPlanId,
-              createdBy: data.createdBy,
-              status: 'PENDING',
-            })
-            .returning()
-        )
+      const deliverySchoolsBatch = assigned.map((s) => ({
+        deliveryId: newDelivery.id,
+        schoolId: s.schoolId,
+        menuPlanId: s.menuPlanId,
+        createdBy: data.createdBy,
+      }));
+      const insertedSchools = await tx
+        .insert(deliverySchools)
+        .values(deliverySchoolsBatch)
+        .returning();
+
+      // 📆 DAILY REPORTS
+      const dailyReportsBatch = insertedSchools.map((ds) => ({
+        date: format(new Date(), "yyyy-MM-dd"),
+        entityId: ds.id,
+        entityType: "driver" as const,
+        menuPlanId: ds.menuPlanId,
+        createdAt: new Date(),
+        createdBy: driver.userId,
+      }));
+      const insertedDailyReports = await tx
+        .insert(dailyReports)
+        .values(dailyReportsBatch)
+        .returning();
+
+      // 🧱 STEP REPORTS (flat insert)
+      const stepReportsBatch = insertedDailyReports.flatMap((dr) =>
+        stepsTemplate.map((step) => ({
+          dailyReportId: dr.id,
+          stepId: step.id,
+          isCompleted: false,
+          createdBy: driver.userId,
+        }))
       );
+      await tx.insert(stepReports).values(stepReportsBatch);
 
-      // driver(s);
-      for (const deliverySchool of deliverySchoolsResult.flat()) {
-        const [dailyDriver] = await tx
-          .insert(dailyReports)
-          .values({
-            date: format(new Date(), 'yyyy-MM-dd'),
-            entityId: deliverySchool.id,
-            entityType: "driver",
-            menuPlanId: deliverySchool.menuPlanId,
-            status: "PENDING",
-            createdAt: new Date(),
-            createdBy: driver.userId,
-          })
-          .returning();
-
-
-        const schoolSteps = await planEntity("driver");
-        await tx.insert(stepReports).values(
-          schoolSteps.map((step) => ({
-            dailyReportId: dailyDriver.id,
-            stepId: step.id,
-            isCompleted: false,
-            createdBy: driver.userId,
-          }))
-        );
-      }
-
+      // 📍 DRIVER LOCATION
       const [newLocation] = await tx
         .insert(driverLocations)
         .values({
           driverId: driver.id,
           deliveryId: newDelivery.id,
-          lat: kitchen?.lat?.toString() ?? "0",
-          lon: kitchen?.lon?.toString() ?? "0",
+          lat: kitchen.lat?.toString() ?? "0",
+          lon: kitchen.lon?.toString() ?? "0",
           createdBy: driver.userId,
         })
         .returning();
 
       deliveriesResult.push({
         delivery: newDelivery,
-        deliverySchools: deliverySchoolsResult.map((r) => r[0]),
+        schools: insertedSchools,
         location: newLocation,
       });
     }
+
 
     return deliveriesResult;
   });

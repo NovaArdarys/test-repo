@@ -24,7 +24,7 @@ async function handleStepCommit(data: z.infer<typeof stepCommittedSchema>) {
     console.log("🪅 Masuk:", parsed);
 
     await deliveryQueue.add("delivery-creation", parsed, {
-      jobId: `delivery|${parsed.entityId}|${parsed.menuPlanId}|${format(new Date(), "yyyyMMdd_HHmmss")}`,
+      jobId: `delivery|${parsed.entityId}|${parsed.menuPlanId}|${format(new Date(), "yyyyMMdd")}`,
       attempts: 3,
       backoff: { type: "exponential", delay: 3000 },
       removeOnComplete: true,

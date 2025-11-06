@@ -6,6 +6,7 @@ import { buildPaginatedWhere } from "@/utils/pagination";
 import { eq, and, desc, InferInsertModel, InferSelectModel, between, gte, lte, sql, inArray, SQLWrapper } from "drizzle-orm";
 import { isEmpty, orderBy } from "lodash";
 
+
 export async function getDriverDeliveries(params: {
   driverId: string;
   startDate?: string;
@@ -15,12 +16,18 @@ export async function getDriverDeliveries(params: {
 }) {
   const { driverId, startDate, endDate, page = 1, limit = 10 } = params;
 
-  const driverDeliveries = await db
+  // 1️⃣ Ambil data delivery utama dengan relasi utama
+  const baseQuery = db
     .select({
-      delivery: deliveries,
-      deliverySchool: deliverySchools,
-      menuPlan: menuPlans,
-      school: schools,
+      deliveryId: deliveries.id,
+      deliverySchoolId: deliverySchools.id,
+      menuPlanId: menuPlans.id,
+      planName: menuPlans.name,
+      planDate: menuPlans.planStartDate,
+      schoolId: schools.id,
+      schoolName: schools.name,
+      deliveryStatus: deliverySchools.status,
+      deliveredAt: deliverySchools.deliveredAt,
     })
     .from(deliveries)
     .leftJoin(deliverySchools, eq(deliveries.id, deliverySchools.deliveryId))
@@ -31,79 +38,113 @@ export async function getDriverDeliveries(params: {
     .limit(limit)
     .offset((page - 1) * limit);
 
-  console.log(driverDeliveries, '===== driverDeliveries ===== 🚲', driverId);
+  const driverDeliveries = await baseQuery;
 
-  const grouped = new Map();
+  if (driverDeliveries.length === 0) {
+    return {
+      data: [],
+      meta: { page, limit, total: 0, totalPages: 0 },
+    };
+  }
 
-  for (const row of driverDeliveries) {
-    const planId = row?.menuPlan?.id;
-    if (!grouped.has(planId)) {
-      grouped.set(planId, {
-        menuPlan: {
-          id: planId,
-          date: row?.menuPlan?.planStartDate,
-          name: row?.menuPlan?.name,
-          foodItems: [],
-        },
-        deliverySchools: [],
+  const deliverySchoolIds = driverDeliveries
+    .map((d) => d.deliverySchoolId)
+    .filter((id): id is string => id !== null);
+
+  const stepQuery = await db
+    .select({
+      deliverySchoolId: dailyReports.entityId,
+      dailyReportId: dailyReports.id,
+      stepId: stepReports.id,
+      isCompleted: stepReports.isCompleted,
+      notes: stepReports.notes,
+      stepKey: masterSteps.stepKey,
+      stepName: masterSteps.stepName,
+      stepOrder: masterSteps.stepOrder,
+      fileUrl: storage.fileUrl,
+    })
+    .from(dailyReports)
+    .innerJoin(stepReports, eq(dailyReports.id, stepReports.dailyReportId))
+    .leftJoin(masterSteps, eq(stepReports.stepId, masterSteps.id))
+    .leftJoin(storage, eq(stepReports.id, storage.entityId))
+    .where(inArray(dailyReports.entityId, deliverySchoolIds));
+
+  const stepsBySchool = stepQuery.reduce((acc, s) => {
+    if (!acc[s.deliverySchoolId]) acc[s.deliverySchoolId] = new Map();
+    const stepMap = acc[s.deliverySchoolId];
+
+    if (!stepMap.has(s.stepId)) {
+      stepMap.set(s.stepId, {
+        id: s.stepId,
+        isCompleted: s.isCompleted,
+        notes: s.notes,
+        stepKey: s.stepKey,
+        stepName: s.stepName,
+        stepOrder: s.stepOrder,
+        imageURLs: [],
       });
     }
 
-    const [dailyReport] = await db
-      .select()
-      .from(dailyReports)
-      .where(row?.deliverySchool?.id ? eq(dailyReports.entityId, row?.deliverySchool?.id) : undefined);
-
-    const stepList = await db
-      .select({
-        step: stepReports,
-        stepMeta: masterSteps,
-        file: storage,
-      })
-      .from(stepReports)
-      .leftJoin(masterSteps, eq(stepReports.stepId, masterSteps.id))
-      .leftJoin(storage, eq(stepReports.id, storage.entityId))
-      .where(eq(stepReports.dailyReportId, dailyReport.id));
-
-    const stepMap = new Map();
-    for (const s of stepList) {
-      const sid = s.step.id;
-      if (!stepMap.has(sid)) {
-        stepMap.set(sid, {
-          id: sid,
-          isCompleted: s.step.isCompleted,
-          notes: s.step.notes,
-          stepKey: s?.stepMeta?.stepKey,
-          stepName: s?.stepMeta?.stepName,
-          stepOrder: s?.stepMeta?.stepOrder,
-          imageURLs: [],
-        });
-      }
-      const step = stepMap.get(sid);
-      if (s.file?.fileUrl && !step.imageURLs.includes(s.file.fileUrl)) {
-        step.imageURLs.push(s.file.fileUrl);
-      }
+    const step = stepMap.get(s.stepId);
+    if (s.fileUrl && !step.imageURLs.includes(s.fileUrl)) {
+      step.imageURLs.push(s.fileUrl);
     }
 
-    grouped.get(planId).deliverySchools.push({
-      id: row?.deliverySchool?.id,
+    return acc;
+  }, {} as Record<string, Map<string, any>>);
+
+  const groupedByPlan = driverDeliveries.reduce((acc, row) => {
+    if (!row.menuPlanId) return acc;
+
+    if (!acc[row.menuPlanId]) {
+      acc[row.menuPlanId] = {
+        menuPlan: {
+          id: row.menuPlanId,
+          date: row.planDate,
+          name: row.planName,
+        },
+        delivery: [],
+      };
+    }
+
+    const steps = row.deliverySchoolId && stepsBySchool[row.deliverySchoolId]
+      ? Array.from(stepsBySchool[row.deliverySchoolId].values()).sort(
+        (a, b) => a.stepOrder - b.stepOrder
+      )
+      : [];
+
+    acc[row.menuPlanId].delivery.push({
+      id: row.deliveryId,
       school: {
-        id: row?.school?.id,
-        name: row?.school?.name,
+        id: row.schoolId,
+        name: row.schoolName,
+        portion: 0
       },
-      status: row?.deliverySchool?.status,
-      deliveredAt: row?.deliverySchool?.deliveredAt,
-      steps: Array.from(stepMap.values()).sort((a, b) => a.stepOrder - b.stepOrder),
+      status: row.deliveryStatus,
+      deliveredAt: row.deliveredAt,
+      steps,
     });
-  }
+
+    return acc;
+  }, {} as Record<string, any>);
+
+  const data = Object.values(groupedByPlan);
+  const total = data.length;
+
+  const [{ count }] =
+    (await db
+      .select({ count: sql<number>`COUNT(*)` })
+      .from(deliveries)
+      .where(eq(deliveries.driverId, driverId))) || [];
 
   return {
-    data: Array.from(grouped.values()),
+    data,
     meta: {
       page,
       limit,
-      total: grouped.size,
-      totalPages: Math.ceil(grouped.size / limit),
+      total: count ?? total,
+      totalPages: Math.ceil((count ?? total) / limit),
     },
   };
 }
+
