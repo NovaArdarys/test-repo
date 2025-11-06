@@ -1,19 +1,11 @@
 import { z } from "zod";
 import { Channel } from "amqplib";
 import { EXCHANGES } from "../events/exchanges";
-import { entityTypeEnum } from "@/db/schemas";
 import { createAutoDelivery } from "@/services/repositories/delivery.school.driver.service";
 import { safeConsume } from "../utils/consumerHelper";
-
-// ===== VALIDATORS =====
-const entityTypeValidator = z.enum(entityTypeEnum.enumValues);
-
-const stepCommittedSchema = z.object({
-  menuPlanId: z.string(),
-  entityType: entityTypeValidator,
-  entityId: z.string(),
-  allStepCompleted: z.boolean(),
-});
+import { stepCommittedSchema } from "@/types/delivery.type";
+import { deliveryQueue } from "@/jobs/queue/delivery.queue";
+import { format } from "date-fns";
 
 // ===== QUEUES =====
 const STEP_QUEUE_NAME = "delivery_service_step_queue";
@@ -23,14 +15,21 @@ const LOG_QUEUE_NAME = "delivery_service_log_queue";
 const LOG_ROUTING_KEY = "log.#";
 
 // ================= HANDLERS =================
-
 // Handle Step Commit (trigger delivery)
 async function handleStepCommit(data: z.infer<typeof stepCommittedSchema>) {
   const parsed = stepCommittedSchema.parse(data);
   console.log("🪅 [DELIVERY EVENT IN] Parsed:", parsed);
 
-  // Jika step berasal dari kitchen dan sudah complete → buat delivery otomatis
   if (parsed.entityType === "kitchen" && parsed.allStepCompleted) {
+
+    await deliveryQueue.add("delivery-creation", parsed, {
+      jobId: `delivery:${parsed.entityId}:${parsed.menuPlanId}:${format(new Date(), "yyyyMMdd")}`,
+      attempts: 3,
+      backoff: { type: "exponential", delay: 3000 },
+      removeOnComplete: true,
+      removeOnFail: false,
+    });
+
     const result = await createAutoDelivery({
       kitchenId: parsed.entityId,
       menuPlanId: parsed.menuPlanId,

@@ -1,14 +1,18 @@
 import { db } from '@/db';
 import {
+  dailyReports,
   deliveries,
   deliverySchools,
   driverLocations,
   drivers,
   kitchens,
+  masterSteps,
   menuPlans,
   menuPlanSchools,
   schools,
+  stepReports,
 } from '@/db/schemas';
+import { format } from 'date-fns';
 import { eq, InferInsertModel } from 'drizzle-orm';
 
 interface CreateAutoDeliveryInput {
@@ -16,6 +20,10 @@ interface CreateAutoDeliveryInput {
   menuPlanId: string;
   createdBy: string;
   status?: 'PENDING' | 'IN_PROGRESS' | 'DELIVERED' | 'FAILED';
+}
+
+async function planEntity(entityType: string) {
+  return db.query.masterSteps.findMany({ where: eq(masterSteps.entityType, entityType as any) });
 }
 
 function distance(lat1: number, lon1: number, lat2: number, lon2: number) {
@@ -131,6 +139,33 @@ export async function createAutoDelivery(data: CreateAutoDeliveryInput) {
             .returning()
         )
       );
+
+      // driver(s);
+      for (const deliverySchool of deliverySchoolsResult.flat()) {
+        const [dailyDriver] = await tx
+          .insert(dailyReports)
+          .values({
+            date: format(new Date(), 'yyyy-MM-dd'),
+            entityId: deliverySchool.id,
+            entityType: "driver",
+            menuPlanId: deliverySchool.menuPlanId,
+            status: "PENDING",
+            createdAt: new Date(),
+            createdBy: data.createdBy,
+          })
+          .returning();
+
+
+        const schoolSteps = await planEntity("driver");
+        await tx.insert(stepReports).values(
+          schoolSteps.map((step) => ({
+            dailyReportId: dailyDriver.id,
+            stepId: step.id,
+            isCompleted: false,
+            createdBy: data.createdBy,
+          }))
+        );
+      }
 
       const [newLocation] = await tx
         .insert(driverLocations)
