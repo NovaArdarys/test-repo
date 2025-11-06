@@ -1,0 +1,81 @@
+import { Context } from "hono";
+import { catchAsync } from "@/utils/catchAsync";
+import {
+  createEventReport,
+  getEventReportById,
+  getEventReports,
+  updateEventReport,
+  softDeleteEventReport,
+} from "@/services/repositories/event.report.service";
+
+import {
+  CreateEventReportSchemaType,
+  UpdateEventReportSchemaType,
+  ListEventReportQuerySchemaType,
+} from "@/validator/event.report.validator";
+
+const getAuditFields = (c: Context) => ({
+  createdBy: c.get("userId"),
+  updatedBy: c.get("userId"),
+  updatedAt: new Date(),
+  createdAt: new Date(),
+});
+
+export const listEventReportsHandler = catchAsync(async (c: Context) => {
+  const query = c.req.query() as unknown as ListEventReportQuerySchemaType;
+  const page = parseInt(String(query.page || "1"));
+  const limit = parseInt(String(query.limit || "10"));
+  const reportType = query.reportType || undefined;
+  const date = query.date ? query.date : undefined;
+
+  const reports = await getEventReports({
+    page,
+    limit,
+    reportType,
+    date: date,
+  });
+
+  return c.json({ data: reports.data, meta: reports.meta }, 200);
+});
+
+export const createEventReportHandler = catchAsync(async (c: Context) => {
+  const body = await c.req.parseBody() as unknown as CreateEventReportSchemaType;
+  const { createdBy } = getAuditFields(c);
+
+  const newReport = await createEventReport({
+    ...body,
+    date: body.date,
+    createdBy,
+  });
+
+  return c.json({ data: newReport, message: "Event report created" }, 201);
+});
+
+export const getEventReportByIdHandler = catchAsync(async (c: Context) => {
+  const { id } = c.req.param();
+  const data = await getEventReportById(id);
+
+  return c.json({ data }, 200);
+});
+
+export const updateEventReportHandler = catchAsync(async (c: Context) => {
+  const { id } = c.req.param();
+  const body = await c.req.parseBody() as unknown as UpdateEventReportSchemaType;
+  const { updatedBy } = getAuditFields(c);
+
+  const updatedReport = await updateEventReport(id, {
+    ...body,
+    updatedBy,
+  });
+
+  return c.json({ data: updatedReport, message: "Event report updated" }, 200);
+});
+
+export const softDeleteEventReportHandler = catchAsync(async (c: Context) => {
+  const { id } = c.req.param();
+  const { updatedBy } = getAuditFields(c);
+
+  await softDeleteEventReport(id, updatedBy);
+
+  return c.json({ message: "Event report soft deleted" }, 200);
+});
