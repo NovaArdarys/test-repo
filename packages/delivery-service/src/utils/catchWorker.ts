@@ -1,65 +1,49 @@
-import { Worker, WorkerOptions, Job } from "bullmq";
+import { Worker, WorkerOptions } from "bullmq";
 import redis from "@/constants/redis";
 import { sendAppLog } from "@/messaging/publishers/log.publisher";
 
 export function createLoggedWorker<T>(
   queueName: string,
-  processor: (job: Job<T>) => Promise<void>,
+  handler: (job: any) => Promise<void>,
   options?: WorkerOptions
 ) {
   const worker = new Worker<T>(
     queueName,
     async (job) => {
-      const startTime = performance.now();
-      await sendAppLog("INFO", {
-        userId: "system",
-        message: `🚀 Worker started: ${queueName} | Job ${job.name} (${job.id})`,
-        path: `worker.${queueName}`,
-        ipAddress: "",
-      });
+      const start = performance.now();
+      console.log(`🧩 [Worker] Start ${job.name} (${job.id})`);
 
       try {
-        await processor(job);
+        await handler(job);
+        const duration = performance.now() - start;
+        console.log(`✅ [Worker] Job ${job.name} done in ${duration.toFixed(1)}ms`);
 
-        const duration = (performance.now() - startTime).toFixed(2);
         await sendAppLog("INFO", {
           userId: "system",
-          message: `Worker success: ${queueName} | Job ${job.name} (${job.id}) | ${duration}ms`,
-          path: `worker.${queueName}`,
-          ipAddress: "",
+          message: `[Worker:${queueName}] Job ${job.name} success`,
+          path: queueName,
+          ipAddress: "127.0.0.1",
         });
       } catch (error: any) {
+        console.error(`💥 [Worker] Job ${job.name} failed:`, error);
+
         await sendAppLog("ERROR", {
           userId: "system",
-          message: `Worker failed: ${queueName} | Job ${job.name} (${job.id}) | ${error.message}`,
-          path: `worker.${queueName}`,
-          ipAddress: "",
+          message: `[Worker:${queueName}] Job ${job.name} failed: ${error.message}`,
+          path: queueName,
+          ipAddress: "127.0.0.1",
         });
-        throw error;
       }
     },
-    {
-      connection: redis,
-      ...options,
-    }
+    { connection: redis, ...options }
   );
 
-  worker.on("failed", async (job, err) => {
-    await sendAppLog("ERROR", {
-      userId: "system",
-      message: `Job failed: ${queueName} | ${job?.name} (${job?.id}) | ${err.message}`,
-      path: `worker.${queueName}`,
-      ipAddress: "",
-    });
+  worker.on("completed", (job) => {
+    console.log(`🎉 [Worker] Job ${job.name} (${job.id}) completed`);
   });
 
-  worker.on("completed", async (job) => {
-    await sendAppLog("INFO", {
-      userId: "system",
-      message: `Job completed: ${queueName} | ${job.name} (${job.id})`,
-      path: `worker.${queueName}`,
-      ipAddress: "",
-    });
+  worker.on("failed", (job, err) => {
+    console.error(`💥 [Worker] Job ${job?.name} (${job?.id}) failed:`, err);
   });
 
   return worker;

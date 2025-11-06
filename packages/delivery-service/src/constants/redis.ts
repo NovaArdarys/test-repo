@@ -4,6 +4,7 @@ const redis = new Redis({
   host: "redis",
   port: 6379,
   password: process.env.REDIS_PASSWORD || "password",
+  maxRetriesPerRequest: null
 });
 
 redis.on("connect", () => {

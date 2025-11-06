@@ -151,7 +151,7 @@ export async function createAutoDelivery(data: CreateAutoDeliveryInput) {
             menuPlanId: deliverySchool.menuPlanId,
             status: "PENDING",
             createdAt: new Date(),
-            createdBy: data.createdBy,
+            createdBy: driver.userId,
           })
           .returning();
 
@@ -162,7 +162,7 @@ export async function createAutoDelivery(data: CreateAutoDeliveryInput) {
             dailyReportId: dailyDriver.id,
             stepId: step.id,
             isCompleted: false,
-            createdBy: data.createdBy,
+            createdBy: driver.userId,
           }))
         );
       }
@@ -174,7 +174,7 @@ export async function createAutoDelivery(data: CreateAutoDeliveryInput) {
           deliveryId: newDelivery.id,
           lat: kitchen?.lat?.toString() ?? "0",
           lon: kitchen?.lon?.toString() ?? "0",
-          createdBy: data.createdBy,
+          createdBy: driver.userId,
         })
         .returning();
 

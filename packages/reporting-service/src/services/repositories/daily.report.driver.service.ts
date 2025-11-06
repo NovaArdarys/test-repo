@@ -31,7 +31,6 @@ export async function getDriverDeliveries(params: {
     .limit(limit)
     .offset((page - 1) * limit);
 
-  // 2️⃣ Group by menuPlan
   const grouped = new Map();
 
   for (const row of driverDeliveries) {
@@ -48,7 +47,6 @@ export async function getDriverDeliveries(params: {
       });
     }
 
-    // Ambil dailyReport dari deliverySchool
     const [dailyReport] = await db
       .select()
       .from(dailyReports)

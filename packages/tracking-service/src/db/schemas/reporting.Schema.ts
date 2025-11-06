@@ -64,3 +64,20 @@ export const stepReports = pgTable("step_reports", {
     onDelete: "set null",
   }),
 });
+
+export const eventReports = pgTable("event_reports", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name"),
+  reportType: text('report_type'),
+  date: date('date').notNull(),
+  locaation: text('location'),
+  description: text('location'),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  createdBy: uuid("created_by")
+    .notNull()
+    .references(() => users.id, { onDelete: "restrict" }),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  updatedBy: uuid("updated_by").references(() => users.id, {
+    onDelete: "set null",
+  }),
+});
