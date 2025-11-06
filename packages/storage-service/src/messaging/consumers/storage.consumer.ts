@@ -5,16 +5,6 @@ import { safeConsume } from "../utils/consumerHelper";
 import { storageClientCommittedSchema } from "@/validator/storage.validator";
 import { storageQueue } from "@/jobs/queue/storage.queue";
 
-// ===== VALIDATORS =====
-const storageCommitSchema = z.object({
-  tempPath: z.string(),
-  targetPath: z.string(),
-  tmpId: z.string().optional(),
-  entityType: z.string().optional(),
-  entityId: z.string().optional(),
-  meta: z.record(z.string(), z.any()).optional(),
-});
-
 // ===== QUEUES =====
 const CLIENT_STORAGE_QUEUE_NAME = "client_storage_commit_queue";
 const CLIENT_STORAGE_ROUTING_KEY = "client.storage.commit";
@@ -23,7 +13,6 @@ const LOG_QUEUE_NAME = "storage_service_log_queue";
 const LOG_ROUTING_KEY = "log.#";
 
 // ================= HANDLERS =================
-
 // Storage Listener from clinet
 async function handleClientStorageCommit(data: z.infer<typeof storageClientCommittedSchema>) {
   const parsed = storageClientCommittedSchema.parse(data);

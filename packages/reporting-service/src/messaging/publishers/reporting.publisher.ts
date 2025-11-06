@@ -16,3 +16,19 @@ export async function publishStepUpdate(data: StorageUploadEvent) {
     console.error("[STORAGE PUBLISH ERROR]", err);
   }
 }
+
+export interface EventReportCommit {
+  entityId: string;
+  entityType?: string;
+  storageIds: string[];
+}
+
+export async function publishEventReportCommit(data: EventReportCommit) {
+  try {
+    await safePublish(EXCHANGES.REPORT, "client.storage.commit", data);
+    console.log(`Published ${data.entityType}`);
+  } catch (err) {
+    console.error("[STORAGE PUBLISH ERROR]", err);
+  }
+}
+

@@ -1,10 +1,10 @@
 // retryPublisher.worker.ts
-import redis from "@/constants/redis";
+import { redisShared } from "@/constants/redis";
 import { getRabbitMQChannel } from "../broker";
 
 export async function retryOutboxPublishes() {
   const channel = getRabbitMQChannel();
-  const keys = await redis.keys("outbox:*");
+  const keys = await redisShared.keys("outbox:*");
 
   if (keys.length === 0) {
     console.log("[OUTBOX] No pending messages.");
@@ -12,7 +12,7 @@ export async function retryOutboxPublishes() {
   }
 
   for (const key of keys) {
-    const data = await redis.get(key);
+    const data = await redisShared.get(key);
     if (!data) continue;
 
     const [, exchange, routingKey] = key.split(":");
@@ -25,7 +25,7 @@ export async function retryOutboxPublishes() {
           console.warn(`[OUTBOX RETRY] ❌ Failed to re-publish ${key}:`, err.message);
         } else {
           console.log(`[OUTBOX RETRY] ✅ Successfully re-published ${key}`);
-          await redis.del(key);
+          await redisShared.del(key);
         }
       });
     } catch (err) {

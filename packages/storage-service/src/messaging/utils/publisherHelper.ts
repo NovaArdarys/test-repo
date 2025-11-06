@@ -1,5 +1,5 @@
 // publishHelper.ts
-import redis from "@/constants/redis";
+import { redisShared } from "@/constants/redis";
 import { getRabbitMQChannel } from "../broker";
 import { v4 as uuidv4 } from "uuid";
 
@@ -26,10 +26,10 @@ export async function safePublish(exchange: string, routingKey: string, data: an
   const message = JSON.stringify(payload);
   const outboxKey = `outbox:${exchange}:${routingKey}:${payload._meta.eventId}`;
 
-  await redis.set(outboxKey, message);
+  await redisShared.set(outboxKey, message);
   await channel.assertExchange(exchange, "topic", { durable: true });
 
-  await redis.hset(`eventlog:${payload._meta.eventId}`, {
+  await redisShared.hset(`eventlog:${payload._meta.eventId}`, {
     exchange,
     routingKey,
     publishedAt: new Date().toISOString(),
@@ -45,7 +45,7 @@ export async function safePublish(exchange: string, routingKey: string, data: an
       }
 
       console.log(`[RABBITMQ] ✅ Published [${routingKey}] (${payload._meta.eventId})`);
-      await redis.del(outboxKey);
+      await redisShared.del(outboxKey);
       resolve();
     });
   });

@@ -1,6 +1,6 @@
 // event.monitor.route.ts
 import { Hono } from "hono";
-import redis from "@/constants/redis";
+import { redisShared } from "@/constants/redis";
 
 export const eventMonitorRoute = new Hono();
 
@@ -9,7 +9,7 @@ eventMonitorRoute.get("/", async (c) => {
     const statusFilter = c.req.query("status");
     const consumerFilter = c.req.query("consumer");
 
-    const keys = await redis.keys("eventlog:*");
+    const keys = await redisShared.keys("eventlog:*");
     if (keys.length === 0) {
       return c.json({ message: "No events logged yet", data: [] });
     }
@@ -17,7 +17,7 @@ eventMonitorRoute.get("/", async (c) => {
     const events = [];
     for (const key of keys) {
       const eventId = key.split(":")[1];
-      const log = await redis.hgetall(key);
+      const log = await redisShared.hgetall(key);
       const event = {
         eventId,
         status: log.status || "unknown",

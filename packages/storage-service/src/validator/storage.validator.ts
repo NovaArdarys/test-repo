@@ -27,7 +27,10 @@ export const uploadBodySchema = z.object({
 export type uploadBodyType = z.infer<typeof uploadBodySchema>;
 
 export const storageClientCommittedSchema = z.object({
-  storageId: z.string(),
+  storageId: z.string().optional(),
+  storageIds: z.array(
+    z.string()
+  ).optional(),
   entityType: entityTypeValidator,
   entityId: z.string(),
   meta: z.record(z.string(), z.any()).optional(),

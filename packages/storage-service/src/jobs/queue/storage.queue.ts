@@ -1,7 +1,7 @@
 import { Queue } from 'bullmq';
-import redis from '@/constants/redis';
+import { redisBull } from '@/constants/redis';
 import { StorageClientCommittedType, } from '@/validator/storage.validator';
-
-export const storageQueue = new Queue<StorageClientCommittedType>('storage-client-queue', {
-  connection: redis
+export const STORAGE_CLIENT_QUEUE = 'storage-client-queue';
+export const storageQueue = new Queue<StorageClientCommittedType>(STORAGE_CLIENT_QUEUE, {
+  connection: redisBull
 });

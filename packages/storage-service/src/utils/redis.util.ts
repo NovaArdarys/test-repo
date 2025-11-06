@@ -1,5 +1,5 @@
 import { REDIS_PERMIISONS_KEY_PREFIX } from "@/constants/config";
-import redis from "@/constants/redis";
+import { redisShared } from "@/constants/redis";
 import { isEmpty } from "lodash";
 
 interface PermissionSchema {
@@ -9,7 +9,7 @@ interface PermissionSchema {
 
 export async function getPermissionsByRoleIdFromRedis(roleId: string): Promise<PermissionSchema[] | null> {
   const key = `${REDIS_PERMIISONS_KEY_PREFIX}${roleId}`;
-  const redisData = await redis.get(key);
+  const redisData = await redisShared.get(key);
   if (redisData) {
     const parsedData = JSON.parse(redisData);
 

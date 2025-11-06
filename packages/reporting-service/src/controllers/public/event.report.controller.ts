@@ -13,6 +13,7 @@ import {
   UpdateEventReportSchemaType,
   ListEventReportQuerySchemaType,
 } from "@/validator/event.report.validator";
+import { publishEventReportCommit } from "@/messaging/publishers/reporting.publisher";
 
 const getAuditFields = (c: Context) => ({
   createdBy: c.get("userId"),
@@ -47,6 +48,14 @@ export const createEventReportHandler = catchAsync(async (c: Context) => {
     date: body.date,
     createdBy,
   });
+
+  if (newReport) {
+    await publishEventReportCommit({
+      entityId: newReport.id,
+      storageIds: body.storageIds,
+      entityType: "other"
+    });
+  }
 
   return c.json({ data: newReport, message: "Event report created" }, 201);
 });

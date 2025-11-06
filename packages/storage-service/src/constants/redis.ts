@@ -1,17 +1,31 @@
 import Redis from "ioredis";
 
-const redis = new Redis({
+export const redisShared = new Redis({
   host: "redis",
   port: 6379,
   password: process.env.REDIS_PASSWORD || "password",
 });
 
-redis.on("connect", () => {
-  console.log("✅ Redis connected");
+export const redisBull = new Redis({
+  host: "redis",
+  port: 6379,
+  password: process.env.REDIS_PASSWORD || "password",
+  maxRetriesPerRequest: null,
 });
 
-redis.on("error", (err) => {
-  console.error("❌ Redis error", err);
+redisShared.on("connect", () => {
+  console.log("✅ Redis Shared connected");
 });
 
-export default redis;
+redisShared.on("error", (err) => {
+  console.error("❌ Redis Shared error", err);
+});
+
+
+redisBull.on("connect", () => {
+  console.log("✅ Redis Bull connected");
+});
+
+redisBull.on("error", (err) => {
+  console.error("❌ Redis Bull error", err);
+});

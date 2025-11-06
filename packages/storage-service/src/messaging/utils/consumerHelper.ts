@@ -1,6 +1,6 @@
 // consumerHelper.ts
 import { ConsumeMessage, Channel } from "amqplib";
-import redis from "@/constants/redis";
+import { redisShared } from "@/constants/redis";
 
 /**
  * consumer helper
@@ -24,16 +24,16 @@ export function safeConsume<T extends Record<string, any>>(
       if (!eventId) return channel.nack(msg, false, false);
 
       const redisKey = `processed:${eventId}`;
-      const alreadyProcessed = await redis.get(redisKey);
+      const alreadyProcessed = await redisShared.get(redisKey);
       if (alreadyProcessed) {
         console.log(`[SAFE CONSUME] Skip duplicate: ${eventId}`);
         return channel.ack(msg);
       }
 
       await handler(parsed, msg, channel);
-      await redis.set(redisKey, "done", "EX", 60 * 60 * 24);
+      await redisShared.set(redisKey, "done", "EX", 60 * 60 * 24);
 
-      await redis.hset(`eventlog:${eventId}`, {
+      await redisShared.hset(`eventlog:${eventId}`, {
         consumedBy: process.env.SERVICE_NAME || "kitchen_service",
         consumedAt: new Date().toISOString(),
         status: "consumed",

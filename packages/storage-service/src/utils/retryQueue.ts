@@ -1,4 +1,4 @@
-import redis from "@/constants/redis";
+import { redisShared } from "@/constants/redis";
 
 const RETRY_QUEUE = "retry:user-service:queue";
 
@@ -15,7 +15,7 @@ export async function enqueueRetry(payload: Omit<RetryPayload, "attempts">) {
     ...payload,
     attempts: 0,
   };
-  await redis.rpush(RETRY_QUEUE, JSON.stringify(job));
+  await redisShared.rpush(RETRY_QUEUE, JSON.stringify(job));
 }
 
 export async function processRetryQueue(
@@ -25,7 +25,7 @@ export async function processRetryQueue(
   console.log("[Retry] Worker started...");
 
   while (!(opts.stopSignal && opts.stopSignal())) {
-    const data = await redis.blpop(RETRY_QUEUE, 0);
+    const data = await redisShared.blpop(RETRY_QUEUE, 0);
     if (!data) continue;
 
     const [, value] = data;
@@ -46,13 +46,13 @@ export async function processRetryQueue(
 
       if (job.attempts >= job.maxAttempts) {
         console.error(`[Retry] Job ${job.id} failed permanently → move to dead-letter`, err.message);
-        await redis.rpush(`${RETRY_QUEUE}:dead`, JSON.stringify(job));
+        await redisShared.rpush(`${RETRY_QUEUE}:dead`, JSON.stringify(job));
       } else {
         const delay = job.backoffMs * job.attempts; // exponential backoff
         console.warn(`[Retry] Job ${job.id} failed (attempt ${job.attempts}), retry in ${delay}ms`);
 
         setTimeout(async () => {
-          await redis.rpush(RETRY_QUEUE, JSON.stringify(job));
+          await redisShared.rpush(RETRY_QUEUE, JSON.stringify(job));
         }, delay);
       }
     }

@@ -1,4 +1,4 @@
-import redis from "@/constants/redis";
+import { redisShared } from "@/constants/redis";
 
 export interface BreakerOptions {
   serviceName: string;
@@ -22,19 +22,19 @@ export async function callWithBreaker<T>(
   const openKey = `${namespace}:${serviceName}:openUntil`;
 
   const now = Date.now();
-  const openUntil = await redis.get(openKey);
+  const openUntil = await redisShared.get(openKey);
   if (openUntil && now < Number(openUntil)) {
     throw new Error(`Circuit open for ${serviceName}`);
   }
 
   try {
     const result = await fn();
-    await redis.del(failuresKey);
+    await redisShared.del(failuresKey);
     return result;
   } catch (err) {
-    const fails = await redis.incr(failuresKey);
+    const fails = await redisShared.incr(failuresKey);
     if (fails >= failureThreshold) {
-      await redis.set(openKey, String(now + cooldownMillis), "PX", cooldownMillis);
+      await redisShared.set(openKey, String(now + cooldownMillis), "PX", cooldownMillis);
     }
     throw err;
   }

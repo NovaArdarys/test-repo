@@ -1,7 +1,7 @@
 // /user-service/src/messaging/consumers/index.ts
 import * as amqplib from 'amqplib';
 import { setupStorageConsumer } from './storage.consumer';
-
+export * from "@/jobs/worker/storage.worker";
 
 export async function initializeConsumers(channel: amqplib.Channel): Promise<void> {
   try {
