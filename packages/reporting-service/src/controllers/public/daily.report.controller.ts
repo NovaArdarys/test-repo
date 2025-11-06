@@ -16,6 +16,7 @@ import {
 import { CreateDailyReportSchemaType, CreateStepReportSchemaType, UpdateDailyReportSchemaType } from "@/validator/daily.report.validator";
 import { publishStepUpdate } from "@/messaging/publishers/reporting.publisher";
 import { every } from "lodash";
+import { getDriverDeliveries } from "@/services/repositories/daily.report.driver.service";
 
 const getAuditFields = (c: Context) => ({
   createdBy: c.get('userId'),
@@ -36,7 +37,17 @@ export const listDailyReportsHandler = catchAsync(async (c: Context) => {
   const limit = parseInt(query.limit || '10');
   const search = query.search || '';
 
-  console.log(audit, "======== audit =======");
+  if (query.entityType === "driver") {
+    const data = await getDriverDeliveries({
+      driverId: audit.driverId?.[0],
+      startDate: query.startDate,
+      endDate: query.endDate,
+      page,
+      limit,
+    });
+
+    return c.json(data);
+  }
 
   const data = await getDailyReportsList({
     entityType: query.entityType,

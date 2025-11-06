@@ -513,8 +513,6 @@ export async function getDailyReportsList(params?: {
   };
 }
 
-
-
 export async function updateDailyReport(
   id: string,
   updates: Partial<DailyReportInsert>
