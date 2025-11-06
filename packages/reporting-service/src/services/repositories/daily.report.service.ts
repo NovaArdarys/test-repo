@@ -298,7 +298,7 @@ export async function getDailyReportsList(params?: {
       },
     },
     extra: [
-      kitchenIds.length > 0 && entityType === "druver"
+      driversIds.length > 0 && entityType === "driver"
         ? sql`${dailyReports.entityId} = ANY(${sql.raw(`ARRAY[${driversIds.map(id => `'${id}'`).join(',')}]::uuid[]`)})`
         : undefined,
       kitchenIds.length > 0 && entityType === "kitchen"

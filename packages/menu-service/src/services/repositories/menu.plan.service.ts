@@ -415,32 +415,32 @@ export async function createMenuPlan(
                 );
             }
             // driver(s)
-            for (const driver of driverByKitchen) {
-                const [dailyDriver] = await trx
-                    .insert(dailyReports)
-                    .values({
-                        date: newPlan.planStartDate,
-                        entityId: driver.id,
-                        entityType: "driver",
-                        menuPlanId: newPlan.id,
-                        status: "PENDING",
-                        createdAt: newPlan.createdAt,
-                        createdBy: newPlan.createdBy,
-                    })
-                    .returning();
+            // for (const driver of driverByKitchen) {
+            //     const [dailyDriver] = await trx
+            //         .insert(dailyReports)
+            //         .values({
+            //             date: newPlan.planStartDate,
+            //             entityId: driver.id,
+            //             entityType: "driver",
+            //             menuPlanId: newPlan.id,
+            //             status: "PENDING",
+            //             createdAt: newPlan.createdAt,
+            //             createdBy: newPlan.createdBy,
+            //         })
+            //         .returning();
 
-                allDailyReports.push(dailyDriver);
+            //     allDailyReports.push(dailyDriver);
 
-                const schoolSteps = await planEntity("driver");
-                await trx.insert(stepReports).values(
-                    schoolSteps.map((step) => ({
-                        dailyReportId: dailyDriver.id,
-                        stepId: step.id,
-                        isCompleted: false,
-                        createdBy: newPlan.createdBy,
-                    }))
-                );
-            }
+            //     const schoolSteps = await planEntity("driver");
+            //     await trx.insert(stepReports).values(
+            //         schoolSteps.map((step) => ({
+            //             dailyReportId: dailyDriver.id,
+            //             stepId: step.id,
+            //             isCompleted: false,
+            //             createdBy: newPlan.createdBy,
+            //         }))
+            //     );
+            // }
         }
 
         return {
