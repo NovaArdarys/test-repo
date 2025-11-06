@@ -15,131 +15,163 @@ export const foodWorker = new Worker<StorageCommittedType>(
 
     try {
 
-      const stepReportData = await db.query.stepReports.findFirst({
-        where: (sr, { eq }) => eq(sr.id, job.data.entityId),
-        columns: {
-          id: true,
-          stepId: true,
-          dailyReportId: true,
-        },
-        with: {
-          dailyReport: {
-            with: {
-              menuPlan: {
-                with: {
-                  menuFoodItem: {
-                    with: {
-                      foodItem: {
-                        columns: {
-                          name: true,
-                          nameEn: true
+      if (job?.data?.entityId) {
+
+        const stepReportData = await db.query.stepReports.findFirst({
+          where: (sr, { eq }) => job?.data?.entityId ? eq(sr.id, job?.data?.entityId) : undefined,
+          columns: {
+            id: true,
+            stepId: true,
+            dailyReportId: true,
+          },
+          with: {
+            dailyReport: {
+              with: {
+                menuPlan: {
+                  with: {
+                    menuFoodItem: {
+                      with: {
+                        foodItem: {
+                          columns: {
+                            name: true,
+                            nameEn: true
+                          }
                         }
                       }
                     }
                   }
                 }
               }
-            }
-          },
-          step: {
-            columns: {
-              stepKey: true,
-              stepName: true,
-              stepOrder: true
+            },
+            step: {
+              columns: {
+                stepKey: true,
+                stepName: true,
+                stepOrder: true
+              }
             }
           }
+        });
+
+        if (!stepReportData?.step) {
+          throw new Error("Step report not found or missing step data.");
         }
-      });
 
-      if (!stepReportData?.step) {
-        throw new Error("Step report not found or missing step data.");
-      }
-
-      console.log(stepReportData.step.stepOrder, "===== 👣 steps =====", job.data.entityType);
+        console.log(stepReportData.step.stepOrder, "===== 👣 steps =====", job.data.entityType);
 
 
-      const aiType = getAITypeFromStepOrder(stepReportData.step.stepOrder, job.data.entityType);
-      if (!aiType) {
-        return null;
-      }
-
-      const image = await compressImageToBase64(job.data.url);
-
-      const end = performance.now();
-      const processingTime = (end - start) / 1000;
-      const labels =
-        aiType === "food"
-          ? stepReportData.dailyReport.menuPlan.menuFoodItem
-            .map((item) => ({
-              id: item.foodItem?.name?.trim() || "",
-              en: item.foodItem?.nameEn?.trim() || item.foodItem?.name?.trim() || "",
-            }))
-            .filter((l) => l.id && l.en)
-          : [];
-
-      if (aiType === "food" && (!labels || labels.length === 0)) {
-        throw new Error("No valid food labels found for AI request.");
-      }
-
-      const result = await detectAI(aiType, {
-        image,
-        labels: labels.map(l => ({
-          id: l.id || "",
-          en: l.en || "",
-        })),
-      });
-      console.log({
-        entityId: job.data.entityId,
-        entityType: job.data.entityType,
-        analysisType: aiType === "food" ? "food_detection" : aiType === "cleanliness" ? "cleanliness" : "mealbox_count",
-        sourceImageUrl: job.data.url,
-        outputImageUrl: result?.output_image ?? null,
-        processingTime: String(processingTime),
-        threshold: result?.threshold ?? null,
-        output: result,
-        input: job.data,
-        metadata: {
-          jobId: job.id,
-          queue: 'food-detect-queue',
-          timestamp: new Date().toISOString()
+        const aiType = getAITypeFromStepOrder(stepReportData.step.stepOrder, job.data.entityType);
+        if (!aiType) {
+          return null;
         }
-      }, "-------- 🔥🔥🔥🔥 ---------");
 
+        const image = await compressImageToBase64(job.data.url);
 
-      await insertAiLog({
-        entityId: job.data.entityId,
-        analysisType:
+        const end = performance.now();
+        const processingTime = (end - start) / 1000;
+        const labels =
           aiType === "food"
-            ? "food_detection"
-            : aiType === "cleanliness"
-              ? "cleanliness"
-              : "mealbox_count",
-        sourceImageUrl: job.data.url,
-        outputImageUrl: result?.output_image ?? null,
-        processingTime: String(processingTime),
-        threshold: result?.threshold ?? null,
-        output: result,
-        input: {
+            ? stepReportData.dailyReport.menuPlan.menuFoodItem
+              .map((item) => ({
+                id: item.foodItem?.name?.trim() || "",
+                en: item.foodItem?.nameEn?.trim() || item.foodItem?.name?.trim() || "",
+              }))
+              .filter((l) => l.id && l.en)
+            : [];
+
+        if (aiType === "food" && (!labels || labels.length === 0)) {
+          throw new Error("No valid food labels found for AI request.");
+        }
+
+        const result = await detectAI(aiType, {
+          image,
           labels: labels.map(l => ({
             id: l.id || "",
             en: l.en || "",
           })),
-        },
-        metadata: {
-          aiURL: `/detect/${aiType}`,
-          jobId: job.id,
-          queue: "food-detect-queue",
-          timestamp: new Date().toISOString(),
-        },
-      });
+        });
 
-      console.log(`✅ [Worker] Job ${job.id} completed in ${processingTime.toFixed(2)}s`);
-      return result;
+        await insertAiLog({
+          entityId: job?.data?.entityId ?? null,
+          analysisType:
+            aiType === "food"
+              ? "food_detection"
+              : aiType === "cleanliness"
+                ? "cleanliness"
+                : "mealbox_count",
+          sourceImageUrl: job.data.url,
+          outputImageUrl: result?.output_image ?? null,
+          processingTime: String(processingTime),
+          threshold: result?.threshold ?? null,
+          output: result,
+          input: {
+            labels: labels.map(l => ({
+              id: l.id || "",
+              en: l.en || "",
+            })),
+          },
+          metadata: {
+            aiURL: `/detect/${aiType}`,
+            jobId: job.id,
+            queue: "food-detect-queue",
+            timestamp: new Date().toISOString(),
+          },
+        });
+
+        console.log(`✅ [Worker] Job ${job.id} completed in ${processingTime.toFixed(2)}s`);
+        return result;
+      } else {
+
+        const image = await compressImageToBase64(job.data.url);
+
+        const end = performance.now();
+        const processingTime = (end - start) / 1000;
+
+
+        const result = await detectAI(job.data.entityType === "profile" ? "people" : "food", {
+          image,
+          labels: [
+            {
+              id: "",
+              en: "",
+            }
+          ],
+        });
+
+        await insertAiLog({
+          entityId: job?.data?.entityId ?? null,
+          analysisType:
+            job.data.entityType === "profile"
+              ? "food_detection"
+              : job.data.entityType === "other"
+                ? "cleanliness"
+                : "mealbox_count",
+          sourceImageUrl: job.data.url,
+          outputImageUrl: result?.output_image ?? null,
+          processingTime: String(processingTime),
+          threshold: result?.threshold ?? null,
+          output: result,
+          input: {
+            labels: [{
+              id: "",
+              en: "",
+            }],
+          },
+          metadata: {
+            aiURL: `/detect/${job.data.entityType === "profile" ? "people" : "food"}`,
+            jobId: job.id,
+            queue: "food-detect-queue",
+            timestamp: new Date().toISOString(),
+          },
+        });
+
+      }
+
 
     } catch (err: any) {
       try {
         await insertAiLog({
-          entityId: job.data.entityId,
+          entityId: job?.data?.entityId || null,
           analysisType: "mealbox_count",
           sourceImageUrl: job.data.url,
           outputImageUrl: null,

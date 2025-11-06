@@ -36,6 +36,8 @@ export const listDailyReportsHandler = catchAsync(async (c: Context) => {
   const limit = parseInt(query.limit || '10');
   const search = query.search || '';
 
+  console.log(audit, "======== audit =======");
+
   const data = await getDailyReportsList({
     entityType: query.entityType,
     entityId: query.entityId,
@@ -44,6 +46,7 @@ export const listDailyReportsHandler = catchAsync(async (c: Context) => {
     endDate: query.endDate,
     kitchenIds: audit.kitchenId,
     schoolIds: audit.schoolId,
+    driversIds: audit.driverId,
     page,
     limit,
     menuPlanName: search

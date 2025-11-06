@@ -10,7 +10,7 @@ export type AiAnalysisLogInsert = InferInsertModel<typeof aiAnalysisLogs>;
 
 export interface InsertAiLogParams extends Partial<AiAnalysisLogInsert> {
   analysisType: AnalysisType;
-  entityId: string;
+  entityId: string | null;
 }
 
 

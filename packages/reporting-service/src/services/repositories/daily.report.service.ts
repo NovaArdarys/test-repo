@@ -267,6 +267,7 @@ export async function getDailyReportsList(params?: {
   endDate?: string;
   kitchenIds?: string[];
   schoolIds?: string[];
+  driversIds?: string[];
   page: number; // default 1
   limit: number; // default 10
   menuPlanName?: string;
@@ -279,6 +280,7 @@ export async function getDailyReportsList(params?: {
     endDate,
     kitchenIds = [],
     schoolIds = [],
+    driversIds = [],
     page = 1,
     limit = 10,
   } = params ?? {};
@@ -296,6 +298,9 @@ export async function getDailyReportsList(params?: {
       },
     },
     extra: [
+      kitchenIds.length > 0 && entityType === "druver"
+        ? sql`${dailyReports.entityId} = ANY(${sql.raw(`ARRAY[${driversIds.map(id => `'${id}'`).join(',')}]::uuid[]`)})`
+        : undefined,
       kitchenIds.length > 0 && entityType === "kitchen"
         ? sql`${dailyReports.entityId} = ANY(${sql.raw(`ARRAY[${kitchenIds.map(id => `'${id}'`).join(',')}]::uuid[]`)})`
         : undefined,
