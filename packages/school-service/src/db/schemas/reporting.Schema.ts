@@ -13,9 +13,6 @@ import { entityTypeEnum } from "./enums/enums";
 import { menuPlans } from "./food.schema";
 import { storage } from "./storage.schema";
 
-/* ==============================
-   1️⃣ DAILY REPORT
-   ============================== */
 export const dailyReports = pgTable(
   "daily_reports",
   {
@@ -46,9 +43,6 @@ export const dailyReports = pgTable(
   })
 );
 
-/* ==============================
-   2️⃣ STEP REPORT
-   ============================== */
 export const stepReports = pgTable("step_reports", {
   id: uuid("id").primaryKey().defaultRandom(),
   dailyReportId: uuid("daily_report_id")
