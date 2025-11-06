@@ -8,8 +8,8 @@ import { deliveryQueue } from "@/jobs/queue/delivery.queue";
 import { format } from "date-fns";
 
 // ===== QUEUES =====
-const STEP_QUEUE_NAME = "delivery_service_step_queue";
-const STEP_ROUTING_KEY = "delivery.step.commit";
+const STEP_QUEUE_NAME = "report_service_step_queue";
+const STEP_ROUTING_KEY = "report.step.commit";
 
 const LOG_QUEUE_NAME = "delivery_service_log_queue";
 const LOG_ROUTING_KEY = "log.#";
@@ -52,9 +52,9 @@ export async function setupDeliveryServiceConsumers(channel: Channel) {
   console.log(`[*] Delivery Service listening for LOG events in ${logQueue.queue}`);
 
   // STEP Listener (delivery.step.commit)
-  await channel.assertExchange(EXCHANGES.STORAGE, "topic", { durable: true });
+  await channel.assertExchange(EXCHANGES.REPORT, "topic", { durable: true });
   const stepQueue = await channel.assertQueue(STEP_QUEUE_NAME, { durable: true });
-  await channel.bindQueue(stepQueue.queue, EXCHANGES.STORAGE, STEP_ROUTING_KEY);
+  await channel.bindQueue(stepQueue.queue, EXCHANGES.REPORT, STEP_ROUTING_KEY);
   channel.prefetch(10);
   channel.consume(stepQueue.queue, safeConsume(handleStepCommit, channel), { noAck: false });
   console.log(`[*] Delivery Service listening for STEP COMMIT events in ${stepQueue.queue}`);
