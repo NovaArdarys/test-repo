@@ -33,7 +33,7 @@ export async function getEventReportById(id: string): Promise<EventReport | null
 
 
 export async function getEventReports(options?: {
-  date?: Date;
+  date?: string;
   reportType?: string;
 }): Promise<EventReport[]> {
   const reports = await db.query.eventReports.findMany({

@@ -54,6 +54,10 @@ export async function createAutoDelivery(data: CreateAutoDeliveryInput) {
 
     if (!allDrivers.length) throw new Error('No drivers available for kitchen');
 
+    const menuPlan = await tx.query.menuPlans.findFirst({
+      where: (mp, { eq }) => eq(mp.id, data.menuPlanId),
+    });
+
     const planSchools = await tx
       .select({
         schoolId: menuPlanSchools.schoolId,
@@ -66,7 +70,7 @@ export async function createAutoDelivery(data: CreateAutoDeliveryInput) {
       .innerJoin(schools, eq(menuPlanSchools.schoolId, schools.id))
       .where(eq(menuPlanSchools.menuPlanId, data.menuPlanId));
 
-    if (!planSchools.length)
+    if (!planSchools.length && menuPlan)
       throw new Error('No schools found for this menu plan');
 
     const sortedSchools = planSchools
@@ -122,6 +126,7 @@ export async function createAutoDelivery(data: CreateAutoDeliveryInput) {
           updatedAt: new Date(),
           createdBy: data.createdBy,
           updatedBy: data.createdBy,
+          deliveryDate: menuPlan?.id
         })
         .returning();
 

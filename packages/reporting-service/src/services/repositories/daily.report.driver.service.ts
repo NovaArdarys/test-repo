@@ -31,6 +31,8 @@ export async function getDriverDeliveries(params: {
     .limit(limit)
     .offset((page - 1) * limit);
 
+  console.log(driverDeliveries, '===== driverDeliveries ===== 🚲');
+
   const grouped = new Map();
 
   for (const row of driverDeliveries) {

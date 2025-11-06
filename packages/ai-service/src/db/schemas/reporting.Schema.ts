@@ -70,7 +70,7 @@ export const eventReports = pgTable("event_reports", {
   name: text("name"),
   reportType: text('report_type'),
   date: date('date').notNull(),
-  locaation: text('location'),
+  location: text('location'),
   description: text('location'),
   isDeleted: boolean('is_deleted').default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
