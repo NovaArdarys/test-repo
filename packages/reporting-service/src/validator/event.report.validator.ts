@@ -6,6 +6,7 @@ export const CreateEventReportSchema = z.object({
   date: z.string(),
   location: z.string().optional(),
   description: z.string().optional(),
+  storageIds: z.array(z.string()).default([]),
 });
 
 export type CreateEventReportSchemaType = z.infer<typeof CreateEventReportSchema>;
@@ -16,6 +17,7 @@ export const UpdateEventReportSchema = z.object({
   date: z.string().optional(),
   location: z.string().optional(),
   description: z.string().optional(),
+  storageIds: z.array(z.string()).default([]),
 });
 
 export type UpdateEventReportSchemaType = z.infer<typeof UpdateEventReportSchema>;
