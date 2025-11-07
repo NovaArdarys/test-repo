@@ -50,7 +50,7 @@ export const schoolClassroom = pgTable(
     date: date("classroom_date").defaultNow().notNull(),
     totalStudent: integer("total_student").default(0).notNull(),
     storageId: uuid("storage_id").references(() => storage.id, { onDelete: "set null" }),
-    portionType: text("portionType").default(''),
+    portionType: varchar("portionType"),
     isDeleted: boolean("is_deleted").default(false).notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     createdBy: uuid("created_by"),

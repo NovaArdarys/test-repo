@@ -1,0 +1,1 @@
+ALTER TABLE "school_class_room" ALTER COLUMN "portionType" DROP DEFAULT;
