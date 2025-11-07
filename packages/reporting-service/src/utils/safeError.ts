@@ -39,7 +39,7 @@ export function isUniqueConstraintError(error: unknown): boolean {
  */
 export async function handleDuplicateJob(job: Job, error: unknown) {
   if (isUniqueConstraintError(error)) {
-    console.warn(`[SAFE CONSUME] Skip duplicate: ${job.id}`);
+    console.warn(`[SAFE CONSUME] Duplicated: ${job.id}`);
     await job.remove();
     return true;
   }

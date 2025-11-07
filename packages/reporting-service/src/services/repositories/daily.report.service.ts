@@ -285,6 +285,12 @@ export async function getDailyReportsList(params?: {
     limit = 10,
   } = params ?? {};
 
+  console.log(startDate, "===== startDate =====");
+  console.log(endDate, "===== endDate =====", {
+    gte: startDate ?? undefined,
+    lte: endDate ?? undefined,
+  },);
+
   const { where, meta } = await buildPaginatedWhere({
     table: dailyReports,
     tableName: "daily_reports",

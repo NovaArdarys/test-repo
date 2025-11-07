@@ -37,7 +37,7 @@ export const listDailyReportsHandler = catchAsync(async (c: Context) => {
   const limit = parseInt(query.limit || '10');
   const search = query.search || '';
 
-  console.log(audit, "===== audit =====");
+  console.log(audit, "===== audit =====", query);
 
   if (query.entityType === "driver") {
     const data = await getDriverDeliveries({
