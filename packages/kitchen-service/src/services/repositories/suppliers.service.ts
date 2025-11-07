@@ -22,8 +22,13 @@ export async function getSuppliers({
   const normalizedSearch = search?.toLowerCase().trim();
   const keywords = normalizedSearch ? normalizedSearch.split(/\s+/) : [];
 
+  // const baseCondition = and(
+  //   kitchenIds.length > 0 ? inArray(suppliers.kitchenId, kitchenIds) : undefined,
+  //   eq(suppliers.isDeleted, false),
+  //   eq(suppliersProducts.isDeleted, false)
+  // );
+
   const baseCondition = and(
-    kitchenIds.length > 0 ? inArray(suppliers.kitchenId, kitchenIds) : undefined,
     eq(suppliers.isDeleted, false),
     eq(suppliersProducts.isDeleted, false)
   );
