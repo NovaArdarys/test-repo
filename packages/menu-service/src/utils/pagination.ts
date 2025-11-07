@@ -40,14 +40,22 @@ export function buildWhere<T extends Record<string, any>>(
   const clauses: SQL[] = [];
 
   for (const [k, v] of Object.entries(conditions)) {
-    if (v && typeof v === 'object') {
-      const validKeys = Object.entries((v: any) => v).filter(([_, val]) =>
+    if (
+      v !== null &&
+      typeof v === "object" &&
+      !Array.isArray(v) &&
+      !(v as any).isSql
+    ) {
+      const entries = Object.entries(v as Record<string, unknown>);
+      const validKeys = entries.filter(([_, val]) =>
         Array.isArray(val) ? val.length > 0 : val !== undefined && val !== null
       );
-      if (validKeys.length === 0) delete (conditions as any)[k];
+
+      if (validKeys.length === 0) {
+        delete (conditions as any)[k];
+      }
     }
   }
-
   for (const [key, rawValue] of Object.entries(conditions)) {
     if (rawValue === undefined || rawValue === null) continue;
     const column = table[key as keyof T];
