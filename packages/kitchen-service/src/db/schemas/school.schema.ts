@@ -50,7 +50,7 @@ export const schoolClassroom = pgTable(
     date: date("classroom_date").defaultNow().notNull(),
     totalStudent: integer("total_student").default(0).notNull(),
     storageId: uuid("storage_id").references(() => storage.id, { onDelete: "set null" }),
-    isLargeClass: boolean("is_large_class").default(false).notNull(),
+    portionType: text("portionType").default(''),
     isDeleted: boolean("is_deleted").default(false).notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     createdBy: uuid("created_by"),
@@ -59,7 +59,7 @@ export const schoolClassroom = pgTable(
     return {
       schoolIdIdx: index("user_class_room_school_id_idx").on(table.schoolId),
 
-      largeClassIdx: index("user_class_room_is_large_class_idx").on(table.isLargeClass),
+      portionTypeIdx: index("user_class_room_is_large_class_idx").on(table.portionType),
 
       notDeletedIdx: index("user_class_room_not_deleted_idx").on(table.isDeleted),
 

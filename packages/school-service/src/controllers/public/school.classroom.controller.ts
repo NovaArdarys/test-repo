@@ -34,9 +34,8 @@ export const listSchoolClassroomHandler = catchAsync(async (c: Context) => {
   const name = query.name;
   const startDate = query.startDate;
   const endDate = query.endDate;
-  const isLargeClass = query.isLargeClass
-    ? query.isLargeClass === "true"
-    : undefined;
+  const portionType = query.portionType
+    ? query.portionType : undefined;
 
   const audit = getAuditFields(c);
 
@@ -45,7 +44,7 @@ export const listSchoolClassroomHandler = catchAsync(async (c: Context) => {
     limit,
     name,
     schoolIds: audit.schoolId,
-    isLargeClass,
+    portionType,
     endDate,
     startDate
   });

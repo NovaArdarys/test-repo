@@ -18,7 +18,7 @@ export async function getSchoolClassroomList({
   limit = 10,
   name,
   schoolIds = [],
-  isLargeClass,
+  portionType,
   isDeleted = false,
   startDate,
   endDate,
@@ -27,7 +27,7 @@ export async function getSchoolClassroomList({
   limit?: number;
   name?: string;
   schoolIds?: string[];
-  isLargeClass?: boolean;
+  portionType?: string;
   isDeleted?: boolean;
   startDate?: string;
   endDate?: string;
@@ -58,8 +58,8 @@ export async function getSchoolClassroomList({
     whereConditions.push(sql`${schoolClassroom.date} <= ${endDate}`);
   }
 
-  if (isLargeClass !== undefined) {
-    whereConditions.push(eq(schoolClassroom.isLargeClass, isLargeClass));
+  if (portionType !== undefined) {
+    whereConditions.push(eq(schoolClassroom.portionType, portionType));
   }
 
   whereConditions.push(eq(schoolClassroom.isDeleted, isDeleted));
