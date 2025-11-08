@@ -11,6 +11,7 @@ import { join } from 'path';
 import { checkBroker, connectRabbitMQ } from './messaging/broker';
 import { checkDatabase } from '@/db';
 import { eventMonitorRoute } from './routes/event.monitor.route';
+import { swaggerUI } from '@hono/swagger-ui';
 
 type Variables = JwtVariables;
 
@@ -56,7 +57,7 @@ const app = new Hono<{ Variables: Variables; }>()
       return filePath;
     }
   }))
-  .get('/api/health', async (c) => {
+  .get('/swagger', swaggerUI({ url: '/api/openapi.json' })).get('/api/health', async (c) => {
     const dbStatus = await checkDatabase();
     const rabbitStatus = await checkBroker();
 

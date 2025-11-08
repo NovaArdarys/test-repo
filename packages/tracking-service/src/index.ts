@@ -14,6 +14,7 @@ import { checkBroker } from './messaging/broker';
 import type { ServerWebSocket } from 'bun';
 import { handleUpgrade } from './websocket/handler';
 import { eventMonitorRoute } from './routes/event.monitor.route';
+import { swaggerUI } from '@hono/swagger-ui';
 
 type Variables = JwtVariables;
 export const clients = new Set<ServerWebSocket<unknown>>();
@@ -56,7 +57,7 @@ app
       },
     }),
   )
-  .get('/api/health', async (c) => {
+  .get('/swagger', swaggerUI({ url: '/api/openapi.json' })).get('/api/health', async (c) => {
     const dbStatus = await checkDatabase();
     const rabbitStatus = await checkBroker();
 
