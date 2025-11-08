@@ -41,3 +41,5 @@ export const checkAccessToken = async (c: Context, next: Next) => {
     }, HttpStatus.default.UNAUTHORIZED);
   }
 };
+(checkAccessToken as any).__requireAuth = true;
+(checkAccessToken as any).__requireAuth = true;
