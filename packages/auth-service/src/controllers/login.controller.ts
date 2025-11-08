@@ -11,7 +11,6 @@ import { parseDeviceInfo } from "@/utils/device.util";
 import { REDIS_PERMIISONS_KEY_PREFIX, TIMESTAMP_30_DAYS } from "@/constants/config";
 import redis from "@/constants/redis";
 import { getUserRolePermissonsClientService } from "@/services/clients/role.permissions.service";
-import { schools } from "@/db/schemas";
 import { validate } from "@/middleware/validate.middleware";
 
 export const loginHandler = catchAsync(async (c) => {

@@ -10,12 +10,14 @@ import {
 import { logoutHandler } from '@/controllers/logout.controller';
 import { refreshHandler } from '@/controllers/refresh.controller';
 import { forgotPasswordHandler, resetPasswordHandler } from '@/controllers/password.controller';
-import { loginHandler } from '@/controllers/login.controller';
 import { registerHandler } from '@/controllers/register.controller';
 import { checkAccessToken } from '@/middleware/auth.middleware';
+import { loginHandler as loginRoute } from '@/controllers/login.controller';
 
+
+// const { loginHandler, loginValidation } = loginRoute;
 const app = new Hono()
-    .post('/login', validate({ body: loginSchema }), loginHandler)
+    .post('/login', validate({ body: loginSchema }), loginRoute)
     .post('/register', checkAccessToken, validate({ body: registerSchema }), registerHandler) // 👈 hanya di sini
     .post('/refresh', validate({ body: refreshTokenSchema }), refreshHandler)
     .post('/logout', validate({ body: refreshTokenSchema }), logoutHandler)
