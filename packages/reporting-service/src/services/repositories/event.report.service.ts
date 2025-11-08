@@ -1,6 +1,6 @@
 import { db } from "@/db";
 import { eventReports } from "@/db/schemas";
-import { eq, and, desc, sql } from "drizzle-orm";
+import { eq, and, desc, sql, gte, lte } from "drizzle-orm";
 import type { InferInsertModel, InferSelectModel } from "drizzle-orm";
 
 export type EventReport = InferSelectModel<typeof eventReports>;
@@ -37,7 +37,8 @@ export async function getEventReportById(id: string): Promise<EventReport | null
 export async function getEventReports(options?: {
   page?: number;
   limit?: number;
-  date?: string;
+  startDate?: string;
+  endDate?: string;
   reportType?: string;
 }) {
   const page = options?.page ?? 1;
@@ -46,7 +47,8 @@ export async function getEventReports(options?: {
 
   const filters = and(
     eq(eventReports.isDeleted, false),
-    options?.date ? eq(eventReports.date, options.date) : undefined,
+    options?.startDate ? gte(eventReports.date, options.startDate) : undefined,
+    options?.endDate ? lte(eventReports.date, options.endDate) : undefined,
     options?.reportType ? eq(eventReports.reportType, options.reportType) : undefined
   );
 

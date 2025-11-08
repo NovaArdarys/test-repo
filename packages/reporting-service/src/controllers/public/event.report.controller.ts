@@ -11,7 +11,7 @@ import {
 import {
   CreateEventReportSchemaType,
   UpdateEventReportSchemaType,
-  ListEventReportQuerySchemaType,
+  GetEventReportListSchemaType,
 } from "@/validator/event.report.validator";
 import { publishEventReportCommit } from "@/messaging/publishers/reporting.publisher";
 
@@ -23,17 +23,19 @@ const getAuditFields = (c: Context) => ({
 });
 
 export const listEventReportsHandler = catchAsync(async (c: Context) => {
-  const query = c.req.query() as unknown as ListEventReportQuerySchemaType;
+  const query = c.req.query() as unknown as GetEventReportListSchemaType;
   const page = parseInt(String(query.page || "1"));
   const limit = parseInt(String(query.limit || "10"));
   const reportType = query.reportType || undefined;
-  const date = query.date ? query.date : undefined;
+  const startDate = query.startDate ? query.startDate : undefined;
+  const endDate = query.endDate ? query.endDate : undefined;
 
   const reports = await getEventReports({
     page,
     limit,
     reportType,
-    date: date,
+    startDate,
+    endDate
   });
 
   return c.json({ data: reports.data, meta: reports.meta }, 200);

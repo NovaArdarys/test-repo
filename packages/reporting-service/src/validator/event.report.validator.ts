@@ -22,16 +22,6 @@ export const UpdateEventReportSchema = z.object({
 
 export type UpdateEventReportSchemaType = z.infer<typeof UpdateEventReportSchema>;
 
-export const ListEventReportQuerySchema = z.object({
-  page: z.string().optional(),
-  limit: z.string().optional(),
-  date: z.string().optional(),
-  reportType: z.string().optional(),
-});
-
-export type ListEventReportQuerySchemaType = z.infer<typeof ListEventReportQuerySchema>;
-
-
 export const GetEventReportListSchema = z.object({
   page: z
     .string()
@@ -47,7 +37,14 @@ export const GetEventReportListSchema = z.object({
 
   reportType: z.string().optional(),
 
-  date: z
+  startDate: z
+    .string()
+    .optional()
+    .refine(
+      (v) => !v || !isNaN(Date.parse(v)),
+      { message: "Invalid date format (use YYYY-MM-DD)" }
+    ),
+  endDate: z
     .string()
     .optional()
     .refine(
