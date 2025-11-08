@@ -47,6 +47,8 @@ export const validate = (
         (k) => schemaMap[k as "body" | "query" | "param"]
       ) as ("body" | "query" | "param")[]);
 
+    const validatedData: Record<string, any> = {};
+
     for (const src of targets) {
       const schema = schemaMap[src];
       if (!schema) continue;
@@ -77,14 +79,16 @@ export const validate = (
             break;
         }
 
-        const result = schema.parse(data);
-        c.set("validatedData", result);
+        const parsed = schema.parse(data);
+        validatedData[src] = parsed;
       } catch (err: any) {
         const details = err.errors ?? JSON.parse(err.message);
         return c.json({ error: "Validation Error", source: src, details }, 400);
       }
     }
 
+    const existing = c.get("validatedData") ?? {};
+    c.set("validatedData", { ...existing, ...validatedData });
     await next();
   };
 

@@ -17,7 +17,7 @@ import { loginHandler } from '@/controllers/login.controller';
 
 // const { loginHandler, loginValidation } = loginRoute;
 const app = new Hono()
-    .post('/login', validate({ body: loginSchema }), loginHandler)
+    .post('/login', validate({ body: loginSchema }), loginHandler.loginHandler)
     .post('/register', checkAccessToken, validate({ body: registerSchema }), registerHandler)
     .post('/refresh', validate({ body: refreshTokenSchema }), refreshHandler)
     .post('/logout', validate({ body: refreshTokenSchema }), logoutHandler)
