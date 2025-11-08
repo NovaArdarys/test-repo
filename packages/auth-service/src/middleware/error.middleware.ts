@@ -68,6 +68,8 @@ export const errorConverter = (
     });
   }
 
+  console.log(error, "====== 🌋 error =====");
+
   const statusCode = (error as any)?.statusCode || 500;
   const message = (error as any)?.message || "Internal Server Error";
 
@@ -84,7 +86,7 @@ export const errorHandler: ErrorHandler = (err, c) => {
     name: err instanceof Error ? err.name : "UnknownError",
     message: err instanceof Error ? err.message : String(err),
     stack: err instanceof Error ? err.stack : undefined,
-  });
+  }, convertedError.statusCode, "====== err ======");
 
   return c.json(
     {

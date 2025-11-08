@@ -9,7 +9,7 @@ import * as process from "process";
 import { generateResetToken, verifyResetToken } from "@/utils/jwt";
 
 export const forgotPasswordHandler = catchAsync(async (c) => {
-  const { username }: ForgotPasswordSchemaType = await c.get("validatedData");
+  const { username }: ForgotPasswordSchemaType = await c.get("validatedData").body;
 
   const findUser = await getUserInfoServiceClient({ username });
 

@@ -10,7 +10,7 @@ import redis from "@/constants/redis";
 import { getUserRolePermissonsClientService } from "@/services/clients/role.permissions.service";
 
 export const refreshHandler = catchAsync(async (c) => {
-  const { refreshToken } = await c.get("validatedData") as refreshTokenSchemaType;
+  const { refreshToken }: refreshTokenSchemaType = await c.get("validatedData").body;
 
   if (!refreshToken) {
     throw new ApiError(HttpStatus.default.BAD_REQUEST, { message: "Refresh token required" });
