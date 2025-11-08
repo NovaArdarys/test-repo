@@ -232,6 +232,7 @@ export async function preloadSchemas(app: Hono, prefix = "") {
         query: () => ({}),
         param: () => ({}),
         parseBody: async () => ({}),
+        header: () => "application/json",
       },
       set: () => { },
       json: () => { },
