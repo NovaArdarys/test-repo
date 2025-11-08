@@ -224,7 +224,9 @@ export async function generateOpenAPIDoc(
 export async function preloadSchemas(app: Hono, prefix = "") {
   for (const route of app.routes ?? []) {
     const fullPath = `${prefix}${route.path}`.replace(/\/+$/, "") || "/";
+
     const c = {
+      __isPreload: true,
       req: {
         method: route.method,
         path: route.path,
@@ -232,6 +234,8 @@ export async function preloadSchemas(app: Hono, prefix = "") {
         query: () => ({}),
         param: () => ({}),
         parseBody: async () => ({}),
+        header: () => "application/json",
+        json: async () => ({})
       },
       set: () => { },
       json: () => { },
@@ -240,8 +244,11 @@ export async function preloadSchemas(app: Hono, prefix = "") {
     for (const handler of Array.isArray(route.handler)
       ? route.handler
       : [route.handler]) {
-      if ((handler as any).__schemaMeta) {
-        await handler(c, async () => { });
+      const handlers = Array.isArray(handler) ? handler : [handler];
+      for (const h of handlers) {
+        if ((h as any).__schemaMeta) {
+          await h(c, async () => { });
+        }
       }
     }
   }
@@ -253,6 +260,4 @@ export async function preloadSchemas(app: Hono, prefix = "") {
       await preloadSchemas(subHandler, subPrefix);
     }
   }
-
-  const registry = getRouteSchemaRegistry();
 }

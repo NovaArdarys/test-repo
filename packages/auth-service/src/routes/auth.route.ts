@@ -15,11 +15,11 @@ import { registerHandler } from '@/controllers/register.controller';
 import { checkAccessToken } from '@/middleware/auth.middleware';
 
 const app = new Hono()
-    .post('/login', validate(loginSchema), loginHandler)
-    .post('/register', checkAccessToken, validate(registerSchema), registerHandler) // 👈 hanya di sini
-    .post('/refresh', validate(refreshTokenSchema), refreshHandler)
-    .post('/logout', validate(refreshTokenSchema), logoutHandler)
-    .post('/forgot-password', validate(forgotPasswordSchema), forgotPasswordHandler)
-    .post('/reset-password', validate(resetPasswordSchema), resetPasswordHandler);
+    .post('/login', validate({ body: loginSchema }), loginHandler)
+    .post('/register', checkAccessToken, validate({ body: registerSchema }), registerHandler) // 👈 hanya di sini
+    .post('/refresh', validate({ body: refreshTokenSchema }), refreshHandler)
+    .post('/logout', validate({ body: refreshTokenSchema }), logoutHandler)
+    .post('/forgot-password', validate({ body: forgotPasswordSchema }), forgotPasswordHandler)
+    .post('/reset-password', validate({ body: resetPasswordSchema }), resetPasswordHandler);
 
 export default app;

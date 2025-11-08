@@ -1,4 +1,4 @@
-import { loginSchemaType } from "../validator/auth.validator";
+import { loginSchema } from "../validator/auth.validator";
 import ApiError from "../utils/ApiError";
 import { catchAsync } from "../utils/catchAsync";
 import { isEmpty } from "lodash";
@@ -12,9 +12,10 @@ import { REDIS_PERMIISONS_KEY_PREFIX, TIMESTAMP_30_DAYS } from "@/constants/conf
 import redis from "@/constants/redis";
 import { getUserRolePermissonsClientService } from "@/services/clients/role.permissions.service";
 import { schools } from "@/db/schemas";
+import { validate } from "@/middleware/validate.middleware";
 
 export const loginHandler = catchAsync(async (c) => {
-  const { password, username }: loginSchemaType = await c.req.parseBody();
+  const { password, username } = await c.get("validatedData").body;
 
   const findUser = await getUserInfoServiceClient({ username });
 

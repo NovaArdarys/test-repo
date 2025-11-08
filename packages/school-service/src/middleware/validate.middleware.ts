@@ -1,7 +1,7 @@
 import { Context, Next } from "hono";
-import { ZodSchema } from "zod";
+import { ZodSchema, z } from "zod";
 
-// Registry global
+// Registry global untuk OpenAPI
 const routeSchemaRegistry = new Map<string, { type: string; schema: ZodSchema<any>; }[]>();
 const registered = new Set<string>();
 
@@ -9,18 +9,15 @@ export function getRouteSchemaRegistry() {
   return routeSchemaRegistry;
 }
 
-/**
- * Middleware validate otomatis: 
- * - baca schema dari Zod
- * - auto detect method + routePath dari Context
- * - auto simpan ke registry sekali saja
- */
 export const validate =
-  (schema: ZodSchema<any>, source: "body" | "param" | "query" = "body") => {
-    const middleware = async (c: Context, next: Next) => {
+  <T extends ZodSchema<any>>(schema: T, source: "body" | "param" | "query" = "body") => {
+    // Middleware dengan typing pada Context Variables
+    const middleware = async (
+      c: Context<{ Variables: { validatedData: z.infer<T>; }; }>,
+      next: Next
+    ) => {
       const method = c.req.method.toUpperCase();
-      const routePath =
-        (c.req as any).routePath || c.req.path.split("?")[0] || "/";
+      const routePath = (c.req as any).routePath || c.req.path.split("?")[0] || "/";
       const key = `${method}:${routePath}`;
 
       if (!registered.has(`${key}:${source}`)) {
@@ -33,6 +30,7 @@ export const validate =
 
       try {
         let data: any;
+
         switch (source) {
           case "param":
             data = c.req.param();
@@ -42,10 +40,14 @@ export const validate =
             break;
           default:
             try {
-              data = await c.req.parseBody();
+              const contentType = c.req.header("content-type") ?? "";
+              data = contentType.includes("application/json")
+                ? await c.req.json()
+                : await c.req.parseBody();
             } catch {
               data = {};
             }
+            break;
         }
 
         const parsed = schema.parse(data);
