@@ -5,7 +5,8 @@ import { logger } from 'hono/logger';
 import { timeout } from 'hono/timeout';
 import { jwt } from 'hono/jwt';
 import type { JwtVariables } from 'hono/jwt';
-import routes from './routes/public';
+import routes from './routes/public/web';
+import routesMobile from './routes/public/mobile';
 import { errorHandler } from '@/middleware/error.middleware';
 import { join } from 'path';
 import { checkBroker, connectRabbitMQ } from './messaging/broker';
@@ -59,6 +60,7 @@ const app = new Hono<{ Variables: Variables; }>()
     }
   }))
   .get('/swagger', swaggerUI({ url: '/api/openapi.json' }))
+  .get('/mobile/swagger', swaggerUI({ url: '/api/mobile/openapi.json' }))
   .get('/api/health', async (c) => {
     const dbStatus = await checkDatabase();
     const rabbitStatus = await checkBroker();
@@ -72,6 +74,7 @@ const app = new Hono<{ Variables: Variables; }>()
   })
   .route("/api/events", eventMonitorRoute)
   .route('/api', routes)
+  .route('/api/mobile', routesMobile)
 
   .onError(errorHandler);
 

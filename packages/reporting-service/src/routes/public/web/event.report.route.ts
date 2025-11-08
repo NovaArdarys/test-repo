@@ -25,32 +25,31 @@ app.use(checkAccessToken);
 
 app.get(
   "/",
-  validate(GetEventReportListSchema, "query"),
+  validate({ query: GetEventReportListSchema }),
   listEventReportsHandler
 );
 
 app.get(
   "/:id",
-  validate(idParamSchema, "param"),
+  validate({ param: idParamSchema }),
   getEventReportByIdHandler
 );
 
 app.post(
   "/",
-  validate(CreateEventReportSchema),
+  validate({ body: CreateEventReportSchema }),
   createEventReportHandler
 );
 
 app.put(
   "/:id",
-  validate(idParamSchema, "param"),
-  validate(UpdateEventReportSchema),
+  validate({ param: idParamSchema, body: UpdateEventReportSchema }),
   updateEventReportHandler
 );
 
 app.delete(
   "/:id",
-  validate(idParamSchema, "param"),
+  validate({ param: idParamSchema }),
   softDeleteEventReportHandler
 );
 

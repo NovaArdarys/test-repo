@@ -1,11 +1,9 @@
 import { Hono } from 'hono';
 
-import dailyReports from '@/routes/public/daily.report.route';
-import eventReports from '@/routes/public/event.report.route';
+import dailyReports from '@/routes/public/mobile/mobile.daily.report.route';
 import { generateOpenAPIDoc, } from '@/utils/autoRoute';
 
 const app = new Hono()
-  .route('/event-reports', eventReports)
   .route('/daily-reports', dailyReports);
 
 app.get("/openapi.json", async (c) => {
@@ -14,7 +12,7 @@ app.get("/openapi.json", async (c) => {
     version: "1.0.0",
     description: "Auto-generated API documentation for daily & event reports",
     serverUrl: "http://localhost:3009",
-  }, "/api");
+  }, "/api/mobile");
 
   return handler(c, async () => { });
 });

@@ -99,8 +99,6 @@ export async function generateOpenAPIDoc(
     const method = route.method?.toUpperCase?.() ?? "GET";
     const key = `${method}:${fullPath}`;
 
-    console.log(key?.replace(prefix, ""), key, "====== replaced ======");
-
     const schemaMeta = registry.get(key?.replace(prefix, "")) ?? [];
     if (!schemaMeta.length) continue;
 
@@ -164,12 +162,13 @@ export async function generateOpenAPIDoc(
       }
     }
 
+    const [_api, device] = compact(prefix.split("/"));
     const [tag] = compact(fullPath?.replace(prefix, "")?.split("/"));
-    console.log(compact(fullPath?.replace(prefix, "")?.split("/")), fullPath?.replace(prefix, ""), "===== splitted ======");
+    console.log(device, "===== splitted ======", prefix);
 
     paths[fullPath] ??= {};
     paths[fullPath][method.toLowerCase()] = {
-      tags: [tag],
+      tags: [`${device ?? "website"} - ${tag}`],
       summary: `Auto-generated for ${method} ${fullPath}`,
       parameters: parameters.length ? parameters : undefined,
       requestBody,
