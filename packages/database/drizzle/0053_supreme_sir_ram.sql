@@ -1,0 +1,1 @@
+ALTER TABLE "event_reports" ADD COLUMN "entity_id" uuid;
