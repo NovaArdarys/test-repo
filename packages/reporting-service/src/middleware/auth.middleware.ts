@@ -42,4 +42,3 @@ export const checkAccessToken = async (c: Context, next: Next) => {
   }
 };
 (checkAccessToken as any).__requireAuth = true;
-(checkAccessToken as any).__requireAuth = true;
