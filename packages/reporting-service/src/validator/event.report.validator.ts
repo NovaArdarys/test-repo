@@ -3,6 +3,7 @@ import { z } from "zod";
 export const CreateEventReportSchema = z.object({
   name: z.string().min(1),
   reportType: z.string().min(1),
+  entityId: z.string().optional(),
   date: z.string(),
   location: z.string().optional(),
   description: z.string().optional(),
@@ -14,6 +15,7 @@ export type CreateEventReportSchemaType = z.infer<typeof CreateEventReportSchema
 export const UpdateEventReportSchema = z.object({
   name: z.string().optional(),
   reportType: z.string().optional(),
+  entityId: z.string().optional(),
   date: z.string().optional(),
   location: z.string().optional(),
   description: z.string().optional(),

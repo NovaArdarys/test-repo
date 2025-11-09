@@ -31,8 +31,6 @@ export const listDailyReportsHandler = catchAsync(async (c: Context) => {
 
   const { view, entity } = await c.get("validatedData").param;
 
-  console.log(audit, "===== audit =====", query);
-
   if (entity === "driver") {
     const data = await getDriverDeliveries({
       driverId: audit.driverId?.[0],
