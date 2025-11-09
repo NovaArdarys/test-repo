@@ -6,10 +6,7 @@ services:
       context: ../.. 
       dockerfile: packages/tracking-service/Dockerfile
     container_name: tracking_service
-    command: bun dev
     env_file:
-      - ../../.env
-      - .env
       - ../../.env
       - .env
     environment:

@@ -4,10 +4,7 @@ services:
       context: ../..
       dockerfile: packages/kitchen-service/Dockerfile
     container_name: kitchen_service
-    command: bun dev
     env_file:
-      - ../../.env
-      - .env
       - ../../.env
       - .env
     environment:

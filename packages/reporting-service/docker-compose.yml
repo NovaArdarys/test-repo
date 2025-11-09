@@ -5,7 +5,6 @@ services:
       dockerfile: packages/reporting-service/Dockerfile
     container_name: reporting_service
     working_dir: /app/packages/reporting-service
-    command: bun dev
     env_file:
       - ../../.env
       - .env
