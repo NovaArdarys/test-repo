@@ -1,11 +1,12 @@
 import { Hono } from 'hono';
 import menuPlan from "./menu.plan.route";
 import foodItem from "./food.item.route";
+import calendar from "./calendar.route";
 import { generateOpenAPIDoc } from '@/utils/autoRoute';
 const app = new Hono();
 
 app.route('/food-items', foodItem);
-app.route('/calendar', menuPlan);
+app.route('/calendar', calendar);
 app.route('/agenda', menuPlan);
 
 app.get("/openapi.json", async (c) => {
