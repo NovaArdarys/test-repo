@@ -20,7 +20,7 @@ const app = new Hono();
 app.use(checkAccessToken);
 
 app.get(
-  '/',
+  '/:entity',
   validate({
     query: listMenuPlansQuerySchema, param: z.object({
       entity: entityTypeEnum
