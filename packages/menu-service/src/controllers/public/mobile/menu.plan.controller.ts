@@ -22,7 +22,6 @@ export const listMenuPlansHandler = catchAsync(async (c: Context) => {
 
   const page = parseInt(String(query.page || '1'));
   const limit = parseInt(String(query.limit || '10'));
-  const status = query.status;
   const startDate = query.startDate || null;
   const endDate = query.endDate || null;
   const entityType = query.entityType || null;
