@@ -27,7 +27,6 @@ export async function getDeliveriesList({
   isDeleted = false,
   startDate,
   endDate,
-  entity
 }: {
   page: number;
   limit: number;
@@ -47,7 +46,9 @@ export async function getDeliveriesList({
     const d = new Date(year, month - 1, day);
     if (endOfDay) d.setHours(23, 59, 59, 999);
     const pad = (n: number) => String(n).padStart(2, "0");
-    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}.${String(d.getMilliseconds()).padStart(3, "0")}`;
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}.${String(
+      d.getMilliseconds()
+    ).padStart(3, "0")}`;
   }
 
   const today = new Date();
@@ -61,11 +62,19 @@ export async function getDeliveriesList({
   if (!isEmpty(kitchenIds)) {
     conditions.push(`d.kitchen_id = ANY(ARRAY[${kitchenIds?.map((id) => `'${id}'`).join(",")}]::uuid[])`);
   }
-  if (driverIds) conditions.push(`d.driver_id = ANY(ARRAY[${driverIds?.map((id) => `'${id}'`).join(",")}]::uuid[])`);
-  if (status) conditions.push(`d.status = '${status}'`);
+  if (!isEmpty(driverIds)) {
+    conditions.push(`d.driver_id = ANY(ARRAY[${driverIds?.map((id) => `'${id}'`).join(",")}]::uuid[])`);
+  }
+  if (status) {
+    conditions.push(`d.status = '${status}'`);
+  }
+
+  const kitchenFilterSql = !isEmpty(kitchenIds)
+    ? `AND mp.kitchen_id = ANY(ARRAY[${kitchenIds?.map((id) => `'${id}'`).join(",")}]::uuid[])`
+    : "";
 
   const schoolFilterSql = !isEmpty(schoolIds)
-    ? `AND ds.school_id = ANY(ARRAY[${schoolIds!.map((id) => `'${id}'`).join(",")}]::uuid[])`
+    ? `AND ds.school_id = ANY(ARRAY[${schoolIds?.map((id) => `'${id}'`).join(",")}]::uuid[])`
     : "";
 
   conditions.push(`
@@ -75,6 +84,7 @@ export async function getDeliveriesList({
       JOIN menu_plans mp ON ds.menu_plan_id = mp.id
       WHERE ds.delivery_id = d.id
       ${schoolFilterSql}
+      ${kitchenFilterSql}
       AND mp.plan_start_date >= '${start}'
       AND mp.plan_start_date <= '${end}'
     )
@@ -82,7 +92,7 @@ export async function getDeliveriesList({
 
   const whereSql = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
 
-  const data = await db.execute(sql`
+  const query = `
     SELECT
       d.id,
       d.kitchen_id AS "kitchenId",
@@ -133,22 +143,25 @@ export async function getDeliveriesList({
         JOIN schools s ON ds.school_id = s.id
         JOIN menu_plans mp ON ds.menu_plan_id = mp.id
         WHERE ds.delivery_id = d.id
-        ${!isEmpty(schoolIds) ? `AND ds.school_id = ANY(ARRAY[${schoolIds!.map((id) => `'${id}'`).join(",")}]::uuid[])` : ""}
+        ${schoolFilterSql}
+        ${kitchenFilterSql}
       ) AS school
     FROM deliveries d
     LEFT JOIN kitchens k ON d.kitchen_id = k.id
     LEFT JOIN drivers dr ON d.driver_id = dr.id
     LEFT JOIN user_details ud ON dr.user_id = ud.user_id
-    ${sql.raw(whereSql)}
+    ${whereSql}
     ORDER BY d.start_time DESC
     LIMIT ${limit}
-    OFFSET ${offset}
-  `);
+    OFFSET ${offset};
+  `;
 
-  const totalResult = await db.execute<{ total: number; }>(sql`
+  const data = await db.execute(query);
+
+  const totalResult = await db.execute<{ total: number; }>(`
     SELECT COUNT(*)::int AS total
     FROM deliveries d
-    ${sql.raw(whereSql)}
+    ${whereSql};
   `);
 
   const total = Number(totalResult.rows?.[0]?.total ?? 0);
