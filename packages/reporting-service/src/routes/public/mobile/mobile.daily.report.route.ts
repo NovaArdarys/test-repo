@@ -25,9 +25,11 @@ const app = new Hono();
 app.use(checkAccessToken);
 
 app.get(
-  "/:entity/vi",
+  "/:entity/:view",
   validate({
-    query: getDailyReportListSchema.omit({ entityType: true }).extend({
+    query: getDailyReportListSchema.omit({ entityType: true, entityId: true }),
+    param: z.object({
+      entity: z.enum(["kitchen", "driver", "beneficiary"]),
       view: z.enum([
         "home",
         "calendar",
@@ -36,9 +38,6 @@ app.get(
         "profile",
       ]),
     }),
-    param: z.object({
-      entity: z.enum(["kitchen", "driver", "beneficiary"]),
-    }),
   }),
   listDailyReportsHandler
 );
@@ -46,9 +45,15 @@ app.get(
 app.get(
   "/:entity/:id",
   validate({
-    param: z.object({
-      idParamSchema,
+    param: idParamSchema.extend({
       entity: z.enum(["kitchen", "driver", "beneficiary"]),
+      view: z.enum([
+        "home",
+        "calendar",
+        "delivery",
+        "report",
+        "profile",
+      ]),
     })
   }),
   getDailyReportHandler

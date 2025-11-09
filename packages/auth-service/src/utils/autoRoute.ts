@@ -113,9 +113,10 @@ export async function generateOpenAPIDoc(
   }
 
   for (const route of allRoutes) {
-    const fullPath = `${prefix}${route.path}`.replace(/\/+$/, "") || "/";
+    const fullPath = `${prefix}${route.path}`.replace(/:([A-Za-z0-9_]+)/g, "{$1}").replace(/\/+$/, "") || "/";
+    const originalFullPath = `${prefix}${route.path}`.replace(/\/+$/, "") || "/";
     const method = route.method?.toUpperCase?.() ?? "GET";
-    const key = `${method}:${fullPath}`;
+    const key = `${method}:${originalFullPath}`;
 
     const schemaMeta = registry.get(key?.replace(prefix, "")) ?? [];
     if (!schemaMeta.length) continue;
@@ -137,18 +138,39 @@ export async function generateOpenAPIDoc(
         continue;
       }
 
-      // 🔹 QUERY & PARAM
-      if (meta.type === "query" || meta.type === "param") {
+      // 🔹 PARAM
+      if (meta.type === "param") {
+        const props = jsonSchema.properties ?? {};
+        const requiredProps = jsonSchema.required ?? [];
+
+        for (const [propName, propSchema] of Object.entries(props)) {
+          const isEnum = Array.isArray((propSchema as any).enum);
+          parameters.push({
+            name: propName,
+            in: "path",
+            required: true,
+            schema: propSchema,
+            ...(isEnum
+              ? { example: (propSchema as any).enum?.[0] }
+              : {}),
+          });
+        }
+        continue;
+      }
+
+      // 🔹 QUERY
+      if (meta.type === "query") {
         const props = jsonSchema.properties ?? {};
         const requiredProps = jsonSchema.required ?? [];
         for (const [propName, propSchema] of Object.entries(props)) {
           parameters.push({
             name: propName,
-            in: meta.type === "query" ? "query" : "path",
+            in: "query",
             required: requiredProps.includes(propName),
             schema: propSchema,
           });
         }
+        continue;
       }
 
       // 🔹 BODY
@@ -181,7 +203,7 @@ export async function generateOpenAPIDoc(
     }
 
     const [_api, device] = compact(prefix.split("/"));
-    const [tag] = compact(fullPath?.replace(prefix, "")?.split("/"));
+    const [tag] = compact(originalFullPath?.replace(prefix, "")?.split("/"));
     console.log(device, "===== splitted ======", prefix);
 
     paths[fullPath] ??= {};
