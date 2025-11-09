@@ -32,6 +32,24 @@ function convertZodField(field: any): any {
   const def = field?.def ?? {};
   const type = def.type ?? "string";
 
+  if (def.type === "enum") {
+    const entries =
+      def.entries ||
+      field.enum ||
+      def.values ||
+      field.options ||
+      {};
+    const values = Array.isArray(entries)
+      ? entries
+      : Object.values(entries);
+
+    return {
+      type: "string",
+      enum: values,
+    };
+  }
+
+
   switch (type) {
     case "string":
       return { type: "string" };
