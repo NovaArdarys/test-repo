@@ -4,7 +4,6 @@ services:
       context: ../..
       dockerfile: packages/reporting-service/Dockerfile
     container_name: reporting_service
-    working_dir: /app/packages/reporting-service
     env_file:
       - ../../.env
       - .env
@@ -27,4 +26,4 @@ services:
       timeout: 10s
       retries: 5
       start_period: 20s
-    restart: always
+    restart: unless-stopped
