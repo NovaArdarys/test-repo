@@ -33,7 +33,6 @@ export const updateMenuPlanSchema = menuPlanBaseSchema.partial();
 export type UpdateMenuPlanSchemaType = z.infer<typeof updateMenuPlanSchema>;
 
 export const listMenuPlansQuerySchema = paginationSchema.extend({
-  villageId: z.string().uuid().optional(),
   startDate: z.string().optional(),
   endDate: z.string().optional(),
   search: z.string().optional(),

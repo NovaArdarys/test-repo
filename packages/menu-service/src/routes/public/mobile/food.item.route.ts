@@ -26,54 +26,8 @@ const app = new Hono();
 app.use(checkAccessToken);
 app.get(
   '/',
-  permission(),
-  validate(listFoodItemsQuerySchema, 'query'),
+  validate({ query: listFoodItemsQuerySchema }),
   listFoodItemsHandler
-);
-
-app.post(
-  '/',
-  permission(),
-  validate(createFoodItemSchema),
-  createFoodItemHandler
-);
-
-app.get(
-  '/:id/menus',
-  permission(),
-  validate(idParamSchema, 'param'),
-  listMenuPlansByFoodItemIdHandler
-);
-
-
-app.get(
-  '/:id',
-  permission(),
-  validate(idParamSchema, 'param'),
-  getFoodItemByIdHandler
-);
-
-app.put(
-  '/:id',
-  permission(),
-  validate(idParamSchema, 'param'),
-  validate(updateFoodItemSchema),
-  updateFoodItemHandler
-);
-
-app.delete(
-  '/:id',
-  permission(),
-  validate(idParamSchema, 'param'),
-  deleteFoodItemHandler
-);
-
-app.patch(
-  '/:id/availability',
-  permission(),
-  validate(idParamSchema, 'param'),
-  validate(toggleAvailabilitySchema),
-  toggleFoodItemAvailabilityHandler
 );
 
 export default app;
