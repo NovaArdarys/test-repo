@@ -339,8 +339,8 @@ export async function getDailyReportsList(params?: {
           ORDER BY mp.plan_start_date ASC
         ) t
       ), '[]'::jsonb)
-    `.as("threeDaysMenu")
-      : sql`'[]'::jsonb`.as("threeDaysMenu");
+    `
+      : sql`'[]'::jsonb`;
 
 
 
@@ -380,8 +380,8 @@ export async function getDailyReportsList(params?: {
           LIMIT 3
         ) er
       ), '[]'::jsonb)
-    `.as("eventReports")
-      : sql`'[]'::jsonb`.as("eventReports");
+    `
+      : sql`'[]'::jsonb`;
 
 
   const topSuppliersField =
@@ -448,8 +448,8 @@ export async function getDailyReportsList(params?: {
           LIMIT 3
         ) s
       ), '[]'::jsonb)
-    `.as("topSuppliers")
-      : sql`'[]'::jsonb`.as("topSuppliers");
+    `
+      : sql`'[]'::jsonb`;
 
 
   const stepTomorrowField =
@@ -475,13 +475,12 @@ export async function getDailyReportsList(params?: {
         `ARRAY[${kitchenIds.map((id) => `'${id}'`).join(",")}]::uuid[]`
       )})
             AND dr.entity_type = 'kitchen'
-            AND dr.is_deleted = false
             AND dr.date = ${addDays(new Date(endDate), 1).toISOString().split("T")[0]}
         ) sr
         INNER JOIN master_steps ms ON ms.id = sr.step_id
       ), '[]'::jsonb)
-    `.as("stepTomorrow")
-      : sql`'[]'::jsonb`.as("stepTomorrow");
+    `
+      : sql`'[]'::jsonb`;
 
 
   const { where, meta } = await buildPaginatedWhere({
@@ -517,6 +516,34 @@ export async function getDailyReportsList(params?: {
     limit,
   });
 
+  let widgets: Record<string, any[]> = {
+    threeDaysMenu: [],
+    eventReports: [],
+    topSuppliers: [],
+    stepTomorrow: [],
+  };
+
+
+  if (view === "home") {
+    const [
+      threeDaysMenuData,
+      eventReportsData,
+      topSuppliersData,
+      stepTomorrowData
+    ] = await Promise.all([
+      db.execute(sql`SELECT (${threeDaysMenuField}) AS "threeDaysMenu"`),
+      db.execute(sql`SELECT (${eventReportsField}) AS "eventReports"`),
+      db.execute(sql`SELECT (${topSuppliersField}) AS "topSuppliers"`),
+      db.execute(sql`SELECT (${stepTomorrowField}) AS "stepTomorrow"`),
+    ]);
+
+    widgets = {
+      threeDaysMenu: threeDaysMenuData?.rows?.[0]?.threeDaysMenu as any ?? [],
+      eventReports: eventReportsData?.rows?.[0]?.eventReports as any ?? [],
+      topSuppliers: topSuppliersData?.rows?.[0]?.topSuppliers as any ?? [],
+      stepTomorrow: stepTomorrowData?.rows?.[0]?.stepTomorrow as any ?? [],
+    };
+  }
   const data = await db
     .select({
       dailyReports,
@@ -555,10 +582,7 @@ export async function getDailyReportsList(params?: {
       storage: {
         imageURL: storage.fileUrl,
       },
-      threeDaysMenu: threeDaysMenuField,
-      eventReports: eventReportsField,
-      topSuppliersField: topSuppliersField,
-      stepsTomorrow: stepTomorrowField,
+
     })
     .from(dailyReports)
     .leftJoin(
@@ -614,10 +638,6 @@ export async function getDailyReportsList(params?: {
           ...row.menuPlan,
           _foodItemMap: new Map(),
         } : null,
-        threeDaysMenu: row.threeDaysMenu ?? [],
-        eventReports: row.eventReports ?? [],
-        suppliers: row.topSuppliersField ?? [],
-        stepsTomorrow: row.stepsTomorrow ?? [],
         _stepMap: new Map(),
       });
     }
@@ -712,7 +732,10 @@ export async function getDailyReportsList(params?: {
   });
 
   return {
-    data: finalGroupedData,
+    data: {
+      agenda: finalGroupedData,
+      ...widgets
+    },
     meta,
   };
 }
