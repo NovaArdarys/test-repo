@@ -33,9 +33,6 @@ app.get(
       view: z.enum([
         "home",
         "calendar",
-        "delivery",
-        "report",
-        "profile",
       ]),
     }),
   }),
@@ -50,9 +47,6 @@ app.get(
       view: z.enum([
         "home",
         "calendar",
-        "delivery",
-        "report",
-        "profile",
       ]),
     })
   }),
