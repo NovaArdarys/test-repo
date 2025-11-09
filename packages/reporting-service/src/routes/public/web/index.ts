@@ -13,7 +13,8 @@ app.get("/openapi.json", async (c) => {
     title: "Reports API",
     version: "1.0.0",
     description: "Auto-generated API documentation for daily & event reports",
-    serverUrl: "http://localhost:3009",
+    developmentServerUrl: "http://localhost:3009",
+    productionServerUrl: "https://dev-mbg-be.midigi.id/reporting/api",
   }, "/api");
 
   return handler(c, async () => { });

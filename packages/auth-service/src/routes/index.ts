@@ -11,7 +11,8 @@ app.get("/openapi.json", async (c) => {
         title: "Auth API",
         version: "1.0.0",
         description: "Auto-generated API documentation for Auth",
-        serverUrl: "http://localhost:3000",
+        developmentServerUrl: "http://localhost:3000",
+        productionServerUrl: "https://dev-mbg-be.midigi.id/auth/api",
     }, "/api");
 
     return handler(c, async () => { });

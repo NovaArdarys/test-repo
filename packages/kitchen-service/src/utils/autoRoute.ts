@@ -80,7 +80,7 @@ function collectAllRoutes(app: any, prefix = ""): any[] {
 
 export async function generateOpenAPIDoc(
   app: Hono,
-  info: { title: string; version: string; serverUrl?: string; description?: string; },
+  info: { title: string; version: string; developmentServerUrl?: string; productionServerUrl?: string; description?: string; },
   prefix = ""
 ) {
   await preloadSchemas(app);
@@ -200,7 +200,7 @@ export async function generateOpenAPIDoc(
         version: info.version,
         description: info.description,
       },
-      servers: [{ url: info.serverUrl ?? "http://localhost:3000", description: "Auto-generated" }],
+      servers: [{ url: info.developmentServerUrl ?? "http://localhost:3000", description: "Auto-generated" }, { url: info.productionServerUrl ?? "http://localhost:3000", description: "Auto-generated" }],
       paths,
       components: {
         securitySchemes: {
