@@ -384,6 +384,74 @@ export async function getDailyReportsList(params?: {
       : sql`'[]'::jsonb`.as("eventReports");
 
 
+  const topSuppliersField =
+    view === "home"
+      ? sql`
+      COALESCE((
+        SELECT jsonb_agg(
+          jsonb_build_object(
+            'id', s.id,
+            'name', s.name,
+            'phoneNumber', s.phone_number,
+            'imageURL', s.image_url,
+            'foodItems', (
+              SELECT jsonb_agg(
+                jsonb_build_object(
+                  'id', fi.id,
+                  'name', fi.name,
+                  'type', fi.type
+                )
+              )
+              FROM suppliers_products sp
+              INNER JOIN food_items fi ON fi.id = sp.food_item_id
+              WHERE sp.supplier_id = s.id
+                AND sp.is_deleted = false
+                AND fi.is_deleted = false
+            )
+          )
+        )
+        FROM (
+          SELECT s.*
+          FROM suppliers s
+          WHERE s.is_deleted = false
+            ${entityType === "driver" && driversIds.length > 0
+          ? sql`AND s.kitchen_id IN (
+                        SELECT uk.kitchen_id
+                        FROM user_kitchens uk
+                        WHERE uk.user_id = ANY(${sql.raw(
+            `ARRAY[${driversIds.map((id) => `'${id}'`).join(",")}]::uuid[]`
+          )})
+                          AND uk.is_deleted = false
+                      )`
+          : sql``
+        }
+            ${entityType === "b" && kitchenIds.length > 0
+          ? sql`AND s.kitchen_id = ANY(${sql.raw(
+            `ARRAY[${kitchenIds.map((id) => `'${id}'`).join(",")}]::uuid[]`
+          )})`
+          : sql``
+        }
+            ${entityType === "a" && schoolIds.length > 0
+          ? sql`AND s.kitchen_id IN (
+                        SELECT mp.kitchen_id
+                        FROM menu_plans mp
+                        INNER JOIN menu_plan_schools mps ON mps.menu_plan_id = mp.id
+                        WHERE mps.school_id = ANY(${sql.raw(
+            `ARRAY[${schoolIds.map((id) => `'${id}'`).join(",")}]::uuid[]`
+          )})
+                          AND mp.is_deleted = false
+                          AND mps.is_deleted = false
+                      )`
+          : sql``
+        }
+          ORDER BY s.created_at DESC
+          LIMIT 3
+        ) s
+      ), '[]'::jsonb)
+    `.as("topSuppliers")
+      : sql`'[]'::jsonb`.as("topSuppliers");
+
+
   const { where, meta } = await buildPaginatedWhere({
     table: dailyReports,
     tableName: "daily_reports",
@@ -457,6 +525,7 @@ export async function getDailyReportsList(params?: {
       },
       threeDaysMenu: threeDaysMenuField,
       eventReports: eventReportsField,
+      topSuppliersField: topSuppliersField,
     })
     .from(dailyReports)
     .leftJoin(
@@ -514,6 +583,7 @@ export async function getDailyReportsList(params?: {
         } : null,
         threeDaysMenu: row.threeDaysMenu ?? [],
         eventReports: row.eventReports ?? [],
+        suppliers: row.topSuppliersField ?? [],
         _stepMap: new Map(),
       });
     }
