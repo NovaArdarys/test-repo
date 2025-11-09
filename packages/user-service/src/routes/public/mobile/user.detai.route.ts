@@ -12,6 +12,7 @@ const app = new Hono();
 
 app.use(checkAccessToken)
   .get('/profile',
+    validate({}),
     getUserProfile
   )
   .put('/profile',
