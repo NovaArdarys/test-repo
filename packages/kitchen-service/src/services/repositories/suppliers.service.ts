@@ -13,17 +13,19 @@ export async function getSuppliers({
   limit = 10,
   page = 1,
   search,
+  createdByKitchen = true
 }: {
   kitchenIds?: string[];
   search?: string;
   page: number;
   limit: number;
+  createdByKitchen?: boolean;
 }) {
   const normalizedSearch = search?.toLowerCase().trim();
   const keywords = normalizedSearch ? normalizedSearch.split(/\s+/) : [];
 
   const baseCondition = and(
-    kitchenIds.length > 0 ? inArray(suppliers.kitchenId, kitchenIds) : undefined,
+    kitchenIds.length > 0 && createdByKitchen ? inArray(suppliers.kitchenId, kitchenIds) : undefined,
     eq(suppliers.isDeleted, false),
     eq(suppliersProducts.isDeleted, false)
   );

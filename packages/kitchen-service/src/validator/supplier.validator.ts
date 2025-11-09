@@ -9,6 +9,7 @@ export const supplierBaseSchema = z.object({
   phoneNumber: z.string().max(20).optional(),
   address: z.string().optional(),
   description: z.string().optional(),
+  storageId: z.string().optional(),
   foodIds: z.array(
     BulkFoodIdsItemSchema
   ).optional(),
@@ -34,6 +35,7 @@ export type UpdateSupplierFoodItemSchemaType = z.infer<typeof updateSupplierFood
 
 export const ItemsQuerySchema = paginationSchema.extend({
   search: z.string().optional(),
+  createdByKitchen: z.preprocess((a) => a === 'true', z.boolean())
 });
 
 export type ItemsQuerySchemaType = z.infer<typeof ItemsQuerySchema>;
