@@ -14,7 +14,7 @@ app.get("/openapi.json", async (c) => {
     version: "1.0.0",
     description: "Auto-generated API documentation for daily & event reports, daily-reports digunakan untuk tampilan home driver,kitchen,school, beneficiary, sedangkan event report digunakan untuk get, create, update, delete event report berdasarkan user login",
     developmentServerUrl: "http://localhost:3009",
-    productionServerUrl: "https://dev-mbg-be.midigi.id/reporting/api",
+    productionServerUrl: "https://dev-mbg-be.midigi.id/reporting",
   }, "/api/mobile");
 
   return handler(c, async () => { });
