@@ -3,66 +3,94 @@ import { dailyReports, deliveries, deliverySchools, foodItems, masterSteps, menu
 import { kitchens, drivers, schools } from "@/db/schemas";
 import { APIPagination } from "@/types/paginations.type";
 import { buildPaginatedWhere } from "@/utils/pagination";
+import { addDays } from "date-fns";
 import { eq, and, desc, InferInsertModel, InferSelectModel, between, gte, lte, sql, inArray, SQLWrapper } from "drizzle-orm";
 import { isEmpty, orderBy } from "lodash";
 
 
 export async function getDriverDeliveries(params: {
+  entityType?: string;
   driverId: string;
   startDate?: string;
   endDate?: string;
   page?: number;
   limit?: number;
+  view?: "home" | "calendar" | "delivery" | "report" | "profile";
 }) {
-  const { driverId, startDate, endDate, page = 1, limit = 10 } = params;
+  const { driverId, startDate, endDate, page = 1, limit = 10, view, entityType = "driver" } = params;
 
-  const eventReportsField = sql`
-    COALESCE((
-      SELECT jsonb_agg(
-        jsonb_build_object(
-          'id', er.id,
-          'name', er.name,
-          'reportType', er.report_type,
-          'date', er.date,
-          'location', er.location,
-          'description', er.description
-        )
-      )
-      FROM (
-        SELECT er.*
-        FROM event_reports er
-        WHERE er.entity_id = ${driverId}
-          AND er.report_type = 'driver'
-          AND er.is_deleted = false
-        ORDER BY er.date DESC
-        LIMIT 3
-      ) er
-    ), '[]'::jsonb)
-  `.as("eventReports");
 
-  const threeDaysMenuField = sql`
-    COALESCE((
-      SELECT jsonb_agg(
-        jsonb_build_object(
-          'id', mp.id,
-          'name', mp.name,
-          'date', mp.plan_start_date
+  let computedEndDate = endDate;
+  if (view === "home" && endDate) {
+    try {
+      computedEndDate = addDays(new Date(endDate), 3).toISOString().split("T")[0];
+    } catch {
+      computedEndDate = endDate;
+    }
+  }
+
+  const eventReportsField =
+    view === "home"
+      ? sql`
+      COALESCE((
+        SELECT jsonb_agg(
+          jsonb_build_object(
+            'id', er.id,
+            'name', er.name,
+            'reportType', er.report_type,
+            'date', er.date,
+            'location', er.location,
+            'description', er.description
+          )
         )
-      )
-      FROM menu_plans mp
-      WHERE mp.kitchen_id = (
-        SELECT uk.kitchen_id
-        FROM user_kitchens uk
-        WHERE uk.user_id = ${driverId}
-          AND uk.is_deleted = false
-        LIMIT 1
-      )
-        AND mp.is_deleted = false
-        AND mp.plan_start_date > menuPlans.plan_start_date
-        AND mp.plan_start_date <= menuPlans.plan_start_date + INTERVAL '3 days'
-      ORDER BY mp.plan_start_date ASC
-    ), '[]'::jsonb)
-  `.as("threeDaysMenu");
+        FROM (
+          SELECT er.*
+          FROM event_reports er
+          WHERE er.is_deleted = false
+            ${entityType === "driver" && driverId
+          ? sql`AND er.report_type = 'driver'
+                     AND er.entity_id = ANY(${sql.raw(`ARRAY[${[driverId].map(id => `'${id}'`).join(",")}]::uuid[]`)})`
+          : sql``}
+            AND er.date >= ${endDate}
+            AND er.date <= ${computedEndDate}
+          ORDER BY er.date DESC
+          LIMIT 3
+        ) er
+      ), '[]'::jsonb)
+    `.as("eventReports")
+      : sql`'[]'::jsonb`.as("eventReports");
+
+  const threeDaysMenuField =
+    view === "home"
+      ? sql`
+      COALESCE((
+        SELECT jsonb_agg(
+          jsonb_build_object(
+            'id', t.id,
+            'name', t.name,
+            'date', t.plan_start_date
+          )
+        )
+        FROM (
+          SELECT mp.id, mp.name, mp.plan_start_date
+          FROM menu_plans mp
+          WHERE mp.is_deleted = false
+            ${entityType === "driver" && driverId
+          ? sql`AND mp.kitchen_id IN (
+                         SELECT uk.kitchen_id
+                         FROM user_kitchens uk
+                         WHERE uk.user_id = ANY(${sql.raw(`ARRAY[${[driverId].map(id => `'${id}'`).join(",")}]::uuid[]`)})
+                           AND uk.is_deleted = false
+                       )`
+          : sql``
+        }
+            AND mp.plan_start_date > ${endDate}
+            AND mp.plan_start_date <= ${computedEndDate}
+          ORDER BY mp.plan_start_date ASC
+        ) t
+      ), '[]'::jsonb)
+    `.as("threeDaysMenu")
+      : sql`'[]'::jsonb`.as("threeDaysMenu");
 
   const baseQuery = db
     .select({

@@ -303,41 +303,45 @@ export async function getDailyReportsList(params?: {
       COALESCE((
         SELECT jsonb_agg(
           jsonb_build_object(
-            'id', mp.id,
-            'name', mp.name,
-            'date', mp.plan_start_date
+            'id', t.id,
+            'name', t.name,
+            'date', t.plan_start_date
           )
         )
-        FROM menu_plans mp
-        WHERE mp.is_deleted = false
-          ${entityType === "driver" && driversIds.length > 0
+        FROM (
+          SELECT mp.id, mp.name, mp.plan_start_date
+          FROM menu_plans mp
+          WHERE mp.is_deleted = false
+            ${entityType === "driver" && driversIds.length > 0
           ? sql`AND mp.kitchen_id IN (
-                       SELECT uk.kitchen_id
-                       FROM user_kitchens uk
-                       WHERE uk.user_id = ANY(${sql.raw(`ARRAY[${driversIds.map(id => `'${id}'`).join(",")}]::uuid[]`)})
-                         AND uk.is_deleted = false
-                     )`
+                         SELECT uk.kitchen_id
+                         FROM user_kitchens uk
+                         WHERE uk.user_id = ANY(${sql.raw(`ARRAY[${driversIds.map(id => `'${id}'`).join(",")}]::uuid[]`)})
+                           AND uk.is_deleted = false
+                       )`
           : sql``
         }
-          ${entityType === "kitchen" && kitchenIds.length > 0
+            ${entityType === "kitchen" && kitchenIds.length > 0
           ? sql`AND mp.kitchen_id = ANY(${sql.raw(`ARRAY[${kitchenIds.map(id => `'${id}'`).join(",")}]::uuid[]`)})`
           : sql``
         }
-          ${entityType === "school" && schoolIds.length > 0
+            ${entityType === "school" && schoolIds.length > 0
           ? sql`AND mp.id IN (
-                       SELECT mps.menu_plan_id
-                       FROM menu_plan_schools mps
-                       WHERE mps.school_id = ANY(${sql.raw(`ARRAY[${schoolIds.map(id => `'${id}'`).join(",")}]::uuid[]`)})
-                         AND mps.is_deleted = false
-                     )`
+                         SELECT mps.menu_plan_id
+                         FROM menu_plan_schools mps
+                         WHERE mps.school_id = ANY(${sql.raw(`ARRAY[${schoolIds.map(id => `'${id}'`).join(",")}]::uuid[]`)})
+                           AND mps.is_deleted = false
+                       )`
           : sql``
         }
-          AND mp.plan_start_date > ${endDate}
-          AND mp.plan_start_date <= ${computedEndDate}
-        ORDER BY mp.plan_start_date ASC
+            AND mp.plan_start_date > ${endDate}
+            AND mp.plan_start_date <= ${computedEndDate}
+          ORDER BY mp.plan_start_date ASC
+        ) t
       ), '[]'::jsonb)
     `.as("threeDaysMenu")
       : sql`'[]'::jsonb`.as("threeDaysMenu");
+
 
 
   const eventReportsField =
@@ -359,15 +363,15 @@ export async function getDailyReportsList(params?: {
           FROM event_reports er
           WHERE er.is_deleted = false
             ${entityType === "driver" && driversIds.length > 0
-          ? sql`AND er.entity_type = 'driver'
+          ? sql`AND er.report_type = 'driver'
                      AND er.entity_id = ANY(${sql.raw(`ARRAY[${driversIds.map(id => `'${id}'`).join(",")}]::uuid[]`)})`
           : sql``}
             ${entityType === "kitchen" && kitchenIds.length > 0
-          ? sql`AND er.entity_type = 'kitchen'
+          ? sql`AND er.report_type = 'kitchen'
                      AND er.entity_id = ANY(${sql.raw(`ARRAY[${kitchenIds.map(id => `'${id}'`).join(",")}]::uuid[]`)})`
           : sql``}
             ${entityType === "school" && schoolIds.length > 0
-          ? sql`AND er.entity_type = 'school'
+          ? sql`AND er.report_type = 'school'
                      AND er.entity_id = ANY(${sql.raw(`ARRAY[${schoolIds.map(id => `'${id}'`).join(",")}]::uuid[]`)})`
           : sql``}
             AND er.date >= ${endDate}
