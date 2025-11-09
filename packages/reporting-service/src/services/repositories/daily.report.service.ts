@@ -298,23 +298,87 @@ export async function getDailyReportsList(params?: {
   }
 
   const threeDaysMenuField =
-    view === "home" && (entityType === "kitchen" || entityType === "school" || entityType === "beneficiary")
+    view === "home"
       ? sql`
-          COALESCE((
-            SELECT jsonb_agg(
-              jsonb_build_object(
-                'id', mp.id,
-                'name', mp.name,
-                'date', mp."plan_start_date"
-              )
-            )
-            FROM menu_plans mp
-            WHERE mp."plan_start_date" > ${endDate}
-              AND mp."plan_start_date" <= ${computedEndDate}
-          ), '[]'::jsonb)
-        `.as("threeDaysMenu")
-      :
-      sql`'[]'::jsonb`.as("threeDaysMenu");
+      COALESCE((
+        SELECT jsonb_agg(
+          jsonb_build_object(
+            'id', mp.id,
+            'name', mp.name,
+            'date', mp.plan_start_date
+          )
+        )
+        FROM menu_plans mp
+        WHERE mp.is_deleted = false
+          ${entityType === "driver" && driversIds.length > 0
+          ? sql`AND mp.kitchen_id IN (
+                       SELECT uk.kitchen_id
+                       FROM user_kitchens uk
+                       WHERE uk.user_id = ANY(${sql.raw(`ARRAY[${driversIds.map(id => `'${id}'`).join(",")}]::uuid[]`)})
+                         AND uk.is_deleted = false
+                     )`
+          : sql``
+        }
+          ${entityType === "kitchen" && kitchenIds.length > 0
+          ? sql`AND mp.kitchen_id = ANY(${sql.raw(`ARRAY[${kitchenIds.map(id => `'${id}'`).join(",")}]::uuid[]`)})`
+          : sql``
+        }
+          ${entityType === "school" && schoolIds.length > 0
+          ? sql`AND mp.id IN (
+                       SELECT mps.menu_plan_id
+                       FROM menu_plan_schools mps
+                       WHERE mps.school_id = ANY(${sql.raw(`ARRAY[${schoolIds.map(id => `'${id}'`).join(",")}]::uuid[]`)})
+                         AND mps.is_deleted = false
+                     )`
+          : sql``
+        }
+          AND mp.plan_start_date > ${endDate}
+          AND mp.plan_start_date <= ${computedEndDate}
+        ORDER BY mp.plan_start_date ASC
+      ), '[]'::jsonb)
+    `.as("threeDaysMenu")
+      : sql`'[]'::jsonb`.as("threeDaysMenu");
+
+
+  const eventReportsField =
+    view === "home"
+      ? sql`
+      COALESCE((
+        SELECT jsonb_agg(
+          jsonb_build_object(
+            'id', er.id,
+            'name', er.name,
+            'reportType', er.report_type,
+            'date', er.date,
+            'location', er.location,
+            'description', er.description
+          )
+        )
+        FROM (
+          SELECT er.*
+          FROM event_reports er
+          WHERE er.is_deleted = false
+            ${entityType === "driver" && driversIds.length > 0
+          ? sql`AND er.entity_type = 'driver'
+                     AND er.entity_id = ANY(${sql.raw(`ARRAY[${driversIds.map(id => `'${id}'`).join(",")}]::uuid[]`)})`
+          : sql``}
+            ${entityType === "kitchen" && kitchenIds.length > 0
+          ? sql`AND er.entity_type = 'kitchen'
+                     AND er.entity_id = ANY(${sql.raw(`ARRAY[${kitchenIds.map(id => `'${id}'`).join(",")}]::uuid[]`)})`
+          : sql``}
+            ${entityType === "school" && schoolIds.length > 0
+          ? sql`AND er.entity_type = 'school'
+                     AND er.entity_id = ANY(${sql.raw(`ARRAY[${schoolIds.map(id => `'${id}'`).join(",")}]::uuid[]`)})`
+          : sql``}
+            AND er.date >= ${endDate}
+            AND er.date <= ${computedEndDate}
+          ORDER BY er.date DESC
+          LIMIT 3
+        ) er
+      ), '[]'::jsonb)
+    `.as("eventReports")
+      : sql`'[]'::jsonb`.as("eventReports");
+
 
   const { where, meta } = await buildPaginatedWhere({
     table: dailyReports,
@@ -388,6 +452,7 @@ export async function getDailyReportsList(params?: {
         imageURL: storage.fileUrl,
       },
       threeDaysMenu: threeDaysMenuField,
+      eventReports: eventReportsField,
     })
     .from(dailyReports)
     .leftJoin(
@@ -444,7 +509,7 @@ export async function getDailyReportsList(params?: {
           _foodItemMap: new Map(),
         } : null,
         threeDaysMenu: row.threeDaysMenu ?? [],
-        eventReports: [],
+        eventReports: row.eventReports ?? [],
         _stepMap: new Map(),
       });
     }

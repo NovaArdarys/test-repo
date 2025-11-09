@@ -16,6 +16,54 @@ export async function getDriverDeliveries(params: {
 }) {
   const { driverId, startDate, endDate, page = 1, limit = 10 } = params;
 
+  const eventReportsField = sql`
+    COALESCE((
+      SELECT jsonb_agg(
+        jsonb_build_object(
+          'id', er.id,
+          'name', er.name,
+          'reportType', er.report_type,
+          'date', er.date,
+          'location', er.location,
+          'description', er.description
+        )
+      )
+      FROM (
+        SELECT er.*
+        FROM event_reports er
+        WHERE er.entity_id = ${driverId}
+          AND er.report_type = 'driver'
+          AND er.is_deleted = false
+        ORDER BY er.date DESC
+        LIMIT 3
+      ) er
+    ), '[]'::jsonb)
+  `.as("eventReports");
+
+  const threeDaysMenuField = sql`
+    COALESCE((
+      SELECT jsonb_agg(
+        jsonb_build_object(
+          'id', mp.id,
+          'name', mp.name,
+          'date', mp.plan_start_date
+        )
+      )
+      FROM menu_plans mp
+      WHERE mp.kitchen_id = (
+        SELECT uk.kitchen_id
+        FROM user_kitchens uk
+        WHERE uk.user_id = ${driverId}
+          AND uk.is_deleted = false
+        LIMIT 1
+      )
+        AND mp.is_deleted = false
+        AND mp.plan_start_date > menuPlans.plan_start_date
+        AND mp.plan_start_date <= menuPlans.plan_start_date + INTERVAL '3 days'
+      ORDER BY mp.plan_start_date ASC
+    ), '[]'::jsonb)
+  `.as("threeDaysMenu");
+
   const baseQuery = db
     .select({
       deliveryId: deliveries.id,
@@ -27,6 +75,8 @@ export async function getDriverDeliveries(params: {
       schoolName: schools.name,
       deliveryStatus: deliverySchools.status,
       deliveredAt: deliverySchools.deliveredAt,
+      eventReports: eventReportsField,
+      threeDaysMenu: threeDaysMenuField,
     })
     .from(deliveries)
     .leftJoin(deliverySchools, eq(deliveries.id, deliverySchools.deliveryId))
@@ -103,6 +153,8 @@ export async function getDriverDeliveries(params: {
           name: row.planName,
         },
         delivery: [],
+        eventReports: row.eventReports,
+        threeDaysMenu: row.threeDaysMenu,
       };
     }
 
