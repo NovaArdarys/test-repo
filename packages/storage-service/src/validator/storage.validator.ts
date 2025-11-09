@@ -20,7 +20,18 @@ export const uploadBodySchema = z.object({
   file: uploadFileSchema,
   entityType: entityTypeValidator,
   entityId: z.string().optional(),
-  meta: z.record(z.string(), z.any()).optional(),
+  meta: z
+    .union([
+      z.string().transform((val) => {
+        try {
+          return JSON.parse(val);
+        } catch {
+          return {};
+        }
+      }),
+      z.record(z.string(), z.any()),
+    ])
+    .optional(),
 });
 
 // TypeScript type
@@ -33,7 +44,18 @@ export const storageClientCommittedSchema = z.object({
   ).optional(),
   entityType: entityTypeValidator,
   entityId: z.string(),
-  meta: z.record(z.string(), z.any()).optional(),
+  meta: z
+    .union([
+      z.string().transform((val) => {
+        try {
+          return JSON.parse(val);
+        } catch {
+          return {};
+        }
+      }),
+      z.record(z.string(), z.any()),
+    ])
+    .optional(),
 });
 
 export type StorageClientCommittedType = z.infer<typeof storageClientCommittedSchema>;

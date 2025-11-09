@@ -36,12 +36,12 @@ export const storageHandler = catchAsync(async (c) => {
         path: result.path,
         fileUrl: result.fileUrl,
         createdBy: audit.createdBy,
-        entityId: body?.entityId,
+        entityId: body?.entityId || "00000000-0000-0000-0000-000000000000",
         entityType: (body.entityType as any) ?? "other",
         meta: body.meta ?? {},
         mimeType: file.type,
         size: String(file.size || "0"),
-        tmpId: result.tmpId,
+        tmpId: result?.tmpId || "00000000-0000-0000-0000-000000000000",
       });
 
       const event: StorageUploadEvent = {

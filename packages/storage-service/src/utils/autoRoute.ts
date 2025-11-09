@@ -32,6 +32,52 @@ function convertZodField(field: any): any {
   const def = field?.def ?? {};
   const type = def.type ?? "string";
 
+  console.log(JSON.stringify(field), "===== field =====");
+
+  if (def.type === "custom") {
+    const maybeFn = def.check ?? field._def?.check;
+    if (typeof maybeFn === "function") {
+      const fnStr = maybeFn.toString();
+      if (fnStr.includes("File") || fnStr.includes("[object File]")) {
+        return { type: "string", format: "binary" };
+      }
+    }
+
+    const checks = def.checks || [];
+    const isFile =
+      checks.some((c: any) =>
+        typeof c?.check === "function" && c.check.toString().includes("File")
+      );
+
+    if (isFile) {
+      return { type: "string", format: "binary" };
+    }
+  }
+
+  if (def.type === "union" && Array.isArray(def.options)) {
+    const isFileUnion = def.options.some((opt: any) => {
+      const odef = opt.def || {};
+      return (
+        odef.type === "custom" ||
+        (odef.element?.def?.type === "custom" &&
+          odef.element?.def?.checks?.some(
+            (c: any) =>
+              typeof c.check === "function" &&
+              c.check.toString().includes("File")
+          ))
+      );
+    });
+
+    if (isFileUnion) {
+      return {
+        oneOf: [
+          { type: "string", format: "binary" },
+          { type: "array", items: { type: "string", format: "binary" } },
+        ],
+      };
+    }
+  }
+
   if (def.type === "enum") {
     const entries =
       def.entries ||
@@ -182,15 +228,19 @@ export async function generateOpenAPIDoc(
           };
         }
 
+        const schemaStr = JSON.stringify(jsonSchema);
+        const hasFile =
+          schemaStr.includes('"format":"binary"') ||
+          schemaStr.includes('"format": "binary"');
+
         requestBody = {
           required: true,
-          content: {
-            "application/json": {
-              schema: jsonSchema,
-            },
-          },
+          content: hasFile
+            ? { "multipart/form-data": { schema: jsonSchema } }
+            : { "application/json": { schema: jsonSchema } },
         };
       }
+
 
       if (meta.type === "response") {
         responses["200"] = {
