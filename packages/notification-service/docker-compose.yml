@@ -4,7 +4,10 @@ services:
       context: ../..
       dockerfile: packages/notification-service/Dockerfile
     container_name: notification_service
+    command: bun dev
     env_file:
+      - ../../.env
+      - .env
       - ../../.env
       - .env
     environment:

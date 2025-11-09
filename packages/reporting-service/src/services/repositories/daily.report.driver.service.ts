@@ -16,7 +16,6 @@ export async function getDriverDeliveries(params: {
 }) {
   const { driverId, startDate, endDate, page = 1, limit = 10 } = params;
 
-  // 1️⃣ Ambil data delivery utama dengan relasi utama
   const baseQuery = db
     .select({
       deliveryId: deliveries.id,

@@ -18,7 +18,7 @@ import { idParamSchema } from "@/validator/globa.validator";
 import {
   listDailyReportsHandler,
   getDailyReportHandler,
-} from "@/controllers/public/daily.report.controller";
+} from "@/controllers/public/mobile/mobile.daily.report.controller";
 
 const app = new Hono();
 

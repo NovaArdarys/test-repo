@@ -4,6 +4,8 @@ services:
       context: ../..
       dockerfile: packages/reporting-service/Dockerfile
     container_name: reporting_service
+    working_dir: /app/packages/reporting-service
+    command: bun dev
     env_file:
       - ../../.env
       - .env
@@ -14,7 +16,8 @@ services:
     ports:
       - "3009:3009"
     volumes:
-      - ../..:/app:cached
+      - ../../packages/reporting-service:/app/packages/reporting-service:cached
+      - /app/node_modules
     depends_on:
       redis:
         condition: service_healthy
@@ -26,4 +29,4 @@ services:
       timeout: 10s
       retries: 5
       start_period: 20s
-    restart: unless-stopped
+    restart: always

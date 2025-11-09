@@ -4,7 +4,10 @@ services:
       context: ../..
       dockerfile: packages/school-service/Dockerfile
     container_name: school_service
+    command: bun dev
     env_file:
+      - ../../.env
+      - .env
       - ../../.env
       - .env
     environment:

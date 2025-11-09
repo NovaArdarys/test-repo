@@ -4,7 +4,7 @@ import { catchAsync } from "@/utils/catchAsync";
 import {
   getDailyReportsList,
   getDailyReportById,
-} from "@/services/repositories/mobile/daily.report.service";
+} from "@/services/repositories/daily.report.service";
 import { CreateDailyReportSchemaType, CreateStepReportSchemaType, UpdateDailyReportSchemaType } from "@/validator/daily.report.validator";
 import { publishStepUpdate } from "@/messaging/publishers/reporting.publisher";
 import { every } from "lodash";
@@ -29,9 +29,11 @@ export const listDailyReportsHandler = catchAsync(async (c: Context) => {
   const limit = parseInt(query.limit || '10');
   const search = query.search || '';
 
+  const { view, entity } = await c.get("validatedData").param;
+
   console.log(audit, "===== audit =====", query);
 
-  if (query.entityType === "driver") {
+  if (entity === "driver") {
     const data = await getDriverDeliveries({
       driverId: audit.driverId?.[0],
       startDate: query.startDate,
@@ -44,7 +46,7 @@ export const listDailyReportsHandler = catchAsync(async (c: Context) => {
   }
 
   const data = await getDailyReportsList({
-    entityType: query.entityType,
+    entityType: entity,
     entityId: query.entityId,
     status: query.status,
     startDate: query.startDate,
@@ -54,7 +56,8 @@ export const listDailyReportsHandler = catchAsync(async (c: Context) => {
     driversIds: audit.driverId,
     page,
     limit,
-    menuPlanName: search
+    menuPlanName: search,
+    view
   });
   return c.json(data);
 });

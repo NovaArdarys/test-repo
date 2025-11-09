@@ -3,6 +3,7 @@ import { dailyReports, foodItems, masterSteps, menuFoodItem, menuPlans, menuPlan
 import { kitchens, drivers, schools } from "@/db/schemas";
 import { APIPagination } from "@/types/paginations.type";
 import { buildPaginatedWhere } from "@/utils/pagination";
+import { addDays } from "date-fns";
 import { eq, and, desc, InferInsertModel, InferSelectModel, between, gte, lte, sql, inArray, SQLWrapper } from "drizzle-orm";
 import { isEmpty, orderBy } from "lodash";
 
@@ -271,6 +272,7 @@ export async function getDailyReportsList(params?: {
   page: number; // default 1
   limit: number; // default 10
   menuPlanName?: string;
+  view?: "home" | "calendar" | "delivery" | "report" | "profile";
 }) {
   const {
     entityType,
@@ -283,13 +285,36 @@ export async function getDailyReportsList(params?: {
     driversIds = [],
     page = 1,
     limit = 10,
+    view
   } = params ?? {};
 
-  console.log(startDate, "===== startDate =====");
-  console.log(endDate, "===== endDate =====", {
-    gte: startDate ?? undefined,
-    lte: endDate ?? undefined,
-  },);
+  let computedEndDate = endDate;
+  if (view === "home" && endDate) {
+    try {
+      computedEndDate = addDays(new Date(endDate), 3).toISOString().split("T")[0];
+    } catch {
+      computedEndDate = endDate;
+    }
+  }
+
+  const threeDaysMenuField =
+    view === "home" && entityType === "kitchen"
+      ? sql`
+          COALESCE((
+            SELECT jsonb_agg(
+              jsonb_build_object(
+                'id', mp.id,
+                'name', mp.name,
+                'date', mp."plan_start_date"
+              )
+            )
+            FROM menu_plans mp
+            WHERE mp."plan_start_date" >= ${endDate}
+              AND mp."plan_start_date" <= ${computedEndDate}
+          ), '[]'::jsonb)
+        `.as("threeDaysMenu")
+      :
+      sql`'[]'::jsonb`.as("threeDaysMenu");
 
   const { where, meta } = await buildPaginatedWhere({
     table: dailyReports,
@@ -361,7 +386,8 @@ export async function getDailyReportsList(params?: {
       },
       storage: {
         imageURL: storage.fileUrl,
-      }
+      },
+      threeDaysMenu: threeDaysMenuField,
     })
     .from(dailyReports)
     .leftJoin(
@@ -407,12 +433,15 @@ export async function getDailyReportsList(params?: {
 
   const reportMap = new Map();
 
+  console.log(data?.[0]?.threeDaysMenu, "===== threeDaysMenu ======");
+
   data.forEach((row) => {
     const reportId = row.dailyReports.id;
 
     if (!reportMap.has(reportId)) {
       reportMap.set(reportId, {
         ...row.dailyReports,
+        threeDaysMenu: row.threeDaysMenu ?? [],
         menuPlan: row.menuPlan ? {
           ...row.menuPlan,
           _foodItemMap: new Map(),
@@ -425,9 +454,6 @@ export async function getDailyReportsList(params?: {
 
     const sfiId = row.suppliersFoodItem?.id;
     const foodItemId = row.foodItem?.id;
-    console.log("=============", foodItemId, "=============");
-
-
 
     if (sfiId && report.menuPlan) {
       const existingFoodItem = report.menuPlan._foodItemMap.get(sfiId);

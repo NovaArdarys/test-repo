@@ -4,7 +4,10 @@ services:
       context: ../..
       dockerfile: packages/menu-service/Dockerfile
     container_name: menu_service
+    command: bun dev
     env_file:
+      - ../../.env
+      - .env
       - ../../.env
       - .env
     environment:

@@ -4,7 +4,10 @@ services:
       context: ../..
       dockerfile: packages/log-service/Dockerfile
     container_name: log_service
+    command: bun dev
     env_file:
+      - ../../.env
+      - .env
       - ../../.env
       - .env
     environment:
