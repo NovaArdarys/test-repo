@@ -33,7 +33,6 @@ export const listDeliveriesHandler = catchAsync(async (c: Context) => {
   const data = await getDeliveriesList({
     page,
     limit,
-    status: query.status,
     kitchenIds: audit.kitchenId,
     driverIds: audit.driverId,
     schoolIds: audit.schoolId,

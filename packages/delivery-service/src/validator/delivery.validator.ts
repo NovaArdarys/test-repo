@@ -28,7 +28,6 @@ export type CreateDeliverySchemaType = z.infer<typeof createDeliverySchema>;
 export const updateDeliverySchema = deliveryBaseSchema.partial();
 
 export const listDeliveriesQuerySchema = paginationSchema.extend({
-  status: deliveryStatusTypeEnum.optional(),
   startDate: z.string().optional(),
   endDate: z.string().optional(),
 });

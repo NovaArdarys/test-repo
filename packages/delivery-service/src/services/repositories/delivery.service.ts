@@ -58,10 +58,10 @@ export async function getDeliveriesList({
   const end = endDate ? toLocalPgTimestamp(endDate, true) : toLocalPgTimestamp(defaultEnd, true);
 
   const conditions: string[] = [`d.is_deleted = ${isDeleted}`];
-  if (!isEmpty(kitchenIds) && entity === "kitchen") {
+  if (!isEmpty(kitchenIds)) {
     conditions.push(`d.kitchen_id = ANY(ARRAY[${kitchenIds?.map((id) => `'${id}'`).join(",")}]::uuid[])`);
   }
-  if (driverIds && entity === "driver") conditions.push(`d.driver_id = ANY(ARRAY[${driverIds?.map((id) => `'${id}'`).join(",")}]::uuid[])`);
+  if (driverIds) conditions.push(`d.driver_id = ANY(ARRAY[${driverIds?.map((id) => `'${id}'`).join(",")}]::uuid[])`);
   if (status) conditions.push(`d.status = '${status}'`);
 
   const schoolFilterSql = !isEmpty(schoolIds)
@@ -74,7 +74,7 @@ export async function getDeliveriesList({
       FROM delivery_schools ds
       JOIN menu_plans mp ON ds.menu_plan_id = mp.id
       WHERE ds.delivery_id = d.id
-       ${schoolFilterSql}
+      ${schoolFilterSql}
       AND mp.plan_start_date >= '${start}'
       AND mp.plan_start_date <= '${end}'
     )
@@ -133,7 +133,7 @@ export async function getDeliveriesList({
         JOIN schools s ON ds.school_id = s.id
         JOIN menu_plans mp ON ds.menu_plan_id = mp.id
         WHERE ds.delivery_id = d.id
-        ${!isEmpty(schoolIds) && entity === "school" ? `AND ds.school_id = ANY(ARRAY[${schoolIds!.map((id) => `'${id}'`).join(",")}]::uuid[])` : ""}
+        ${!isEmpty(schoolIds) ? `AND ds.school_id = ANY(ARRAY[${schoolIds!.map((id) => `'${id}'`).join(",")}]::uuid[])` : ""}
       ) AS school
     FROM deliveries d
     LEFT JOIN kitchens k ON d.kitchen_id = k.id
