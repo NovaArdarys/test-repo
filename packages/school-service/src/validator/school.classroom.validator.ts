@@ -5,7 +5,7 @@ export const CreateSchoolClassroomSchema = z.object({
   menuPlanId: z.string().optional(),
   date: z.string().optional(),
   name: z.string().min(1, "Class name is required").max(100),
-  totalStudent: z.preprocess((a) => parseInt(z.string().parse(a), 10), z.number().min(1)).optional(),
+  totalRecipient: z.preprocess((a) => parseInt(z.string().parse(a), 10), z.number().min(1)).optional(),
   storageId: z.string().nullable().optional(),
   portionType: z.string(),
 });
@@ -16,7 +16,7 @@ export const BulkUpdateTotalStudentSchema = z.object({
   items: z.array(
     z.object({
       id: z.string(),
-      totalStudent: z.number().min(0),
+      totalRecipient: z.number().min(0),
       updatedBy: z.string(),
     })
   ),

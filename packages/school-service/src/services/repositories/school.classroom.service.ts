@@ -222,17 +222,17 @@ export async function softDeleteSchoolClassroom(
 }
 
 export async function bulkUpdateTotalStudents(
-  updates: { id: string; totalStudent: number; updatedBy: string; }[]
+  updates: { id: string; totalRecipient: number; updatedBy: string; }[]
 ): Promise<SchoolClassroom[]> {
   if (updates.length === 0) return [];
 
   const results = await db.transaction(async (tx) => {
     const updated: SchoolClassroom[] = [];
 
-    for (const { id, totalStudent, updatedBy } of updates) {
+    for (const { id, totalRecipient, updatedBy } of updates) {
       const [row] = await tx
         .update(schoolClassroom)
-        .set({ totalStudent, createdBy: updatedBy })
+        .set({ totalRecipient, createdBy: updatedBy })
         .where(eq(schoolClassroom.id, id))
         .returning();
 

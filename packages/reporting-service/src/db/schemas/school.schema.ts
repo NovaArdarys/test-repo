@@ -48,7 +48,7 @@ export const schoolClassroom = pgTable(
       .references(() => menuPlans.id, { onDelete: "set null" }),
     name: varchar("name", { length: 100 }).notNull().unique(),
     date: date("classroom_date").defaultNow().notNull(),
-    totalStudent: integer("total_student").default(0).notNull(),
+    totalRecipient: integer("total_recipient").default(0).notNull(),
     storageId: uuid("storage_id").references(() => storage.id, { onDelete: "set null" }),
     portionType: varchar("portionType"),
     isDeleted: boolean("is_deleted").default(false).notNull(),
@@ -63,7 +63,7 @@ export const schoolClassroom = pgTable(
 
       notDeletedIdx: index("user_class_room_not_deleted_idx").on(table.isDeleted),
 
-      totalStudentIdx: index("user_class_room_total_student_idx").on(table.totalStudent),
+      totalRecipientIdx: index("user_class_room_total_student_idx").on(table.totalRecipient),
     };
   }
 );
