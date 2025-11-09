@@ -48,6 +48,7 @@ const stepReportBaseSchema = z.object({
   stepId: z.string("Step ID harus format string."),
   notes: z.string().optional(),
   isCompleted: z.preprocess((a) => a === 'true', z.boolean()).default(false),
+  storageId: z.string().optional()
 });
 
 export const createStepReportSchema = stepReportBaseSchema.extend({
