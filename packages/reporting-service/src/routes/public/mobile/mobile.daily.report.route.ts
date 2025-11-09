@@ -40,7 +40,7 @@ app.get(
 );
 
 app.get(
-  "/:entity/:id",
+  "/:entity/:view/:id",
   validate({
     param: idParamSchema.extend({
       entity: z.enum(["kitchen", "driver", "beneficiary"]),
