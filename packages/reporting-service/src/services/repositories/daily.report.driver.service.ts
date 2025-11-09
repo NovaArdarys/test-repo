@@ -57,8 +57,8 @@ export async function getDriverDeliveries(params: {
           LIMIT 3
         ) er
       ), '[]'::jsonb)
-    `.as("eventReports")
-      : sql`'[]'::jsonb`.as("eventReports");
+    `
+      : sql`'[]'::jsonb`;
 
   const threeDaysMenuField =
     view === "home"
@@ -89,8 +89,29 @@ export async function getDriverDeliveries(params: {
           ORDER BY mp.plan_start_date ASC
         ) t
       ), '[]'::jsonb)
-    `.as("threeDaysMenu")
-      : sql`'[]'::jsonb`.as("threeDaysMenu");
+    `
+      : sql`'[]'::jsonb`;
+
+  let widgets: Record<string, any[]> = {
+    threeDaysMenu: [],
+    eventReports: [],
+  };
+
+
+  if (view === "home") {
+    const [
+      threeDaysMenuData,
+      eventReportsData,
+    ] = await Promise.all([
+      db.execute(sql`SELECT (${threeDaysMenuField}) AS "threeDaysMenu"`),
+      db.execute(sql`SELECT (${eventReportsField}) AS "eventReports"`),
+    ]);
+
+    widgets = {
+      threeDaysMenu: threeDaysMenuData?.rows?.[0]?.threeDaysMenu as any ?? [],
+      eventReports: eventReportsData?.rows?.[0]?.eventReports as any ?? [],
+    };
+  }
 
   const baseQuery = db
     .select({
@@ -103,8 +124,6 @@ export async function getDriverDeliveries(params: {
       schoolName: schools.name,
       deliveryStatus: deliverySchools.status,
       deliveredAt: deliverySchools.deliveredAt,
-      eventReports: eventReportsField,
-      threeDaysMenu: threeDaysMenuField,
     })
     .from(deliveries)
     .leftJoin(deliverySchools, eq(deliveries.id, deliverySchools.deliveryId))
@@ -181,8 +200,6 @@ export async function getDriverDeliveries(params: {
           name: row.planName,
         },
         delivery: [],
-        eventReports: row.eventReports,
-        threeDaysMenu: row.threeDaysMenu,
       };
     }
 
@@ -217,7 +234,10 @@ export async function getDriverDeliveries(params: {
       .where(eq(deliveries.driverId, driverId))) || [];
 
   return {
-    data,
+    data: {
+      agenda: data,
+      ...widgets
+    },
     meta: {
       page,
       limit,
