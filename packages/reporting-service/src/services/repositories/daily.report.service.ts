@@ -452,6 +452,38 @@ export async function getDailyReportsList(params?: {
       : sql`'[]'::jsonb`.as("topSuppliers");
 
 
+  const stepTomorrowField =
+    view === "home" && entityType === "kitchen" && kitchenIds.length > 0 && endDate
+      ? sql`
+      COALESCE((
+        SELECT jsonb_agg(
+          jsonb_build_object(
+            'id', sr.id,
+            'stepKey', ms.step_key,
+            'stepName', ms.step_name,
+            'stepOrder', ms.step_order,
+            'isCompleted', sr.is_completed,
+            'notes', sr.notes
+          )
+        )
+        FROM (
+          SELECT sr.*
+          FROM step_reports sr
+          INNER JOIN daily_reports dr ON dr.id = sr.daily_report_id
+          INNER JOIN menu_plans mp ON mp.id = dr.menu_plan_id
+          WHERE dr.entity_id = ANY(${sql.raw(
+        `ARRAY[${kitchenIds.map((id) => `'${id}'`).join(",")}]::uuid[]`
+      )})
+            AND dr.entity_type = 'kitchen'
+            AND dr.is_deleted = false
+            AND dr.date = ${addDays(new Date(endDate), 1).toISOString().split("T")[0]}
+        ) sr
+        INNER JOIN master_steps ms ON ms.id = sr.step_id
+      ), '[]'::jsonb)
+    `.as("stepTomorrow")
+      : sql`'[]'::jsonb`.as("stepTomorrow");
+
+
   const { where, meta } = await buildPaginatedWhere({
     table: dailyReports,
     tableName: "daily_reports",
@@ -526,6 +558,7 @@ export async function getDailyReportsList(params?: {
       threeDaysMenu: threeDaysMenuField,
       eventReports: eventReportsField,
       topSuppliersField: topSuppliersField,
+      stepsTomorrow: stepTomorrowField,
     })
     .from(dailyReports)
     .leftJoin(
@@ -584,6 +617,7 @@ export async function getDailyReportsList(params?: {
         threeDaysMenu: row.threeDaysMenu ?? [],
         eventReports: row.eventReports ?? [],
         suppliers: row.topSuppliersField ?? [],
+        stepsTomorrow: row.stepsTomorrow ?? [],
         _stepMap: new Map(),
       });
     }
