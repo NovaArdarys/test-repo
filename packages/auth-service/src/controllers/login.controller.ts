@@ -50,8 +50,6 @@ export const loginHandler = catchAsync(async (c) => {
     driver: {},
   };
 
-  console.log(JSON.stringify(findUser));
-
   if (findUser.userKitchens?.length > 0) {
     context.kitchen = {
       type: 'kitchen',
@@ -74,7 +72,6 @@ export const loginHandler = catchAsync(async (c) => {
     };
   }
 
-  // Buat payload token
   const payload = {
     id: findUser.id,
     email: findUser.email,
