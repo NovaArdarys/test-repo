@@ -1,6 +1,5 @@
 import { Hono } from "hono";
 import { validate } from "@/middleware/validate.middleware";
-import { permission } from "@/middleware/permission.middleware";
 import { checkAccessToken } from "@/middleware/auth.middleware";
 import z from "zod";
 
@@ -18,6 +17,7 @@ import { idParamSchema } from "@/validator/globa.validator";
 import {
   listDailyReportsHandler,
   getDailyReportHandler,
+  updateStepReportHandler,
 } from "@/controllers/public/mobile/mobile.daily.report.controller";
 
 const app = new Hono();
@@ -52,6 +52,14 @@ app.get(
   }),
   getDailyReportHandler
 );
+
+
+app.put(
+  "/steps/:id",
+  validate({ param: idParamSchema, body: updateStepReportSchema }),
+  updateStepReportHandler
+);
+
 
 
 export default app;

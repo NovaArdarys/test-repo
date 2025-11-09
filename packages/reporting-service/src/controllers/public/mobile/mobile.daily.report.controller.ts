@@ -4,6 +4,8 @@ import { catchAsync } from "@/utils/catchAsync";
 import {
   getDailyReportsList,
   getDailyReportById,
+  updateStepReport,
+  getDailyReportWithoutMaskById,
 } from "@/services/repositories/daily.report.service";
 import { CreateDailyReportSchemaType, CreateStepReportSchemaType, UpdateDailyReportSchemaType } from "@/validator/daily.report.validator";
 import { publishStepUpdate } from "@/messaging/publishers/reporting.publisher";
@@ -65,4 +67,24 @@ export const getDailyReportHandler = catchAsync(async (c: Context) => {
   const report = await getDailyReportById(id);
   if (!report) return c.json({ message: "Not found" }, 404);
   return c.json({ data: report });
+});
+
+
+export const updateStepReportHandler = catchAsync(async (c: Context) => {
+  const id = c.req.param("id");
+  const body = await c.get("validatedData").body;
+  const updated = await updateStepReport(id, { ...body, updatedBy: c.get("userId") });
+  const report = await getDailyReportWithoutMaskById(updated.dailyReportId);
+
+  if (report) {
+    const allCompleted = every(report.steps, 'isCompleted');
+    await publishStepUpdate({
+      menuPlanId: report.menuPlan.id,
+      allStepCompleted: allCompleted,
+      entityId: report.entityId,
+      entityType: report.entityType,
+    });
+  }
+
+  return c.json({ data: updated });
 });
