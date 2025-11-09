@@ -30,8 +30,13 @@ app.get(
 );
 
 app.get(
-  '/:id',
-  validate(idParamSchema, 'param'),
+  '/:entity/:id',
+  validate({
+    param: z.object({
+      entity: entityTypeEnum,
+      idParamSchema,
+    }),
+  }),
   getMenuPlanByIdHandler
 );
 
