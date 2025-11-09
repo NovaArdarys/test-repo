@@ -11,7 +11,8 @@ import {
   schools,
   userSchools,
   userRoles,
-  roles
+  roles,
+  drivers
 } from "@/db/schemas";
 import { and, eq, desc, sql, or, SQL } from "drizzle-orm";
 import { db } from "@/db";
@@ -160,7 +161,9 @@ export async function getUserById(id: string) {
       email: users.email,
       dateOfBirth: userDetails.dateOfBirth,
       phoneNumber: userDetails.phoneNumber,
+      address: userDetails.address,
       fullName: sql<string>`CONCAT(${userDetails.firstName}, ' ', ${userDetails.lastName})`,
+
       kitchen: {
         id: kitchens.id,
         name: kitchens.name,
@@ -168,25 +171,34 @@ export async function getUserById(id: string) {
         lon: kitchens.lon,
         lat: kitchens.lat,
         province: provinces.name,
-        imageURL: kitchens.imageURL
+        imageURL: kitchens.imageURL,
       },
+
       school: {
         id: schools.id,
         name: schools.name,
         address: schools.address,
         kitchenId: schools.kitchenId,
-        phoneNumber: schools.phoneNumber
+        phoneNumber: schools.phoneNumber,
       },
+
       role: {
         id: roles.id,
         name: roles.name,
         domain: roles.domain,
-      }
+      },
     })
     .from(users)
     .innerJoin(userDetails, eq(userDetails.userId, users.id))
+
     .leftJoin(userKitchens, eq(userKitchens.userId, users.id))
-    .leftJoin(kitchens, eq(kitchens.id, userKitchens.kitchenId))
+    .leftJoin(drivers, eq(drivers.userId, users.id))
+
+    .leftJoin(
+      kitchens,
+      eq(kitchens.id, sql`COALESCE(${userKitchens.kitchenId}, ${drivers.kitchenId})`)
+    )
+
     .leftJoin(provinces, eq(provinces.id, kitchens.provinceId))
     .leftJoin(userSchools, eq(userSchools.userId, users.id))
     .leftJoin(schools, eq(schools.id, userSchools.schoolId))
