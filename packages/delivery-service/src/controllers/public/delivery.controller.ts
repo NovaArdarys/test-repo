@@ -43,8 +43,9 @@ export const listDeliveriesHandler = catchAsync(async (c: Context) => {
     page,
     limit,
     status: query.status,
-    kitchenId: audit.kitchenId,
-    driverId: query.driverId,
+    kitchenIds: audit.kitchenId,
+    driverIds: audit.driverId,
+    schoolIds: audit.schoolId,
     startDate,
     endDate
   });

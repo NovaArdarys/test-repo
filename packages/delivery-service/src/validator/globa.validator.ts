@@ -7,6 +7,7 @@ export const paginationSchema = z.object({
   limit: z.preprocess((a) => parseInt(z.string().parse(a), 10), z.number().min(1).max(100)).optional().default(10),
 });
 
+export const entityTypeEnum = z.enum(["kitchen", "driver", "school"]);
 
 export const idParamSchema = z.object({
   id: idSchema,

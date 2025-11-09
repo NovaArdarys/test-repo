@@ -2,8 +2,10 @@
 import { db } from "@/db";
 import { deliveries, deliverySchools, drivers, kitchens, schools, userDetails, } from "@/db/schemas";
 import { APIPagination } from "@/types/paginations.type";
+import { entityTypeEnum } from "@/validator/globa.validator";
 import { eq, and, sql, desc, SQLWrapper, InferSelectModel, InferInsertModel, inArray } from "drizzle-orm";
 import { isEmpty } from "lodash";
+import z from "zod";
 
 export type Delivery = InferSelectModel<typeof deliveries>;
 export type DeliveryStatus = Delivery['status'];
@@ -15,40 +17,56 @@ export type NewDelivery = Omit<
 
 export type UpdateDelivery = Partial<Omit<NewDelivery, 'createdBy'>> & { updatedBy: string; };
 
-
 export async function getDeliveriesList({
   page,
   limit,
-  kitchenId,
-  driverId,
+  kitchenIds,
+  driverIds,
+  schoolIds,
   status,
   isDeleted = false,
   startDate,
   endDate,
+  entity
 }: {
   page: number;
   limit: number;
-  kitchenId?: string[];
-  driverId?: string;
+  kitchenIds?: string[];
+  driverIds?: string[];
+  schoolIds?: string[];
   status?: string;
   isDeleted?: boolean;
   startDate?: string | null;
   endDate?: string | null;
+  entity?: z.infer<typeof entityTypeEnum>;
 }) {
   const offset = (page - 1) * limit;
-  const today = new Date();
-  const defaultStart = new Date(today);
-  defaultStart.setHours(0, 0, 0, 0);
-  const defaultEnd = new Date(today);
-  defaultEnd.setHours(23, 59, 59, 999);
 
-  const start = startDate ? new Date(startDate) : defaultStart;
-  const end = endDate ? new Date(endDate) : defaultEnd;
+  function toLocalPgTimestamp(dateStr: string, endOfDay = false) {
+    const [year, month, day] = dateStr.split("-").map(Number);
+    const d = new Date(year, month - 1, day);
+    if (endOfDay) d.setHours(23, 59, 59, 999);
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}.${String(d.getMilliseconds()).padStart(3, "0")}`;
+  }
+
+  const today = new Date();
+  const defaultStart = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+  const defaultEnd = defaultStart;
+
+  const start = startDate ? toLocalPgTimestamp(startDate) : toLocalPgTimestamp(defaultStart);
+  const end = endDate ? toLocalPgTimestamp(endDate, true) : toLocalPgTimestamp(defaultEnd, true);
 
   const conditions: string[] = [`d.is_deleted = ${isDeleted}`];
-  if (!isEmpty(kitchenId)) conditions.push(`d.kitchen_id = ANY(ARRAY[${kitchenId?.map((id) => `'${id}'`).join(",")}]::uuid[])`);
-  if (driverId) conditions.push(`d.driver_id = '${driverId}'`);
+  if (!isEmpty(kitchenIds) && entity === "kitchen") {
+    conditions.push(`d.kitchen_id = ANY(ARRAY[${kitchenIds?.map((id) => `'${id}'`).join(",")}]::uuid[])`);
+  }
+  if (driverIds && entity === "driver") conditions.push(`d.driver_id = ANY(ARRAY[${driverIds?.map((id) => `'${id}'`).join(",")}]::uuid[])`);
   if (status) conditions.push(`d.status = '${status}'`);
+
+  const schoolFilterSql = !isEmpty(schoolIds)
+    ? `AND ds.school_id = ANY(ARRAY[${schoolIds!.map((id) => `'${id}'`).join(",")}]::uuid[])`
+    : "";
 
   conditions.push(`
     EXISTS (
@@ -56,7 +74,9 @@ export async function getDeliveriesList({
       FROM delivery_schools ds
       JOIN menu_plans mp ON ds.menu_plan_id = mp.id
       WHERE ds.delivery_id = d.id
-      AND mp.plan_start_date BETWEEN '${start.toISOString()}' AND '${end.toISOString()}'
+       ${schoolFilterSql}
+      AND mp.plan_start_date >= '${start}'
+      AND mp.plan_start_date <= '${end}'
     )
   `);
 
@@ -79,16 +99,10 @@ export async function getDeliveriesList({
         'phoneNumber', k.phone_number,
         'lon', k.lon,
         'lat', k.lat,
-        'provinceId', k.province_id,
-        'regencyId', k.regency_id,
-        'districtId', k.district_id,
-        'villageId', k.village_id,
         'storageId', k.storage_id,
         'imageURL', k.image_url,
         'driver', json_build_object(
           'id', dr.id,
-          'userId', dr.user_id,
-          'kitchenId', dr.kitchen_id,
           'licenseNumber', dr.license_number,
           'profile', json_build_object(
             'userId', ud.user_id,
@@ -102,7 +116,8 @@ export async function getDeliveriesList({
           )
         )
       ) AS kitchen,
-      (SELECT json_agg(
+      (
+        SELECT json_agg(
           json_build_object(
             'id', s.id,
             'name', s.name,
@@ -110,18 +125,15 @@ export async function getDeliveriesList({
             'phoneNumber', s.phone_number,
             'lon', s.lon,
             'lat', s.lat,
-            'provinceId', s.province_id,
-            'regencyId', s.regency_id,
-            'districtId', s.district_id,
-            'villageId', s.village_id,
             'storageId', s.storage_id,
             'imageURL', s.image_url
           )
-      )
-      FROM delivery_schools ds
-      JOIN schools s ON ds.school_id = s.id
-      JOIN menu_plans mp ON ds.menu_plan_id = mp.id
-      WHERE ds.delivery_id = d.id
+        )
+        FROM delivery_schools ds
+        JOIN schools s ON ds.school_id = s.id
+        JOIN menu_plans mp ON ds.menu_plan_id = mp.id
+        WHERE ds.delivery_id = d.id
+        ${!isEmpty(schoolIds) && entity === "school" ? `AND ds.school_id = ANY(ARRAY[${schoolIds!.map((id) => `'${id}'`).join(",")}]::uuid[])` : ""}
       ) AS school
     FROM deliveries d
     LEFT JOIN kitchens k ON d.kitchen_id = k.id
@@ -151,7 +163,6 @@ export async function getDeliveriesList({
     },
   };
 }
-
 
 
 export async function getDeliveryById(id: string): Promise<Delivery | null> {

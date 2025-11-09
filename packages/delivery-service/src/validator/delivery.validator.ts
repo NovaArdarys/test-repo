@@ -29,8 +29,6 @@ export const updateDeliverySchema = deliveryBaseSchema.partial();
 
 export const listDeliveriesQuerySchema = paginationSchema.extend({
   status: deliveryStatusTypeEnum.optional(),
-  kitchenId: z.string().optional(),
-  driverId: z.string().optional(),
   startDate: z.string().optional(),
   endDate: z.string().optional(),
 });

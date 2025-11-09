@@ -13,6 +13,7 @@ import { checkDatabase } from '@/db';
 import { initializeConsumers } from './messaging/consumers';
 import { eventMonitorRoute } from './routes/event.monitor.route';
 import { swaggerUI } from '@hono/swagger-ui';
+import routesMobile from './routes/public/mobile';
 
 type Variables = JwtVariables;
 
@@ -59,7 +60,9 @@ const app = new Hono<{ Variables: Variables; }>()
       return filePath;
     }
   }))
-  .get('/swagger', swaggerUI({ url: '/api/openapi.json' })).get('/api/health', async (c) => {
+  .get('/swagger/mobile', swaggerUI({ url: '/delivery/api/mobile/openapi.json' }))
+  .get('/swagger', swaggerUI({ url: '/delivery/api/openapi.json' }))
+  .get('/api/health', async (c) => {
     const dbStatus = await checkDatabase();
     const rabbitStatus = await checkBroker();
 
@@ -72,7 +75,7 @@ const app = new Hono<{ Variables: Variables; }>()
   })
   .route("/api/events", eventMonitorRoute)
   .route('/api', routes)
-
+  .route('/api/mobile', routesMobile)
   .onError(errorHandler);
 
 async function bootstrap() {
