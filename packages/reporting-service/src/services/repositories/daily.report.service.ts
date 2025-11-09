@@ -298,7 +298,7 @@ export async function getDailyReportsList(params?: {
   }
 
   const threeDaysMenuField =
-    view === "home" && entityType === "kitchen"
+    view === "home" && (entityType === "kitchen" || entityType === "school" || entityType === "beneficiary")
       ? sql`
           COALESCE((
             SELECT jsonb_agg(
@@ -309,7 +309,7 @@ export async function getDailyReportsList(params?: {
               )
             )
             FROM menu_plans mp
-            WHERE mp."plan_start_date" >= ${endDate}
+            WHERE mp."plan_start_date" > ${endDate}
               AND mp."plan_start_date" <= ${computedEndDate}
           ), '[]'::jsonb)
         `.as("threeDaysMenu")
@@ -433,19 +433,18 @@ export async function getDailyReportsList(params?: {
 
   const reportMap = new Map();
 
-  console.log(data?.[0]?.threeDaysMenu, "===== threeDaysMenu ======");
-
   data.forEach((row) => {
     const reportId = row.dailyReports.id;
 
     if (!reportMap.has(reportId)) {
       reportMap.set(reportId, {
         ...row.dailyReports,
-        threeDaysMenu: row.threeDaysMenu ?? [],
         menuPlan: row.menuPlan ? {
           ...row.menuPlan,
           _foodItemMap: new Map(),
         } : null,
+        threeDaysMenu: row.threeDaysMenu ?? [],
+        eventReports: [],
         _stepMap: new Map(),
       });
     }

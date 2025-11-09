@@ -16,8 +16,7 @@ services:
     ports:
       - "3009:3009"
     volumes:
-      - ../../packages/reporting-service:/app/packages/reporting-service:cached
-      - /app/node_modules
+      - ../..:/app:cached
     depends_on:
       redis:
         condition: service_healthy
