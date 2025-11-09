@@ -59,7 +59,7 @@ const app = new Hono<{ Variables: Variables; }>()
       return filePath;
     }
   }))
-  .get('/swagger', swaggerUI({ url: '/api/openapi.json' }))
+  .get('/swagger', swaggerUI({ url: 'reporting/api/openapi.json' }))
   .get('/swagger/mobile', swaggerUI({ url: '/api/mobile/openapi.json' }))
   .get('/api/health', async (c) => {
     const dbStatus = await checkDatabase();

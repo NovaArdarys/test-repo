@@ -2,7 +2,7 @@ import { Context } from "hono";
 import { catchAsync } from "@/utils/catchAsync";
 import {
   ListMenuPlansQuerySchemaType
-} from "@/validator/menu.plan.validator";
+} from "@/validator/mobile/menu.plan.validator";
 import { getMenuPlanById, getMenuPlansList } from "@/services/repositories/mobile/menu.plan.service";
 
 const getAuditFields = (c: Context) => ({
@@ -18,13 +18,14 @@ const getAuditFields = (c: Context) => ({
 });
 
 export const listMenuPlansHandler = catchAsync(async (c: Context) => {
-  const query = c.req.query() as unknown as ListMenuPlansQuerySchemaType;
+  const query = c.get("validatedData").query as unknown as ListMenuPlansQuerySchemaType;
+  const param = c.get("validatedData").param;
 
   const page = parseInt(String(query.page || '1'));
   const limit = parseInt(String(query.limit || '10'));
   const startDate = query.startDate || null;
   const endDate = query.endDate || null;
-  const entityType = query.entityType || null;
+  const entityType = param.entityType || null;
   const search = query.search || null;
 
   const audit = getAuditFields(c);

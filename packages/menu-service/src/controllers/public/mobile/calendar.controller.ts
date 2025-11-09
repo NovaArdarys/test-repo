@@ -1,8 +1,8 @@
 
 import { Context } from "hono";
 import { catchAsync } from "@/utils/catchAsync";
-import { ListCalendarQuerySchemaType } from "@/validator/calendar.validator";
-import { getMenuPlansCalendar } from "@/services/repositories/menu.calendar.service";
+import { ListCalendarQuerySchemaType } from "@/validator/mobile/calendar.validator";
+import { getMenuPlansCalendar } from "@/services/repositories/mobile/menu.calendar.service";
 
 const getAuditFields = (c: Context) => ({
   createdBy: c.get('userId'),
@@ -18,12 +18,13 @@ const getAuditFields = (c: Context) => ({
 
 export const listCalendar = catchAsync(async (c: Context) => {
   const query = await c.get("validatedData").query as ListCalendarQuerySchemaType;
+  const param = await c.get("validatedData").param;
 
   const page = parseInt(String(query.page || 1));
   const limit = parseInt(String(query.limit || 10));
   const startDate = query.startDate || null;
   const endDate = query.endDate || null;
-  const entityType = query.entityType || null;
+  const entityType = param.entityType || null;
 
   const audit = getAuditFields(c);
 
