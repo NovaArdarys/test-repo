@@ -10,6 +10,7 @@ import {
   createStepReportSchema,
   updateStepReportSchema,
   getStepReportListSchema,
+  stepReportQuerySchema,
 } from "@/validator/daily.report.validator";
 
 import { idParamSchema } from "@/validator/globa.validator";
@@ -25,13 +26,18 @@ import {
   updateStepReportHandler,
   deleteStepReportHandler,
 } from "@/controllers/public/daily.report.controller";
+import { getStepReportsHandler } from "@/controllers/public/web/log.daily.report.controller";
 
 const app = new Hono();
 
 app.use(checkAccessToken);
 
-// DAILY REPORT ROUTES
-// ================================
+
+app.get(
+  "/log",
+  validate({ query: stepReportQuerySchema }),
+  getStepReportsHandler
+);
 app.get(
   "/",
   validate(getDailyReportListSchema, "query"),
@@ -63,8 +69,7 @@ app.delete(
   deleteDailyReportHandler
 );
 
-// STEP REPORT ROUTES
-// ================================
+
 app.get(
   "/:dailyReportId/steps",
   validate(getStepReportListSchema, "query"),
