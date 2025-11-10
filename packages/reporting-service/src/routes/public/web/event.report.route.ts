@@ -7,6 +7,7 @@ import {
   CreateEventReportSchema,
   UpdateEventReportSchema,
   GetEventReportListSchema,
+  eventReportQuerySchema,
 } from "@/validator/event.report.validator";
 
 import { idParamSchema } from "@/validator/globa.validator";
@@ -18,10 +19,22 @@ import {
   updateEventReportHandler,
   softDeleteEventReportHandler,
 } from "@/controllers/public/event.report.controller";
+import { getEventReportsHandler } from "@/controllers/public/web/log.event.report.controller";
 
 const app = new Hono();
 
 app.use(checkAccessToken);
+
+app.get(
+  "/log",
+  validate({ query: eventReportQuerySchema }),
+  getEventReportsHandler
+);
+app.get(
+  "/log/:id",
+  validate({ param: idParamSchema }),
+  getEventReportByIdHandler
+);
 
 app.get(
   "/",

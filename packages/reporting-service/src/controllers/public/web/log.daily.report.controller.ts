@@ -1,7 +1,7 @@
 import { Context } from "hono";
 import { catchAsync } from "@/utils/catchAsync";
 import { stepReportQuerySchema } from "@/validator/daily.report.validator";
-import { getStepReportById, getStepReportsWithFilter } from "@/services/repositories/read.report.daily.service";
+import { getStepReportById, getStepReportsWithFilter } from "@/services/repositories/log.report.daily.service";
 import z from "zod";
 
 export const getStepReportsHandler = catchAsync(async (c: Context) => {

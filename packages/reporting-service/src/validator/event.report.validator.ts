@@ -56,3 +56,13 @@ export const GetEventReportListSchema = z.object({
 });
 
 export type GetEventReportListSchemaType = z.infer<typeof GetEventReportListSchema>;
+
+
+export const eventReportQuerySchema = z.object({
+  page: z.coerce.number().optional().default(1),
+  limit: z.coerce.number().optional().default(10),
+  startDate: z.string().optional(),
+  endDate: z.string().optional(),
+  reportType: z.string().optional(),
+  search: z.string().optional(),
+});
