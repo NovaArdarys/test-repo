@@ -89,10 +89,17 @@ export const dailyReportRelations = relations(dailyReports, ({ one, many }) => (
 }));
 
 export const stepReportRelations = relations(stepReports, ({ one }) => ({
+  storage: one(storage, { fields: [stepReports.storageId], references: [storage.id] }),
   dailyReport: one(dailyReports, {
     fields: [stepReports.dailyReportId],
     references: [dailyReports.id],
   }),
+
+  step: one(masterSteps, {
+    fields: [stepReports.stepId],
+    references: [masterSteps.id],
+  }),
+
   createdByUser: one(users, {
     fields: [stepReports.createdBy],
     references: [users.id],
@@ -104,11 +111,7 @@ export const stepReportRelations = relations(stepReports, ({ one }) => ({
   masterStep: one(masterSteps, {
     fields: [stepReports.stepId],
     references: [masterSteps.id],
-  }),
-  storage: one(storage, {
-    fields: [stepReports.storageId],
-    references: [storage.id],
-  }),
+  })
 }));
 
 export const masterStepRelations = relations(masterSteps, ({ many }) => ({
@@ -382,43 +385,4 @@ export const deliverySchoolsRelations = relations(deliverySchools, ({ one }) => 
   school: one(schools, { fields: [deliverySchools.schoolId], references: [schools.id] }),
   menuPlan: one(menuPlans, { fields: [deliverySchools.menuPlanId], references: [menuPlans.id] }),
   createdBy: one(users, { fields: [deliverySchools.createdBy], references: [users.id], relationName: 'created_by' }),
-}));
-
-
-export const dailyReportsRelations = relations(dailyReports, ({ many, one }) => ({
-  steps: many(stepReports),
-  menuPlan: one(menuPlans, {
-    fields: [dailyReports.menuPlanId],
-    references: [menuPlans.id],
-  }),
-  createdByUser: one(users, {
-    fields: [dailyReports.createdBy],
-    references: [users.id],
-  }),
-  updatedByUser: one(users, {
-    fields: [dailyReports.updatedBy],
-    references: [users.id],
-  }),
-}));
-
-export const stepReportsRelations = relations(stepReports, ({ one }) => ({
-  storage: one(storage, { fields: [stepReports.storageId], references: [storage.id] }),
-  dailyReport: one(dailyReports, {
-    fields: [stepReports.dailyReportId],
-    references: [dailyReports.id],
-  }),
-
-  step: one(masterSteps, {
-    fields: [stepReports.stepId],
-    references: [masterSteps.id],
-  }),
-
-  createdByUser: one(users, {
-    fields: [stepReports.createdBy],
-    references: [users.id],
-  }),
-  updatedByUser: one(users, {
-    fields: [stepReports.updatedBy],
-    references: [users.id],
-  }),
 }));
