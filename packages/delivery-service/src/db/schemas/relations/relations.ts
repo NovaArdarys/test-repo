@@ -49,6 +49,13 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   createdDeliveries: many(deliveries, { relationName: 'created_by' }),
   updatedDeliveries: many(deliveries, { relationName: 'updated_by' }),
   createdDeliverySchools: many(deliverySchools, { relationName: 'created_by' }),
+  dailyReports: many(dailyReports, {
+    relationName: "user_daily_reports",
+  }),
+
+  stepReports: many(stepReports, {
+    relationName: "user_step_reports",
+  }),
 }));
 
 export const eventReportsRelations = relations(eventReports, ({ one }) => ({
@@ -60,6 +67,52 @@ export const eventReportsRelations = relations(eventReports, ({ one }) => ({
     fields: [eventReports.updatedBy],
     references: [users.id],
   }),
+}));
+
+export const dailyReportRelations = relations(dailyReports, ({ one, many }) => ({
+  createdByUser: one(users, {
+    fields: [dailyReports.createdBy],
+    references: [users.id],
+  }),
+
+  updatedByUser: one(users, {
+    fields: [dailyReports.updatedBy],
+    references: [users.id],
+  }),
+
+  menuPlan: one(menuPlans, {
+    fields: [dailyReports.menuPlanId],
+    references: [menuPlans.id],
+  }),
+
+  steps: many(stepReports),
+}));
+
+export const stepReportRelations = relations(stepReports, ({ one }) => ({
+  dailyReport: one(dailyReports, {
+    fields: [stepReports.dailyReportId],
+    references: [dailyReports.id],
+  }),
+  createdByUser: one(users, {
+    fields: [stepReports.createdBy],
+    references: [users.id],
+  }),
+  updatedByUser: one(users, {
+    fields: [stepReports.updatedBy],
+    references: [users.id],
+  }),
+  masterStep: one(masterSteps, {
+    fields: [stepReports.stepId],
+    references: [masterSteps.id],
+  }),
+  storage: one(storage, {
+    fields: [stepReports.storageId],
+    references: [storage.id],
+  }),
+}));
+
+export const masterStepRelations = relations(masterSteps, ({ many }) => ({
+  stepReports: many(stepReports),
 }));
 
 export const storageRelations = relations(storage, ({ many }) => ({
