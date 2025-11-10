@@ -8,7 +8,7 @@ import { foodItems, menuFoodItem, menuPlans, menuPlanSchools } from "../food.sch
 import { suppliers, suppliersFoodItems, suppliersProducts } from "../supplier.schema";
 import { deliveries, deliverySchools } from "../delivery.schema";
 import { districts, provinces, regencies, villages } from "../master.schema";
-import { dailyReports, stepReports } from "../reporting.Schema";
+import { dailyReports, eventReports, stepReports } from "../reporting.Schema";
 import { masterSteps } from "../stepPlan.schema";
 import { storage } from "../storage.schema";
 
@@ -49,6 +49,17 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   createdDeliveries: many(deliveries, { relationName: 'created_by' }),
   updatedDeliveries: many(deliveries, { relationName: 'updated_by' }),
   createdDeliverySchools: many(deliverySchools, { relationName: 'created_by' }),
+}));
+
+export const eventReportsRelations = relations(eventReports, ({ one }) => ({
+  createdByUser: one(users, {
+    fields: [eventReports.createdBy],
+    references: [users.id],
+  }),
+  updatedByUser: one(users, {
+    fields: [eventReports.updatedBy],
+    references: [users.id],
+  }),
 }));
 
 export const storageRelations = relations(storage, ({ many }) => ({
