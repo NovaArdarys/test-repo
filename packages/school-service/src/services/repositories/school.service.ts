@@ -2,7 +2,7 @@ import { db } from "@/db"; // Asumsi koneksi Drizzle di sini
 import { schools, userSchools } from "@/db/schemas"; // Asumsi skema Anda di sini
 import { APIPagination } from "@/types/paginations.type";
 import { BulkUpdateItem } from "@/validator/school.validator";
-import { eq, and, sql, desc, SQLWrapper, InferInsertModel, InferSelectModel, or } from "drizzle-orm";
+import { eq, and, sql, desc, SQLWrapper, InferInsertModel, InferSelectModel, or, inArray } from "drizzle-orm";
 
 export type School = InferSelectModel<typeof schools>;
 export type NewSchool = Omit<
@@ -287,6 +287,62 @@ export async function syncSchoolsByMerge({
     }
 
     return updated;
+  });
+
+  return results;
+}
+
+export async function syncUserSchoolByMerge({
+  schoolId,
+  userId,
+  userIds: newUserIds,
+}: {
+  schoolId: string;
+  userId: string;
+  userIds: string[];
+}): Promise<NewUserSchool[]> {
+  const results = await db.transaction(async (tx) => {
+    const currentUsers = await tx.query.userSchools.findMany({
+      where: (us, { eq, and }) =>
+        and(eq(us.schoolId, schoolId), eq(us.isDeleted, false)),
+    });
+
+    const currentUserIds = currentUsers.map((u) => u.userId);
+
+    const toAssign = newUserIds.filter((id) => !currentUserIds.includes(id));
+    const toUnassign = currentUserIds.filter((id) => !newUserIds.includes(id));
+
+    if (toUnassign.length > 0) {
+      await tx
+        .update(userSchools)
+        .set({ isDeleted: true })
+        .where(
+          and(
+            eq(userSchools.schoolId, schoolId),
+            inArray(userSchools.userId, toUnassign)
+          )
+        );
+    }
+
+    let inserted: NewUserSchool[] = [];
+    if (toAssign.length > 0) {
+      const rowsToInsert = toAssign.map((uid) => ({
+        schoolId,
+        userId: uid,
+        createdBy: userId,
+        createdAt: new Date(),
+        isDeleted: false,
+      }));
+
+      const rows = await tx
+        .insert(userSchools)
+        .values(rowsToInsert)
+        .returning();
+
+      inserted = rows;
+    }
+
+    return inserted;
   });
 
   return results;

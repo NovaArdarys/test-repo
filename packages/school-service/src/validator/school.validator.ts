@@ -25,6 +25,11 @@ const schoolBaseSchema = z.object({
 export const createSchoolSchema = schoolBaseSchema.extend({
   name: schoolBaseSchema.shape.name.nonempty("Nama sekolah wajib diisi."),
   kitchenId: schoolBaseSchema.shape.kitchenId.nonempty("Kitchen ID wajib diisi."),
+  users: z.array(
+    z.string()
+  ).optional(),
+  storageId: z.string().optional(),
+  imageURL: z.string().optional()
 });
 
 export type CreateSchoolSchemaType = z.infer<typeof createSchoolSchema>;

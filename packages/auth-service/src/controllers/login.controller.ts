@@ -17,6 +17,8 @@ export const loginHandler = catchAsync(async (c) => {
 
   const findUser = await getUserInfoServiceClient({ username });
 
+  console.log(findUser, "===== findUser =====");
+
   if (isEmpty(findUser)) {
     throw new ApiError(HttpStatus.default.UNAUTHORIZED, { message: "Unauthorized" });
   }

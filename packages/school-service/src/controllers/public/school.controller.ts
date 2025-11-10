@@ -9,9 +9,12 @@ import {
   updateSchool,
   assignUserToSchool,
   unassignUserFromSchool,
-  isUserAssignedToSchool
+  isUserAssignedToSchool,
+  syncSchoolsByMerge,
+  syncUserSchoolByMerge
 } from "@/services/repositories/school.service";
 import { CreateSchoolSchemaType, AssignUserToSchoolSchemaType } from "@/validator/school.validator";
+import { isEmpty } from "lodash";
 
 const getAuditFields = (c: Context) => ({
   createdBy: c.get('userId'),
@@ -51,15 +54,23 @@ export const listSchoolsHandler = catchAsync(async (c: Context) => {
 });
 
 export const createSchoolHandler = catchAsync(async (c: Context) => {
-  const body = await c.req.parseBody() as unknown as CreateSchoolSchemaType;
+  const body = await c.get("validatedData").body ?? {};
   const audit = getAuditFields(c);
 
   const newSchool = await createSchool({
-    ...body,
+    ...body as unknown as CreateSchoolSchemaType,
     lon: String(body.lon),
     lat: String(body.lat),
     createdBy: audit.createdBy,
   });
+
+  const usersArray = body.users as unknown as string[] || body["users[]"] || [];
+
+  console.log(console.log(usersArray), body, "===== ok ======");
+
+  if (!isEmpty(usersArray)) {
+    await syncUserSchoolByMerge({ schoolId: newSchool.id, userId: audit.createdBy, userIds: usersArray });
+  }
 
   return c.json({ data: newSchool, message: "School Created" }, 201);
 });
@@ -78,7 +89,7 @@ export const getSchoolByIdHandler = catchAsync(async (c: Context) => {
 
 export const updateSchoolHandler = catchAsync(async (c: Context) => {
   const { id } = c.req.param();
-  const body = await c.req.parseBody() as unknown as CreateSchoolSchemaType;
+  const body = await c.get("validatedData").body ?? {} as unknown as CreateSchoolSchemaType;
   const audit = getAuditFields(c);
 
   const existingSchool = await getSchoolById(id);
@@ -97,6 +108,13 @@ export const updateSchoolHandler = catchAsync(async (c: Context) => {
     throw new ApiError(500, { message: "Failed Update School" });
   }
 
+  const usersArray = body.users as unknown as string[] || body["users[]"] || [];
+
+  console.log(console.log(usersArray), body, "===== ok ======");
+
+  if (!isEmpty(usersArray)) {
+    await syncUserSchoolByMerge({ schoolId: updatedSchool.id, userId: audit.createdBy, userIds: usersArray });
+  }
   return c.json({ data: updatedSchool, message: "Updated School" }, 200);
 });
 
@@ -114,7 +132,7 @@ export const deleteSchoolHandler = catchAsync(async (c: Context) => {
 });
 export const assignUserToSchoolHandler = catchAsync(async (c: Context) => {
   const { id: schoolId } = c.req.param();
-  const { userId } = await c.req.parseBody() as unknown as AssignUserToSchoolSchemaType;
+  const { userId } = await c.get("validatedData").body ?? {} as unknown as AssignUserToSchoolSchemaType;
   const audit = getAuditFields(c);
 
   const school = await getSchoolById(schoolId);

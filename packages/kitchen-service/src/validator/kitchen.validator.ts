@@ -28,6 +28,8 @@ export const createKitchenSchema = kitchenBaseSchema.extend({
   users: z.array(
     z.string()
   ).optional(),
+  storageId: z.string().optional(),
+  imageURL: z.string().optional()
 });
 
 export type CreateKitchenSchemaType = z.infer<typeof createKitchenSchema>;
