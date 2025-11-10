@@ -1,6 +1,6 @@
 import { sql } from "drizzle-orm";
 import { entityTypeEnum } from "./enums/enums";
-import { pgTable, uuid, text, varchar, timestamp, index, uniqueIndex } from "drizzle-orm/pg-core";
+import { pgTable, uuid, text, varchar, timestamp, index, uniqueIndex, jsonb } from "drizzle-orm/pg-core";
 
 export const storage = pgTable(
   "storages",
@@ -8,6 +8,10 @@ export const storage = pgTable(
     id: uuid("id").defaultRandom().primaryKey(),
     fileName: text("file_name").notNull(),
     path: text("path").notNull(),
+    meta: jsonb("meta")
+      .$type<Record<string, any>>()
+      .default(sql`'{}'::jsonb`)
+      .notNull(),
     fileUrl: text("file_url").notNull(),
     mimeType: varchar("mime_type", { length: 100 }),
     size: varchar("size", { length: 50 }),

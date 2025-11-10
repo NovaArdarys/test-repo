@@ -25,6 +25,7 @@ export async function saveStorageRecord(data: StorageCreatePayload): Promise<Sto
     const [record] = await db.insert(storage)
       .values({
         ...data,
+        meta: data?.meta ?? {},
         entityType: data.entityType as any,
         entityId: data?.entityId ?? null,
         createdAt: new Date(),

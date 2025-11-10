@@ -1,0 +1,1 @@
+ALTER TABLE "storages" ADD COLUMN "meta" jsonb DEFAULT '{}'::jsonb NOT NULL;

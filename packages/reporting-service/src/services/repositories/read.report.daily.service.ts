@@ -3,7 +3,7 @@ import { and, between, eq, ilike, sql, gte, lte, or, desc } from "drizzle-orm";/
 import { users, userDetails, userRoles, roles } from "@/db/schemas/user.schema";
 import { roleDomainEnum } from "@/db/schemas/enums/enums";
 import z from "zod";
-import { dailyReports, masterSteps, stepReports } from "@/db/schemas";
+import { dailyReports, masterSteps, schoolClassroom, stepReports } from "@/db/schemas";
 
 const entityTypeValidator = z.enum(roleDomainEnum.enumValues);
 
@@ -139,4 +139,133 @@ export async function getStepReportsWithFilter({
     data: Array.from(grouped.values()),
     meta,
   };
+}
+
+export async function getStepReportById(stepId: string) {
+  const [row] = await db
+    .select({
+      id: stepReports.id,
+      notes: stepReports.notes,
+      isCompleted: stepReports.isCompleted,
+      createdAt: stepReports.createdAt,
+      updatedAt: stepReports.updatedAt,
+      date: dailyReports.date,
+      stepName: masterSteps.stepName,
+      stepOrder: masterSteps.stepOrder,
+      stepKey: masterSteps.stepKey,
+      entityId: dailyReports.entityId,
+      entityType: dailyReports.entityType,
+      status: dailyReports.status,
+      menuPlanId: dailyReports.menuPlanId,
+      createdBy: users.id,
+      creatorName: sql<string>`CONCAT(${userDetails.firstName}, ' ', COALESCE(${userDetails.lastName}, ''))`,
+      phoneNumber: userDetails.phoneNumber,
+      roleName: roles.name,
+      roleDomain: roles.domain,
+      storageId: stepReports.storageId,
+      imageURL: stepReports.imageURL,
+    })
+    .from(stepReports)
+    .leftJoin(masterSteps, eq(stepReports.stepId, masterSteps.id))
+    .leftJoin(dailyReports, eq(stepReports.dailyReportId, dailyReports.id))
+    .leftJoin(users, eq(stepReports.createdBy, users.id))
+    .leftJoin(userDetails, eq(users.id, userDetails.userId))
+    .leftJoin(userRoles, eq(users.id, userRoles.userId))
+    .leftJoin(roles, eq(userRoles.roleId, roles.id))
+    .where(eq(stepReports.id, stepId))
+    .limit(1);
+
+  if (!row) return null;
+
+  let classroomSummary: {
+    totalClassroom: number;
+    totalStudent: number;
+    classrooms: {
+      id: string;
+      name: string;
+      date: string;
+      totalRecipient: number;
+      portionType: string | null;
+    }[];
+  } | null = null;
+
+  if (row.entityType === "school") {
+    const classrooms = await db
+      .select({
+        id: schoolClassroom.id,
+        name: schoolClassroom.name,
+        date: schoolClassroom.date,
+        totalRecipient: schoolClassroom.totalRecipient,
+        portionType: schoolClassroom.portionType,
+      })
+      .from(schoolClassroom)
+      .where(
+        and(
+          row.entityId ? eq(schoolClassroom.schoolId, row.entityId) : undefined,
+          eq(schoolClassroom.isDeleted, false)
+        )
+      );
+
+    const totalClassroom = classrooms.length;
+    const totalStudent = classrooms.reduce(
+      (acc, cur) => acc + (cur.totalRecipient ?? 0),
+      0
+    );
+
+    classroomSummary = {
+      totalClassroom,
+      totalStudent,
+      classrooms: classrooms.map((cls) => ({
+        id: cls.id,
+        name: cls.name,
+        date: new Date(cls.date).toLocaleDateString("id-ID", {
+          day: "2-digit",
+          month: "long",
+          year: "numeric",
+        }),
+        totalRecipient: cls.totalRecipient,
+        portionType: cls.portionType,
+      })),
+    };
+  }
+
+  const result = {
+    id: row.id,
+    name: row.stepName,
+    key: row.stepKey,
+    order: row.stepOrder,
+    notes: row.notes,
+    isCompleted: row.isCompleted,
+    date: new Date(row.date || "").toLocaleDateString("id-ID", {
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+    }),
+    dailyReport: {
+      id: row.id,
+      entityType: row.entityType,
+      status: row.status,
+      menuPlanId: row.menuPlanId,
+    },
+    createdBy: {
+      id: row.createdBy,
+      name: row.creatorName ?? "-",
+      phoneNumber: row.phoneNumber ?? "-",
+      roleName: row.roleName ?? "-",
+      domain: row.roleDomain ?? "-",
+    },
+    storages: row.storageId
+      ? [
+        {
+          id: row.storageId,
+          imageURL: row.imageURL ?? null,
+        },
+      ]
+      : [],
+    classroomSummary,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+  };
+
+  return result;
 }

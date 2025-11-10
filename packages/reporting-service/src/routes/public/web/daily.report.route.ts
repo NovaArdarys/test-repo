@@ -26,7 +26,7 @@ import {
   updateStepReportHandler,
   deleteStepReportHandler,
 } from "@/controllers/public/daily.report.controller";
-import { getStepReportsHandler } from "@/controllers/public/web/log.daily.report.controller";
+import { getStepReportByIdHandler, getStepReportsHandler } from "@/controllers/public/web/log.daily.report.controller";
 
 const app = new Hono();
 
@@ -37,6 +37,11 @@ app.get(
   "/log",
   validate({ query: stepReportQuerySchema }),
   getStepReportsHandler
+);
+app.get(
+  "/log/:id",
+  validate({ param: idParamSchema }),
+  getStepReportByIdHandler
 );
 app.get(
   "/",

@@ -1,7 +1,7 @@
 import { Context } from "hono";
 import { catchAsync } from "@/utils/catchAsync";
 import { stepReportQuerySchema } from "@/validator/daily.report.validator";
-import { getStepReportsWithFilter } from "@/services/repositories/read.report.daily.service";
+import { getStepReportById, getStepReportsWithFilter } from "@/services/repositories/read.report.daily.service";
 import z from "zod";
 
 export const getStepReportsHandler = catchAsync(async (c: Context) => {
@@ -22,3 +22,19 @@ export const getStepReportsHandler = catchAsync(async (c: Context) => {
     meta: results.meta
   });
 });
+
+export const getStepReportByIdHandler = catchAsync(async (c: Context) => {
+  const param = c.get("validatedData").param;
+
+  const result = await getStepReportById(param.id);
+
+  if (!result) {
+    return c.json({ success: false, message: "Step report tidak ditemukan" }, 404);
+  }
+
+  return c.json({
+    success: true,
+    data: result,
+  });
+});
+
