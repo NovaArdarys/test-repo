@@ -1,7 +1,7 @@
 import Redis from "ioredis";
 
 const redis = new Redis({
-  host: "redis",
+  host: process.env.REDIS_HOST || "redis",
   port: 6379,
   password: process.env.REDIS_PASSWORD || "password",
 });

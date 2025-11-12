@@ -6,6 +6,7 @@
       "dependencies": {
         "axios": "^1.12.2",
         "dotenv": "^17.2.2",
+        "picocolors": "^1.1.1",
       },
       "devDependencies": {
         "@types/bun": "latest",
@@ -18,6 +19,7 @@
     "packages/ai-service": {
       "name": "storage-service",
       "dependencies": {
+        "@hono/standard-validator": "^0.1.5",
         "@hono/swagger-ui": "^0.5.2",
         "@jsquash/jpeg": "^1.6.0",
         "@jsquash/png": "^3.1.1",
@@ -74,7 +76,6 @@
         "nodemailer": "^7.0.9",
         "ua-parser-js": "^2.0.6",
         "uuid": "^13.0.0",
-        "zod": "^4.1.11",
         "zod-to-json-schema": "^3.24.6",
       },
       "devDependencies": {
@@ -106,6 +107,7 @@
     "packages/delivery-service": {
       "name": "delivery-service",
       "dependencies": {
+        "@hono/standard-validator": "^0.1.5",
         "@hono/swagger-ui": "^0.5.2",
         "amqplib": "^0.10.9",
         "axios": "^1.12.2",
@@ -138,6 +140,7 @@
     "packages/kitchen-service": {
       "name": "kitchen-service",
       "dependencies": {
+        "@hono/standard-validator": "^0.1.5",
         "@hono/swagger-ui": "^0.5.2",
         "amqplib": "^0.10.9",
         "axios": "^1.12.2",
@@ -169,6 +172,7 @@
     "packages/log-service": {
       "name": "log-service",
       "dependencies": {
+        "@hono/standard-validator": "^0.1.5",
         "@hono/swagger-ui": "^0.5.2",
         "amqplib": "^0.10.9",
         "axios": "^1.12.2",
@@ -200,6 +204,7 @@
     "packages/menu-service": {
       "name": "menu-service",
       "dependencies": {
+        "@hono/standard-validator": "^0.1.5",
         "@hono/swagger-ui": "^0.5.2",
         "amqplib": "^0.10.9",
         "axios": "^1.12.2",
@@ -231,6 +236,7 @@
     "packages/notification-service": {
       "name": "notification-service",
       "dependencies": {
+        "@hono/standard-validator": "^0.1.5",
         "@hono/swagger-ui": "^0.5.2",
         "amqplib": "^0.10.9",
         "axios": "^1.12.2",
@@ -262,6 +268,7 @@
     "packages/reporting-service": {
       "name": "reporting-service",
       "dependencies": {
+        "@hono/standard-validator": "^0.1.5",
         "@hono/swagger-ui": "^0.5.2",
         "amqplib": "^0.10.9",
         "axios": "^1.12.2",
@@ -293,6 +300,7 @@
     "packages/school-service": {
       "name": "school-service",
       "dependencies": {
+        "@hono/standard-validator": "^0.1.5",
         "@hono/swagger-ui": "^0.5.2",
         "amqplib": "^0.10.9",
         "axios": "^1.12.2",
@@ -324,6 +332,7 @@
     "packages/storage-service": {
       "name": "ai-service",
       "dependencies": {
+        "@hono/standard-validator": "^0.1.5",
         "@hono/swagger-ui": "^0.5.2",
         "@jsquash/jpeg": "^1.6.0",
         "@jsquash/png": "^3.1.1",
@@ -362,6 +371,7 @@
     "packages/tracking-service": {
       "name": "tracking-service",
       "dependencies": {
+        "@hono/standard-validator": "^0.1.5",
         "@hono/swagger-ui": "^0.5.2",
         "@types/amqplib": "^0.10.7",
         "@types/jsonwebtoken": "^9.0.10",
@@ -395,6 +405,7 @@
     "packages/user-service": {
       "name": "user-service",
       "dependencies": {
+        "@hono/standard-validator": "^0.1.5",
         "@hono/swagger-ui": "^0.5.2",
         "amqplib": "^0.10.9",
         "axios": "^1.12.2",
@@ -940,6 +951,8 @@
     "pg-types": ["pg-types@2.2.0", "", { "dependencies": { "pg-int8": "1.0.1", "postgres-array": "~2.0.0", "postgres-bytea": "~1.0.0", "postgres-date": "~1.0.4", "postgres-interval": "^1.1.0" } }, "sha512-qTAAlrEsl8s4OiEQY69wDvcMIdQN6wdz5ojQiOy6YRMuynxenON0O5oCpJI6lshc6scgAY8qvJ2On/p+CXY0GA=="],
 
     "pgpass": ["pgpass@1.0.5", "", { "dependencies": { "split2": "^4.1.0" } }, "sha512-FdW9r/jQZhSeohs1Z3sI1yxFQNFvMcnmfuj4WBMUTxOrAyLMaTcE1aAMBiTlbMNaXvBCQuVi0R7hd8udDSP7ug=="],
+
+    "picocolors": ["picocolors@1.1.1", "", {}, "sha512-xceH2snhtb5M9liqDsmEw56le376mTZkEX/jEb/RxNFyegNul7eNslCXP9FDj/Lcu0X8KEyMceP2ntpaHrDEVA=="],
 
     "possible-typed-array-names": ["possible-typed-array-names@1.1.0", "", {}, "sha512-/+5VFTchJDoVj3bhoqi6UeymcD00DAwb1nJwamzPvHEszJ4FpF6SNNbUbOS8yI56qHzdV8eK0qEfOSiodkTdxg=="],
 

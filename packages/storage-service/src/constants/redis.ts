@@ -1,13 +1,13 @@
 import Redis from "ioredis";
 
 export const redisShared = new Redis({
-  host: "redis",
+  host: process.env.REDIS_HOST || "redis",
   port: 6379,
   password: process.env.REDIS_PASSWORD || "password",
 });
 
 export const redisBull = new Redis({
-  host: "redis",
+  host: process.env.REDIS_HOST || "redis",
   port: 6379,
   password: process.env.REDIS_PASSWORD || "password",
   maxRetriesPerRequest: null,
