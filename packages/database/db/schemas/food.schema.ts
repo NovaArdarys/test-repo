@@ -41,10 +41,10 @@ export const menuPlans = pgTable('menu_plans', {
   updatedBy: uuid('updated_by'),
 });
 
-export const menuPlanSchools = pgTable('menu_plan_schools', {
+export const menuPlanBeneficiaries = pgTable('menu_plan_beneficiaries', {
   id: uuid('id').primaryKey().defaultRandom(),
   menuPlanId: uuid('menu_plan_id').notNull(),
-  schoolId: uuid('school_id').notNull(),
+  beneficiaryId: uuid('beneficiary_id').notNull(),
   isDeleted: boolean('is_deleted').default(false).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   createdBy: uuid('created_by'),

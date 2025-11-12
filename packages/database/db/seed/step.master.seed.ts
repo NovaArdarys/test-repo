@@ -22,10 +22,10 @@ const stepsByEntity: Record<
     { stepKey: "delivery", stepName: "Pengantaran", stepOrder: 1 },
     { stepKey: "pickup", stepName: "Pengambilan", stepOrder: 2 },
   ],
-  school: [
+  beneficiary: [
     { stepKey: "inspection", stepName: "Foto Murid", stepOrder: 1 },
-    { stepKey: "receive_big_class", stepName: "Konfirmasi Penerimaan", stepOrder: 2 },
-    { stepKey: "receive_small_class", stepName: "Konfirmasi Penerimaan", stepOrder: 3 },
+    { stepKey: "receive_big_portion", stepName: "Konfirmasi Penerimaan", stepOrder: 2 },
+    { stepKey: "receive_small_portion", stepName: "Konfirmasi Penerimaan", stepOrder: 3 },
   ],
 };
 
