@@ -1,0 +1,2 @@
+ALTER TYPE "public"."step_key_enum" ADD VALUE 'receive_big_portion' BEFORE 'receive_small_class';--> statement-breakpoint
+ALTER TYPE "public"."step_key_enum" ADD VALUE 'receive_small_portion' BEFORE 'inspection';
