@@ -1,11 +1,11 @@
 import { db } from "@/db";
-import { foodItems, kitchens, menuPlans, menuPlanSchools, menuFoodItem, schools, dailyReports, stepReports, drivers, masterSteps, suppliersFoodItems } from "@/db/schemas";
+import { foodItems, kitchens, menuPlans, menuPlanBeneficiaries, menuFoodItem, beneficiaries, dailyReports, stepReports, drivers, masterSteps, suppliersFoodItems } from "@/db/schemas";
 import { eq, and, sql, desc, InferSelectModel, InferInsertModel } from "drizzle-orm";
 import { FoodItem } from "./food.item.service";
-import { MenuPlanSchools } from "./menu.plan.schools.kitchen.service";
 import { isEmpty } from "lodash";
 import { buildPaginatedWhere } from "@/utils/pagination";
 
+export type MenuPlanBeneficiaries = InferSelectModel<typeof menuPlanBeneficiaries>;
 export type MenuPlan = InferSelectModel<typeof menuPlans>;
 export type NewMenuPlan = Omit<
     InferInsertModel<typeof menuPlans>,
@@ -59,7 +59,7 @@ export async function getMenuPlansList({
             entityType === "kitchen" && isEmpty(kitchenIds)
                 ? sql`${menuPlans.kitchenId} IS NOT NULL`
                 : undefined,
-            !isEmpty(schoolIds) && entityType === "school"
+            !isEmpty(schoolIds) && (entityType === "school" || entityType === "beneficiary")
                 ? sql`${menuPlans.id} IN (
           SELECT menu_plan_id 
           FROM menu_plan_schools
@@ -107,9 +107,9 @@ export async function getMenuPlansList({
                     },
                 }
             },
-            menuPlanSchools: {
+            menuPlanBeneficiaries: {
                 with: {
-                    school: {
+                    beneficiary: {
                         columns: {
                             id: true,
                             address: true,
@@ -138,18 +138,18 @@ export async function getMenuPlansList({
             foodItemMap.set(foodItem.id, fi);
         });
 
-        const schoolMap = new Map<string, any>();
-        report.menuPlanSchools.forEach((mpsk) => {
-            if (mpsk.school?.id) schoolMap.set(mpsk.school.id, { ...mpsk.school, portion: 0 });
+        const beneficiaryMap = new Map<string, any>();
+        report.menuPlanBeneficiaries.forEach((mpsk) => {
+            if (mpsk.beneficiary?.id) beneficiaryMap.set(mpsk.beneficiary.id, { ...mpsk.beneficiary, portion: 0 });
         });
 
-        const { menuPlanSchools, suppliersFoodItems, planEndDate, planStartDate, ...menuPlan } = report;
+        const { menuPlanBeneficiaries, suppliersFoodItems, planEndDate, planStartDate, ...menuPlan } = report;
 
         return {
             ...menuPlan,
             date: planStartDate,
             foodItems: Array.from(foodItemMap.values()),
-            schools: Array.from(schoolMap.values()),
+            beneficiaries: Array.from(beneficiaryMap.values()),
         };
     });
 
@@ -196,9 +196,9 @@ export async function getMenuPlanById(
                 }
             },
             menuPlankitchen: true,
-            menuPlanSchools: {
+            menuPlanBeneficiaries: {
                 with: {
-                    school: {
+                    beneficiary: {
                         columns: {
                             id: true,
                             address: true,
@@ -230,23 +230,23 @@ export async function getMenuPlanById(
         foodItemMap.set(foodItem.id, fi);
     });
 
-    const schoolMap = new Map<string, any>();
-    data.menuPlanSchools.forEach((mpsk) => {
-        if (mpsk.school?.id)
-            schoolMap.set(mpsk.school.id, {
-                ...mpsk.school,
+    const beneficiaryMap = new Map<string, any>();
+    data.menuPlanBeneficiaries.forEach((mpsk) => {
+        if (mpsk.beneficiary?.id)
+            beneficiaryMap.set(mpsk.beneficiary.id, {
+                ...mpsk.beneficiary,
                 portion: 0,
             });
     });
 
-    const { menuPlanSchools, suppliersFoodItems, planEndDate, planStartDate, ...menuPlan } = data;
+    const { menuPlanBeneficiaries, suppliersFoodItems, planEndDate, planStartDate, ...menuPlan } = data;
 
     const formattedData = {
         ...menuPlan,
         date: planStartDate,
         kitchenId: kitchenIds?.[0] ?? null,
         foodItems: Array.from(foodItemMap.values()),
-        schools: Array.from(schoolMap.values())
+        beneficiaries: Array.from(beneficiaryMap.values())
     };
 
     return {
@@ -267,7 +267,7 @@ async function validateEntity(entityType: string, entityId: string) {
         case "driver":
             return db.query.drivers.findMany({ where: eq(drivers.id, entityId) });
         case "school":
-            return db.query.schools.findMany({ where: eq(schools.id, entityId) });
+            return db.query.beneficiaries.findMany({ where: eq(beneficiaries.id, entityId) });
         default:
             throw new Error(`Unknown entity type: ${entityType}`);
     }
@@ -301,10 +301,10 @@ export async function createMenuPlan(
 
     return db.transaction(async (trx) => {
         // Ambil sekolah berdasarkan kitchen
-        const schoolsByKitchen = await trx
+        const beneficiariesByKitchen = await trx
             .select()
-            .from(schools)
-            .where(eq(schools.kitchenId, kitchenId));
+            .from(beneficiaries)
+            .where(eq(beneficiaries.kitchenId, kitchenId));
         const driverByKitchen = await trx
             .select()
             .from(drivers)
@@ -314,7 +314,6 @@ export async function createMenuPlan(
         const allDailyReports: any[] = [];
 
         for (const date of planDates) {
-            // Buat menu plan utama
             const [newPlan] = await trx
                 .insert(menuPlans)
                 .values({
@@ -329,10 +328,10 @@ export async function createMenuPlan(
                 })
                 .returning();
 
-            if (schoolsByKitchen.length > 0) {
-                await trx.insert(menuPlanSchools).values(
-                    schoolsByKitchen.map((school) => ({
-                        schoolId: school.id,
+            if (beneficiariesByKitchen.length > 0) {
+                await trx.insert(menuPlanBeneficiaries).values(
+                    beneficiariesByKitchen.map((beneficiary) => ({
+                        beneficiaryId: beneficiary.id,
                         menuPlanId: newPlan.id,
                         createdAt: newPlan.createdAt,
                         createdBy: newPlan.createdBy,
@@ -388,7 +387,7 @@ export async function createMenuPlan(
             );
 
             // school(s)
-            for (const school of schoolsByKitchen) {
+            for (const school of beneficiariesByKitchen) {
                 const [dailySchool] = await trx
                     .insert(dailyReports)
                     .values({
@@ -483,15 +482,15 @@ export async function updateMenuPlan(
             );
         }
 
-        await trx.delete(menuPlanSchools).where(eq(menuPlanSchools.menuPlanId, id));
+        await trx.delete(menuPlanBeneficiaries).where(eq(menuPlanBeneficiaries.menuPlanId, id));
         if (kitchenId) {
-            const schoolsByKitchen = await trx.select().from(schools).where(eq(schools.kitchenId, kitchenId));
-            if (schoolsByKitchen.length > 0) {
+            const beneficiariesByKitchen = await trx.select().from(beneficiaries).where(eq(beneficiaries.kitchenId, kitchenId));
+            if (beneficiariesByKitchen.length > 0) {
                 await Promise.all(
-                    schoolsByKitchen.map((school) =>
-                        trx.insert(menuPlanSchools).values({
+                    beneficiariesByKitchen.map((beneficiary) =>
+                        trx.insert(menuPlanBeneficiaries).values({
                             menuPlanId: updatedPlan.id,
-                            schoolId: school.id,
+                            beneficiaryId: beneficiary.id,
                             createdAt: updatedPlan.updatedAt,
                             createdBy: updatedBy!,
                         })
@@ -526,8 +525,8 @@ export async function updateMenuPlan(
                     }
                 }
             } else if (kitchenId) {
-                const schoolsByKitchen = await trx.select().from(schools).where(eq(schools.kitchenId, kitchenId));
-                for (const school of schoolsByKitchen) {
+                const beneficiariesByKitchen = await trx.select().from(beneficiaries).where(eq(beneficiaries.kitchenId, kitchenId));
+                for (const school of beneficiariesByKitchen) {
                     for (const date of planDates) {
                         const [daily] = await trx.insert(dailyReports).values({
                             date,
@@ -589,23 +588,23 @@ export async function getFoodItemsByMenuPlanId(menuFoodPlanId: string): Promise<
 export async function getDistributionByMenuPlanId(menuPlanId: string): Promise<
     Array<{
         distributionId: string;
-        school: MenuPlanSchools;
-        kitchen: MenuPlanSchools;
+        school: MenuPlanBeneficiaries;
+        kitchen: MenuPlanBeneficiaries;
     }>
 > {
     const distributionDetails = await db.select({
-        distributionId: menuPlanSchools.id,
-        school: schools,
+        distributionId: menuPlanBeneficiaries.id,
+        beneficiaries: beneficiaries,
         kitchen: kitchens,
     })
-        .from(menuPlanSchools)
-        .innerJoin(schools, eq(menuPlanSchools.schoolId, schools.id))
-        .innerJoin(menuPlans, eq(menuPlanSchools.menuPlanId, menuPlans.id))
+        .from(menuPlanBeneficiaries)
+        .innerJoin(beneficiaries, eq(menuPlanBeneficiaries.beneficiaryId, beneficiaries.id))
+        .innerJoin(menuPlans, eq(menuPlanBeneficiaries.menuPlanId, menuPlans.id))
         .innerJoin(kitchens, eq(menuPlans.kitchenId, kitchens.id))
         .where(and(
-            eq(menuPlanSchools.menuPlanId, menuPlanId),
-            eq(menuPlanSchools.isDeleted, false),
-            eq(schools.isDeleted, false),
+            eq(menuPlanBeneficiaries.menuPlanId, menuPlanId),
+            eq(menuPlanBeneficiaries.isDeleted, false),
+            eq(beneficiaries.isDeleted, false),
             eq(kitchens.isDeleted, false)
         ));
 

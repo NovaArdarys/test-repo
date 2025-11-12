@@ -189,7 +189,7 @@ export async function getStepReportById(stepId: string) {
     }[];
   } | null = null;
 
-  if (row.entityType === "school") {
+  if (row.entityType === "school" || row.entityType === "beneficiary") {
     const classrooms = await db
       .select({
         id: schoolClassroom.id,

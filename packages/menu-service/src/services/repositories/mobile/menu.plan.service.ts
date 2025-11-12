@@ -64,7 +64,7 @@ export async function getMenuPlansList({
                 : undefined,
 
             // 🔹 SCHOOL
-            entityType === "school" && !isEmpty(schoolIds)
+            (entityType === "school" || entityType === "beneficiary") && !isEmpty(schoolIds)
                 ? sql`${menuPlans.id} IN (
             SELECT mps.menu_plan_id
             FROM menu_plan_schools mps

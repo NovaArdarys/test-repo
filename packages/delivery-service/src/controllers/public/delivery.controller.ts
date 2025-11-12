@@ -24,11 +24,12 @@ const getAuditFields = (c: Context) => ({
   userId: c.get('userId'),
   kitchenId: c.get("kitchenId") as string[],
   driverId: c.get("driverId") as string[],
-  schoolId: c.get("schoolId") as string[],
+  beneficiaryId: c.get("beneficiaryId") as string[],
   driverKitchenId: c.get("driverKitchenId") as string[],
   updatedAt: new Date(),
   createdAt: new Date()
 });
+
 
 export const listDeliveriesHandler = catchAsync(async (c: Context) => {
   const query = c.req.query() as unknown as ListDeliveriesQuerySchemaType;

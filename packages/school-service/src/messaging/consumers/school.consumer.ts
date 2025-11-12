@@ -38,7 +38,7 @@ const LOG_ROUTING_KEY = "log.#";
 async function handleStorageEvent(data: z.infer<typeof storageCommittedSchema>) {
   const parsed = storageCommittedSchema.parse(data);
 
-  if (parsed.entityType === "school") {
+  if (parsed.entityType === "school" || parsed.entityType === "beneficiary") {
     await updateSchool(parsed.entityId, {
       storageId: parsed.storageId,
       imageURL: parsed.url,

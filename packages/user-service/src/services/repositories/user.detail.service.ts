@@ -8,8 +8,8 @@ import {
   userKitchens,
   kitchens,
   provinces,
-  schools,
-  userSchools,
+  beneficiaries,
+  userBeneficiaries,
   userRoles,
   roles,
   drivers
@@ -174,12 +174,12 @@ export async function getUserById(id: string) {
         imageURL: kitchens.imageURL,
       },
 
-      school: {
-        id: schools.id,
-        name: schools.name,
-        address: schools.address,
-        kitchenId: schools.kitchenId,
-        phoneNumber: schools.phoneNumber,
+      beneficiaries: {
+        id: beneficiaries.id,
+        name: beneficiaries.name,
+        address: beneficiaries.address,
+        kitchenId: beneficiaries.kitchenId,
+        phoneNumber: beneficiaries.phoneNumber,
       },
 
       role: {
@@ -200,8 +200,8 @@ export async function getUserById(id: string) {
     )
 
     .leftJoin(provinces, eq(provinces.id, kitchens.provinceId))
-    .leftJoin(userSchools, eq(userSchools.userId, users.id))
-    .leftJoin(schools, eq(schools.id, userSchools.schoolId))
+    .leftJoin(userBeneficiaries, eq(userBeneficiaries.userId, users.id))
+    .leftJoin(beneficiaries, eq(beneficiaries.id, userBeneficiaries.beneficiaryId))
     .leftJoin(userRoles, eq(userRoles.userId, users.id))
     .leftJoin(roles, eq(roles.id, userRoles.roleId))
     .where(and(eq(users.id, id), eq(users.isDeleted, false)))

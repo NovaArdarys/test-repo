@@ -34,7 +34,7 @@ export function getAITypeFromStepOrder(stepOrder: number, entityType: EntityType
     }
   }
 
-  if (entityType === "school") {
+  if (entityType === "school" || entityType === "beneficiary") {
     switch (stepOrder) {
       case 1:
         return "people";

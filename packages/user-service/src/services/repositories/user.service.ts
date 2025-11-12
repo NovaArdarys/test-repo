@@ -45,9 +45,9 @@ export async function getUser({ email }: { email: string; phone?: string; }) {
             kitchenId: true
           }
         },
-        userSchools: {
+        userBeneficiaries: {
           columns: {
-            schoolId: true,
+            beneficiaryId: true,
           }
         },
       },

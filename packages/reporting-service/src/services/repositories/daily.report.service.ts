@@ -36,7 +36,7 @@ async function getMenuPlanDate(
 ) {
   const menuPlanByEntity = await db.query.menuPlanSchools.findFirst({
     where:
-      entityType === "school"
+      (entityType === "school" || entityType === "beneficiary")
         ? eq(menuPlanSchools.schoolId, entityId)
         : undefined,
   });
@@ -325,7 +325,7 @@ export async function getDailyReportsList(params?: {
           ? sql`AND mp.kitchen_id = ANY(${sql.raw(`ARRAY[${kitchenIds.map(id => `'${id}'`).join(",")}]::uuid[]`)})`
           : sql``
         }
-            ${entityType === "school" && schoolIds.length > 0
+            ${(entityType === "school" || entityType === "beneficiary") && schoolIds.length > 0
           ? sql`AND mp.id IN (
                          SELECT mps.menu_plan_id
                          FROM menu_plan_schools mps
@@ -370,7 +370,7 @@ export async function getDailyReportsList(params?: {
           ? sql`AND er.report_type = 'kitchen'
                      AND er.entity_id = ANY(${sql.raw(`ARRAY[${kitchenIds.map(id => `'${id}'`).join(",")}]::uuid[]`)})`
           : sql``}
-            ${entityType === "school" && schoolIds.length > 0
+            ${(entityType === "school" || entityType === "beneficiary") && schoolIds.length > 0
           ? sql`AND er.report_type = 'school'
                      AND er.entity_id = ANY(${sql.raw(`ARRAY[${schoolIds.map(id => `'${id}'`).join(",")}]::uuid[]`)})`
           : sql``}
@@ -502,7 +502,7 @@ export async function getDailyReportsList(params?: {
       kitchenIds.length > 0 && entityType === "kitchen"
         ? sql`${dailyReports.entityId} = ANY(${sql.raw(`ARRAY[${kitchenIds.map(id => `'${id}'`).join(',')}]::uuid[]`)})`
         : undefined,
-      schoolIds.length > 0 && entityType === "school"
+      schoolIds.length > 0 && (entityType === "school" || entityType === "beneficiary")
         ? sql`${dailyReports.entityId} = ANY(${sql.raw(`ARRAY[${schoolIds.map(id => `'${id}'`).join(',')}]::uuid[]`)})`
         : undefined,
       params?.menuPlanName

@@ -46,7 +46,7 @@ export const loginHandler = catchAsync(async (c) => {
   }
 
   let context = {
-    school: {},
+    beneficiary: {},
     kitchen: {},
     driver: {},
   };
@@ -56,10 +56,10 @@ export const loginHandler = catchAsync(async (c) => {
       type: 'kitchen',
       kitchenIds: findUser.userKitchens.map((k: any) => k.kitchenId).slice(0, 5),
     };
-  } else if (findUser.userSchools?.length > 0) {
-    context.school = {
-      type: 'school',
-      schoolIds: findUser.userSchools.map((s: any) => s.schoolId).slice(0, 5),
+  } else if (findUser.userBeneficiaries?.length > 0) {
+    context.beneficiary = {
+      type: 'beneficiary',
+      beneficiaryIds: findUser.userBeneficiaries.map((s: any) => s.beneficiaryId).slice(0, 5),
     };
   } else if (findUser.drivers?.length > 0) {
     context.driver = {
