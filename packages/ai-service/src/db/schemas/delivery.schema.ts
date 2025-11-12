@@ -1,5 +1,5 @@
 import { boolean, date, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
-import { deliverySchoolStatusEnum, deliveryStatusEnum } from "./enums/enums";
+import { deliveryBeneficiaryStatusEnum, deliveryStatusEnum } from "./enums/enums";
 
 export const deliveries = pgTable('deliveries', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -24,12 +24,12 @@ export const deliveries = pgTable('deliveries', {
   ),
 }));
 
-export const deliverySchools = pgTable('delivery_schools', {
+export const deliveryBeneficiaries = pgTable('delivery_beneficiaries', {
   id: uuid('id').primaryKey().defaultRandom(),
   deliveryId: uuid('delivery_id').notNull(),
-  schoolId: uuid('school_id').notNull(),
+  beneficiaryId: uuid('beneficiary_id').notNull(),
   menuPlanId: uuid('menu_plan_id').notNull(),
-  status: deliverySchoolStatusEnum('status').default('PENDING').notNull(),
+  status: deliveryBeneficiaryStatusEnum('status').default('PENDING').notNull(),
   deliveredAt: timestamp('delivered_at'),
   notes: text('notes'),
   isDeleted: boolean('is_deleted').default(false).notNull(),
