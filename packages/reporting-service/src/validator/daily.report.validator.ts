@@ -2,7 +2,7 @@ import z from "zod";
 import { paginationSchema } from "./globa.validator";
 import { roleDomainEnum } from "@/db/schemas/enums/enums"; // pastikan import ke enum yang kamu punya
 
-export const entityTypeEnum = z.enum(["kitchen", "driver", "school"]);
+export const entityTypeEnum = z.enum(["kitchen", "driver", "school", "beneficiary"]);
 export const stepKeyEnum = z.enum([
   "preparationTool",
   "preparation",

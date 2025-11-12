@@ -4,7 +4,7 @@ import { planStatusEnum } from "@/db/schemas";
 
 export const BulkUpdateItemSchema = z.string("ID komponen makanan harus berupa format UUID yang valid");
 export const BulkDateItemSchema = z.string("Date harus berupa format yang valid");
-export const entityTypeEnum = z.enum(["kitchen", "driver", "school"]);
+export const entityTypeEnum = z.enum(["kitchen", "driver", "school", "beneficiary"]);
 
 export type BulkUpdateItem = z.infer<typeof BulkUpdateItemSchema>;
 
