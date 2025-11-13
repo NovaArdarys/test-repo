@@ -35,7 +35,7 @@ export const listCalendar = catchAsync(async (c: Context) => {
     page,
     driversIds: audit.driverId,
     kitchenIds: audit.kitchenId,
-    schoolIds: audit.schoolId,
+    schoolIds: audit.beneficiaryId,
     endDate,
     startDate,
     entityType
