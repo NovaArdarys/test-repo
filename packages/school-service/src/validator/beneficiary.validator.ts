@@ -20,6 +20,10 @@ const BeneficiaryBaseSchema = z.object({
   regencyId: z.string(),
   districtId: z.string(),
   villageId: z.string(),
+  joinedDate: z.string(),
+  smallPortion: z.number().min(0).default(0),
+  largePortion: z.number().min(0).default(0),
+  status: z.enum(["ACTIVE", "INACTIVE"]).default("ACTIVE"),
 });
 
 export const CreateBeneficiarySchema = BeneficiaryBaseSchema.extend({
