@@ -2,8 +2,8 @@ import { Hono } from 'hono';
 import { validate } from '@/middleware/validate.middleware'; // Asumsi middleware validasi
 import { permission } from '@/middleware/permission.middleware'; // Asumsi middleware permission// Skema Validasi
 
-import { idParamSchema, paginationSchema } from '@/validator/globa.validator';
-import { createPermissionSchema, createRoleSchema, permissionListQuerySchema, updatePermissionSchema, updateRoleSchema } from '@/validator/role.permission.validator';
+import { idParamSchema, paginationSchema } from '@/validator/global.validator';
+import { CreateRoleSchema, UpdateRoleSchema } from '@/validator/role.permission.validator';
 import { createRoleHandler, deleteRoleHandler, getRoleByIdHandler, listRolesHandler, updateRoleHandler } from '@/controllers/public/role.permission.management.controller';
 import { checkAccessToken } from '@/middleware/auth.middleware';
 
@@ -17,7 +17,7 @@ app.use(checkAccessToken)
   )
   .post('/',
     permission(),
-    validate(createRoleSchema),
+    validate(CreateRoleSchema),
     createRoleHandler
   )
   .get('/:id',
@@ -28,7 +28,7 @@ app.use(checkAccessToken)
   .put('/:id',
     permission(),
     validate(idParamSchema, 'param'),
-    validate(updateRoleSchema),
+    validate(UpdateRoleSchema),
     updateRoleHandler
   )
   .delete('/:id',

@@ -6,9 +6,9 @@ import {
   getUserDetailsHandler, updateUserDetailsHandler,
   getUserProfile
 } from '@/controllers/public/user.management.controller';
-import { userListQuerySchema } from '@/validator/role.permission.validator';
+import { UserListQuerySchema } from '@/validator/role.permission.validator';
 import { createUserSchema, updateUserSchema, userDetailSchema } from '@/validator/user.validator';
-import { idParamSchema } from '@/validator/globa.validator';
+import { idParamSchema } from '@/validator/global.validator';
 import { checkAccessToken } from '@/middleware/auth.middleware';
 
 const app = new Hono();
@@ -16,7 +16,7 @@ const app = new Hono();
 app.use(checkAccessToken)
   .get('/',
     permission(),
-    validate(userListQuerySchema, 'query'),
+    validate(UserListQuerySchema, 'query'),
     listUsersHandler
   )
   .get('/profile',
