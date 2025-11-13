@@ -91,6 +91,17 @@ export async function getDailyReportById(id: string) {
           planStartDate: true,
         },
         with: {
+          menuPlanBeneficiaries: {
+            with: {
+              beneficiary: {
+                columns: {
+                  name: true,
+                  smallPortion: true,
+                  largePortion: true
+                }
+              }
+            }
+          },
           suppliersFoodItems: {
             with: {
               foodItem: {
@@ -599,6 +610,9 @@ export async function getDailyReportsList(params?: {
       beneficiaries: beneficiariesData?.rows?.[0]?.beneficiaries as any ?? [],
     };
   }
+
+  const includeBeneficiaries = view === "calendar";
+
   const data = await db
     .select({
       dailyReports,
@@ -607,6 +621,28 @@ export async function getDailyReportsList(params?: {
         name: menuPlans.name,
         planEndDate: menuPlans.planEndDate,
         planStartDate: menuPlans.planStartDate,
+        beneficiaries: includeBeneficiaries
+          ? sql`
+          (
+            SELECT json_agg(
+              json_build_object(
+                'id', b.id,
+                'name', b.name,
+                'address', b.address,
+                'category', b.category,
+                'imageURL', b.image_url,
+                'smallPortion', b.small_portion,
+                'largePortion', b.large_portion
+              )
+            )
+            FROM menu_plan_beneficiaries mpb
+            JOIN beneficiaries b ON b.id = mpb.beneficiary_id
+            WHERE mpb.menu_plan_id = ${menuPlans.id}
+              AND mpb.is_deleted = false
+              AND b.is_deleted = false
+          )
+        `.as("beneficiaries")
+          : sql`null`.as("beneficiaries"),
         targetPortion: sql`
         (
           SELECT json_build_object(
@@ -747,7 +783,6 @@ export async function getDailyReportsList(params?: {
     report.steps = orderBy(report.steps, "stepOrder", "asc");
 
     const {
-      id,
       entityId,
       menuPlanId,
       createdAt,
