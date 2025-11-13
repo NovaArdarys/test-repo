@@ -1,14 +1,14 @@
 import { Hono } from 'hono';
 import { validate } from '@/middleware/validate.middleware';
 
-import { BulkUpdateSchoolSchema } from '@/validator/beneficiary.validator';
+import { BulkUpdateBeneficiarySchema } from '@/validator/beneficiary.validator';
 import { bulkUpdateSchoolHandler } from '@/controllers/private/school.controller';
 
 const app = new Hono();
 
 app.patch(
   '/',
-  validate(BulkUpdateSchoolSchema, 'body'),
+  validate(BulkUpdateBeneficiarySchema, 'body'),
   bulkUpdateSchoolHandler
 );
 export default app;

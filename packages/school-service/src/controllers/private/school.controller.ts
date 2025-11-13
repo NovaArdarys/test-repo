@@ -1,7 +1,7 @@
 import { syncSchoolsByMerge } from '@/services/repositories/beneficiary.service';
 import ApiError from '@/utils/ApiError';
 import { catchAsync } from '@/utils/catchAsync';
-import { BulkUpdateSchoolSchemaType } from '@/validator/beneficiary.validator';
+import { BulkUpdateBeneficiarySchemaType } from '@/validator/beneficiary.validator';
 import { Context } from 'hono';
 
 const getAuditFields = (c: Context) => ({
@@ -18,7 +18,7 @@ const getAuditFields = (c: Context) => ({
 
 
 export const bulkUpdateSchoolHandler = catchAsync(async (c: Context) => {
-  const body = await c.get("validatedData") as unknown as BulkUpdateSchoolSchemaType;
+  const body = await c.get("validatedData") as unknown as BulkUpdateBeneficiarySchemaType;
   const updatedSchools = await syncSchoolsByMerge({ kitchenId: body.kitchenId, schoolIds: body.data, updatedBy: body.userId, });
 
   return c.json({ data: updatedSchools, message: "Successfully updated schools" }, 200);
