@@ -136,6 +136,8 @@ export async function getDailyReportById(id: string) {
 
   const report = data;
 
+  console.log(report?.steps, "=====report=====");
+
   if (!report?.menuPlan) return report;
 
   const foodItemMap = new Map<string, any>();
