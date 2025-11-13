@@ -808,8 +808,9 @@ export async function getDailyReportsList(params?: {
   return {
     data: {
       agenda: finalGroupedData,
-      ...(view === "home" ? widgets : { beneficiaries: widgets?.beneficiaries }),
-      ...(view === "home" ? widgets : { stepTomorrow: widgets?.stepTomorrow })
+      ...(entityType !== "kitchen" ? {} : view === "home" ? widgets : { beneficiaries: widgets?.beneficiaries }),
+      ...(entityType !== "kitchen" ? {} : view === "home" ? widgets : { stepTomorrow: widgets?.stepTomorrow }),
+      ...(view === "home" && entityType === "beneficiary" ? { eventReports: widgets?.eventReports, threeDaysMenu: widgets.threeDaysMenu } : {}),
     },
     meta,
   };
