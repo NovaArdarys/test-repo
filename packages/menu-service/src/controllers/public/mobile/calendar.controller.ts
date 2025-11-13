@@ -17,6 +17,7 @@ const getAuditFields = (c: Context) => ({
 });
 
 export const listCalendar = catchAsync(async (c: Context) => {
+
   const query = await c.get("validatedData").query as ListCalendarQuerySchemaType;
   const param = await c.get("validatedData").param;
 
@@ -24,7 +25,7 @@ export const listCalendar = catchAsync(async (c: Context) => {
   const limit = parseInt(String(query.limit || 10));
   const startDate = query.startDate || null;
   const endDate = query.endDate || null;
-  const entityType = param.entityType || null;
+  const entityType = param.entity || null;
 
   const audit = getAuditFields(c);
 
