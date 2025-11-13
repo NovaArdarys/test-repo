@@ -6,7 +6,7 @@ export const permissionTypeEnum = pgEnum('permission_type', ['API', 'WEBSITE', '
 export const foodTypeEnum = pgEnum('food_type', ['PROTEIN', 'PLANT_BASED_PROTEIN', 'CARBO', 'VEGETABLE', 'FRUIT', 'DRINK', 'OTHER']);
 export const planStatusEnum = pgEnum('plan_status', ['DRAFT', 'ACTIVE']);
 export const deliveryStatusEnum = pgEnum('delivery_status', ['PENDING', 'IN_PROGRESS', 'DELIVERED', 'FAILED']);
-export const deliverySchoolStatusEnum = pgEnum('delivery_school_status', ['PENDING', 'DELIVERED', 'FAILED']);
+export const deliveryBeneficiaryStatusEnum = pgEnum('delivery_beneficiary_status', ['PENDING', 'DELIVERED', 'FAILED']);
 
 export type PermissionType = 'API' | 'WEBSITE' | 'MOBILE';
 
