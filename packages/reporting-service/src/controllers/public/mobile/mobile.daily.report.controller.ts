@@ -7,7 +7,6 @@ import {
   updateStepReport,
   getDailyReportWithoutMaskById,
 } from "@/services/repositories/daily.report.service";
-import { CreateDailyReportSchemaType, CreateStepReportSchemaType, UpdateDailyReportSchemaType } from "@/validator/daily.report.validator";
 import { publishStepUpdate } from "@/messaging/publishers/reporting.publisher";
 import { every } from "lodash";
 import { getDriverDeliveries } from "@/services/repositories/daily.report.driver.service";
@@ -53,7 +52,7 @@ export const listDailyReportsHandler = catchAsync(async (c: Context) => {
     startDate: query.startDate,
     endDate: query.endDate,
     kitchenIds: audit.kitchenId,
-    schoolIds: audit.schoolId,
+    schoolIds: audit.beneficiaryId,
     driversIds: audit.driverId,
     page,
     limit,

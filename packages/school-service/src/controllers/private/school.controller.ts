@@ -1,4 +1,4 @@
-import { syncSchoolsByMerge } from '@/services/repositories/school.service';
+import { syncSchoolsByMerge } from '@/services/repositories/beneficiary.service';
 import ApiError from '@/utils/ApiError';
 import { catchAsync } from '@/utils/catchAsync';
 import { BulkUpdateSchoolSchemaType } from '@/validator/school.validator';

@@ -1,11 +1,7 @@
 import { db } from "@/db";
-import { dailyReports, deliveries, deliverySchools, foodItems, masterSteps, menuFoodItem, menuPlans, menuPlanSchools, schoolClassroom, stepReports, storage, suppliers, suppliersFoodItems } from "@/db/schemas";
-import { kitchens, drivers, schools } from "@/db/schemas";
-import { APIPagination } from "@/types/paginations.type";
-import { buildPaginatedWhere } from "@/utils/pagination";
+import { beneficiaries, dailyReports, deliveries, deliveryBeneficiaries, masterSteps, menuPlans, stepReports, storage } from "@/db/schemas";
 import { addDays } from "date-fns";
-import { eq, and, desc, InferInsertModel, InferSelectModel, between, gte, lte, sql, inArray, SQLWrapper } from "drizzle-orm";
-import { isEmpty, orderBy } from "lodash";
+import { eq, desc, sql, inArray } from "drizzle-orm";
 
 
 export async function getDriverDeliveries(params: {
@@ -116,19 +112,19 @@ export async function getDriverDeliveries(params: {
   const baseQuery = db
     .select({
       deliveryId: deliveries.id,
-      deliverySchoolId: deliverySchools.id,
+      deliveryBeneficiaryId: deliveryBeneficiaries.id,
       menuPlanId: menuPlans.id,
       planName: menuPlans.name,
       planDate: menuPlans.planStartDate,
-      schoolId: schools.id,
-      schoolName: schools.name,
-      deliveryStatus: deliverySchools.status,
-      deliveredAt: deliverySchools.deliveredAt,
+      beneficiaryId: beneficiaries.id,
+      beneficiaryName: beneficiaries.name,
+      deliveryStatus: deliveryBeneficiaries.status,
+      deliveredAt: deliveryBeneficiaries.deliveredAt,
     })
     .from(deliveries)
-    .leftJoin(deliverySchools, eq(deliveries.id, deliverySchools.deliveryId))
-    .leftJoin(menuPlans, eq(deliverySchools.menuPlanId, menuPlans.id))
-    .leftJoin(schools, eq(deliverySchools.schoolId, schools.id))
+    .leftJoin(deliveryBeneficiaries, eq(deliveries.id, deliveryBeneficiaries.deliveryId))
+    .leftJoin(menuPlans, eq(deliveryBeneficiaries.menuPlanId, menuPlans.id))
+    .leftJoin(beneficiaries, eq(deliveryBeneficiaries.beneficiaryId, beneficiaries.id))
     .where(eq(deliveries.driverId, driverId))
     .orderBy(desc(menuPlans.planStartDate))
     .limit(limit)
@@ -143,13 +139,13 @@ export async function getDriverDeliveries(params: {
     };
   }
 
-  const deliverySchoolIds = driverDeliveries
-    .map((d) => d.deliverySchoolId)
+  const deliveryBeneficiaryIds = driverDeliveries
+    .map((d) => d.deliveryBeneficiaryId)
     .filter((id): id is string => id !== null);
 
   const stepQuery = await db
     .select({
-      deliverySchoolId: dailyReports.entityId,
+      deliveryBeneficiaryId: dailyReports.entityId,
       dailyReportId: dailyReports.id,
       stepId: stepReports.id,
       isCompleted: stepReports.isCompleted,
@@ -163,11 +159,11 @@ export async function getDriverDeliveries(params: {
     .innerJoin(stepReports, eq(dailyReports.id, stepReports.dailyReportId))
     .leftJoin(masterSteps, eq(stepReports.stepId, masterSteps.id))
     .leftJoin(storage, eq(stepReports.id, storage.entityId))
-    .where(inArray(dailyReports.entityId, deliverySchoolIds));
+    .where(inArray(dailyReports.entityId, deliveryBeneficiaryIds));
 
   const stepsBySchool = stepQuery.reduce((acc, s) => {
-    if (!acc[s.deliverySchoolId]) acc[s.deliverySchoolId] = new Map();
-    const stepMap = acc[s.deliverySchoolId];
+    if (!acc[s.deliveryBeneficiaryId]) acc[s.deliveryBeneficiaryId] = new Map();
+    const stepMap = acc[s.deliveryBeneficiaryId];
 
     if (!stepMap.has(s.stepId)) {
       stepMap.set(s.stepId, {
@@ -203,8 +199,8 @@ export async function getDriverDeliveries(params: {
       };
     }
 
-    const steps = row.deliverySchoolId && stepsBySchool[row.deliverySchoolId]
-      ? Array.from(stepsBySchool[row.deliverySchoolId].values()).sort(
+    const steps = row.deliveryBeneficiaryId && stepsBySchool[row.deliveryBeneficiaryId]
+      ? Array.from(stepsBySchool[row.deliveryBeneficiaryId].values()).sort(
         (a, b) => a.stepOrder - b.stepOrder
       )
       : [];
@@ -212,8 +208,8 @@ export async function getDriverDeliveries(params: {
     acc[row.menuPlanId].delivery.push({
       id: row.deliveryId,
       school: {
-        id: row.schoolId,
-        name: row.schoolName,
+        id: row.beneficiaryId,
+        name: row.beneficiaryName,
         portion: 0
       },
       status: row.deliveryStatus,

@@ -1,7 +1,6 @@
 import { db } from "@/db";
-import { dailyReports, foodItems, masterSteps, menuFoodItem, menuPlans, menuPlanSchools, schoolClassroom, stepReports, storage, suppliers, suppliersFoodItems } from "@/db/schemas";
-import { kitchens, drivers, schools } from "@/db/schemas";
-import { APIPagination } from "@/types/paginations.type";
+import { dailyReports, foodItems, masterSteps, menuPlans, menuPlanBeneficiaries, stepReports, storage, suppliers, suppliersFoodItems } from "@/db/schemas";
+import { kitchens, drivers, beneficiaries } from "@/db/schemas";
 import { buildPaginatedWhere } from "@/utils/pagination";
 import { addDays } from "date-fns";
 import { eq, and, desc, InferInsertModel, InferSelectModel, between, gte, lte, sql, inArray, SQLWrapper } from "drizzle-orm";
@@ -19,7 +18,9 @@ async function validateEntity(entityType: string, entityId: string) {
     case "driver":
       return db.query.drivers.findFirst({ where: eq(drivers.id, entityId) });
     case "school":
-      return db.query.schools.findFirst({ where: eq(schools.id, entityId) });
+      return db.query.beneficiaries.findFirst({ where: eq(beneficiaries.id, entityId) });
+    case "beneficiary":
+      return db.query.beneficiaries.findFirst({ where: eq(beneficiaries.id, entityId) });
     default:
       throw new Error(`Unknown entity type: ${entityType}`);
   }
@@ -31,13 +32,13 @@ async function planEntity(entityType: string) {
 
 async function getMenuPlanDate(
   date: string,
-  entityType: "school" | "kitchen",
+  entityType: "school" | "kitchen" | "beneficiary",
   entityId: string
 ) {
-  const menuPlanByEntity = await db.query.menuPlanSchools.findFirst({
+  const menuPlanByEntity = await db.query.menuPlanBeneficiaries.findFirst({
     where:
       (entityType === "school" || entityType === "beneficiary")
-        ? eq(menuPlanSchools.schoolId, entityId)
+        ? eq(menuPlanBeneficiaries.beneficiaryId, entityId)
         : undefined,
   });
 
@@ -328,8 +329,8 @@ export async function getDailyReportsList(params?: {
             ${(entityType === "school" || entityType === "beneficiary") && schoolIds.length > 0
           ? sql`AND mp.id IN (
                          SELECT mps.menu_plan_id
-                         FROM menu_plan_schools mps
-                         WHERE mps.school_id = ANY(${sql.raw(`ARRAY[${schoolIds.map(id => `'${id}'`).join(",")}]::uuid[]`)})
+                         FROM menu_plan_beneficiaries mps
+                         WHERE mps.beneficiary_id = ANY(${sql.raw(`ARRAY[${schoolIds.map(id => `'${id}'`).join(",")}]::uuid[]`)})
                            AND mps.is_deleted = false
                        )`
           : sql``
@@ -371,7 +372,7 @@ export async function getDailyReportsList(params?: {
                      AND er.entity_id = ANY(${sql.raw(`ARRAY[${kitchenIds.map(id => `'${id}'`).join(",")}]::uuid[]`)})`
           : sql``}
             ${(entityType === "school" || entityType === "beneficiary") && schoolIds.length > 0
-          ? sql`AND er.report_type = 'school'
+          ? sql`AND er.report_type = 'beneficiaries'
                      AND er.entity_id = ANY(${sql.raw(`ARRAY[${schoolIds.map(id => `'${id}'`).join(",")}]::uuid[]`)})`
           : sql``}
             AND er.date >= ${endDate}
@@ -435,8 +436,8 @@ export async function getDailyReportsList(params?: {
           ? sql`AND s.kitchen_id IN (
                         SELECT mp.kitchen_id
                         FROM menu_plans mp
-                        INNER JOIN menu_plan_schools mps ON mps.menu_plan_id = mp.id
-                        WHERE mps.school_id = ANY(${sql.raw(
+                        INNER JOIN menu_plan_beneficiaries mps ON mps.menu_plan_id = mp.id
+                        WHERE mps.beneficiary_id = ANY(${sql.raw(
             `ARRAY[${schoolIds.map((id) => `'${id}'`).join(",")}]::uuid[]`
           )})
                           AND mp.is_deleted = false

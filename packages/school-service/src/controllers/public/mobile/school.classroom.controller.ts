@@ -8,11 +8,11 @@ import {
   updateSchoolClassroom,
   softDeleteSchoolClassroom,
   bulkUpdateTotalStudents
-} from "@/services/repositories/school.classroom.service";
+} from "@/services/repositories/beneficiary.portions.service";
 import {
   CreateSchoolClassroomSchemaType,
   BulkUpdateTotalStudentSchemaType
-} from "@/validator/school.classroom.validator";
+} from "@/validator/beneficiary.portions.validator";
 import { publishClientCommitStorage } from "@/messaging/publishers/school.publisher";
 
 const getAuditFields = (c: Context) => ({

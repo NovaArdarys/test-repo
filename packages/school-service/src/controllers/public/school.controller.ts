@@ -12,7 +12,7 @@ import {
   isUserAssignedToSchool,
   syncSchoolsByMerge,
   syncUserSchoolByMerge
-} from "@/services/repositories/school.service";
+} from "@/services/repositories/beneficiary.service";
 import { CreateSchoolSchemaType, AssignUserToSchoolSchemaType } from "@/validator/school.validator";
 import { isEmpty } from "lodash";
 

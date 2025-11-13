@@ -41,7 +41,7 @@ export async function setupStorageConsumer(channel: Channel) {
 
   const clientQueue = await channel.assertQueue(CLIENT_STORAGE_QUEUE_NAME, { durable: true });
 
-  await channel.bindQueue(clientQueue.queue, EXCHANGES.SCHOOL, CLIENT_STORAGE_ROUTING_KEY);
+  await channel.bindQueue(clientQueue.queue, EXCHANGES.BENEFICIARY, CLIENT_STORAGE_ROUTING_KEY);
   await channel.bindQueue(clientQueue.queue, EXCHANGES.REPORT, CLIENT_STORAGE_ROUTING_KEY);
   await channel.bindQueue(clientQueue.queue, EXCHANGES.STORAGE, CLIENT_STORAGE_ROUTING_KEY);
   await channel.bindQueue(clientQueue.queue, EXCHANGES.USER, CLIENT_STORAGE_ROUTING_KEY);

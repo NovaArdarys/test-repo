@@ -47,7 +47,7 @@ export async function connectRabbitMQ(): Promise<amqp.ConfirmChannel> {
       rabbitMQState.channel = null;
     });
 
-    await channel.assertExchange(EXCHANGES.SCHOOL, "topic", { durable: true });
+    await channel.assertExchange(EXCHANGES.BENEFICIARY, "topic", { durable: true });
 
     console.log("✅ RabbitMQ connected & ConfirmChannel created");
     return channel;

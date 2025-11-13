@@ -2,17 +2,17 @@ import { Context } from "hono";
 import ApiError from "@/utils/ApiError";
 import { catchAsync } from "@/utils/catchAsync";
 import {
-  createSchoolClassroom,
-  getSchoolClassroomById,
-  getSchoolClassroomList,
-  updateSchoolClassroom,
-  softDeleteSchoolClassroom,
+  createBeneficiaryPortions,
+  getBeneficiaryPortionsById,
+  getBeneficiaryPortionsList,
+  updateBeneficiaryPortions,
+  softDeleteBeneficiaryPortions,
   bulkUpdateTotalStudents
-} from "@/services/repositories/school.classroom.service";
+} from "@/services/repositories/beneficiary.portions.service";
 import {
-  CreateSchoolClassroomSchemaType,
-  BulkUpdateTotalStudentSchemaType
-} from "@/validator/school.classroom.validator";
+  CreateBeneficiaryPortionsSchemaType,
+  BulkUpdateTotalBeneficiarySchemaType
+} from "@/validator/beneficiary.portions.validator";
 import { publishClientCommitStorage } from "@/messaging/publishers/school.publisher";
 
 const getAuditFields = (c: Context) => ({
@@ -28,7 +28,7 @@ const getAuditFields = (c: Context) => ({
 });
 
 
-export const listSchoolClassroomHandler = catchAsync(async (c: Context) => {
+export const listBeneficiaryPortionsHandler = catchAsync(async (c: Context) => {
   const query = c.req.query();
   const page = parseInt(query.page || "1");
   const limit = parseInt(query.limit || "10");
@@ -40,11 +40,11 @@ export const listSchoolClassroomHandler = catchAsync(async (c: Context) => {
 
   const audit = getAuditFields(c);
 
-  const data = await getSchoolClassroomList({
+  const data = await getBeneficiaryPortionsList({
     page,
     limit,
     name,
-    schoolIds: audit.schoolId,
+    schoolIds: audit.beneficiaryId,
     portionType,
     endDate,
     startDate
@@ -53,11 +53,11 @@ export const listSchoolClassroomHandler = catchAsync(async (c: Context) => {
   return c.json({ data: data.data, meta: data.meta }, 200);
 });
 
-export const createSchoolClassroomHandler = catchAsync(async (c: Context) => {
-  const body = (await c.req.parseBody()) as unknown as CreateSchoolClassroomSchemaType;
+export const createBeneficiaryPortionsHandler = catchAsync(async (c: Context) => {
+  const body = (await c.req.parseBody()) as unknown as CreateBeneficiaryPortionsSchemaType;
   const audit = getAuditFields(c);
 
-  const newClassroom = await createSchoolClassroom({
+  const newClassroom = await createBeneficiaryPortions({
     ...body,
     createdBy: audit.createdBy,
   });
@@ -67,10 +67,10 @@ export const createSchoolClassroomHandler = catchAsync(async (c: Context) => {
   return c.json({ data: newClassroom, message: "Classroom Created" }, 201);
 });
 
-export const getSchoolClassroomByIdHandler = catchAsync(async (c: Context) => {
+export const getBeneficiaryPortionsByIdHandler = catchAsync(async (c: Context) => {
   const { id } = c.req.param();
 
-  const classroom = await getSchoolClassroomById(id);
+  const classroom = await getBeneficiaryPortionsById(id);
 
   if (!classroom) {
     throw new ApiError(404, { message: "Classroom Not Found" });
@@ -79,17 +79,17 @@ export const getSchoolClassroomByIdHandler = catchAsync(async (c: Context) => {
   return c.json({ data: classroom }, 200);
 });
 
-export const updateSchoolClassroomHandler = catchAsync(async (c: Context) => {
+export const updateBeneficiaryPortionsHandler = catchAsync(async (c: Context) => {
   const { id } = c.req.param();
-  const body = (await c.req.parseBody()) as unknown as CreateSchoolClassroomSchemaType;
+  const body = (await c.req.parseBody()) as unknown as CreateBeneficiaryPortionsSchemaType;
   const audit = getAuditFields(c);
 
-  const existing = await getSchoolClassroomById(id);
+  const existing = await getBeneficiaryPortionsById(id);
   if (!existing) {
     throw new ApiError(404, { message: "Classroom Not Found" });
   }
 
-  const updated = await updateSchoolClassroom(id, {
+  const updated = await updateBeneficiaryPortions(id, {
     ...body,
     updatedBy: audit.updatedBy,
   });
@@ -103,11 +103,11 @@ export const updateSchoolClassroomHandler = catchAsync(async (c: Context) => {
   return c.json({ data: updated, message: "Updated Classroom" }, 200);
 });
 
-export const deleteSchoolClassroomHandler = catchAsync(async (c: Context) => {
+export const deleteBeneficiaryPortionsHandler = catchAsync(async (c: Context) => {
   const { id } = c.req.param();
   const audit = getAuditFields(c);
 
-  const deleted = await softDeleteSchoolClassroom(id, audit.updatedBy);
+  const deleted = await softDeleteBeneficiaryPortions(id, audit.updatedBy);
 
   if (!deleted) {
     throw new ApiError(404, { message: "Classroom Not Found" });
@@ -117,7 +117,7 @@ export const deleteSchoolClassroomHandler = catchAsync(async (c: Context) => {
 });
 
 export const bulkUpdateTotalStudentsHandler = catchAsync(async (c: Context) => {
-  const body = (await c.req.parseBody()) as unknown as BulkUpdateTotalStudentSchemaType;
+  const body = (await c.req.parseBody()) as unknown as BulkUpdateTotalBeneficiarySchemaType;
 
   if (!Array.isArray(body.items) || body.items.length === 0) {
     throw new ApiError(400, { message: "No update items provided." });

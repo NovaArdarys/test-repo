@@ -3,7 +3,7 @@ import { and, between, eq, ilike, sql, gte, lte, or, desc } from "drizzle-orm";/
 import { users, userDetails, userRoles, roles } from "@/db/schemas/user.schema";
 import { roleDomainEnum } from "@/db/schemas/enums/enums";
 import z from "zod";
-import { dailyReports, masterSteps, schoolClassroom, stepReports } from "@/db/schemas";
+import { dailyReports, masterSteps, beneficiaryPortions, stepReports } from "@/db/schemas";
 
 const entityTypeValidator = z.enum(roleDomainEnum.enumValues);
 
@@ -192,17 +192,17 @@ export async function getStepReportById(stepId: string) {
   if (row.entityType === "school" || row.entityType === "beneficiary") {
     const classrooms = await db
       .select({
-        id: schoolClassroom.id,
-        name: schoolClassroom.name,
-        date: schoolClassroom.date,
-        totalRecipient: schoolClassroom.totalRecipient,
-        portionType: schoolClassroom.portionType,
+        id: beneficiaryPortions.id,
+        name: beneficiaryPortions.name,
+        date: beneficiaryPortions.date,
+        totalRecipient: beneficiaryPortions.totalRecipient,
+        portionType: beneficiaryPortions.portionType,
       })
-      .from(schoolClassroom)
+      .from(beneficiaryPortions)
       .where(
         and(
-          row.entityId ? eq(schoolClassroom.schoolId, row.entityId) : undefined,
-          eq(schoolClassroom.isDeleted, false)
+          row.entityId ? eq(beneficiaryPortions.beneficiaryId, row.entityId) : undefined,
+          eq(beneficiaryPortions.isDeleted, false)
         )
       );
 

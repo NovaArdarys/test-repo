@@ -2,7 +2,7 @@ import { z } from "zod";
 import { Channel } from "amqplib";
 import { EXCHANGES } from "../events/exchanges";
 import { entityTypeEnum } from "@/db/schemas";
-import { assignUserToSchool, isUserAssignedToSchool, updateSchool } from "@/services/repositories/school.service";
+import { assignUserToBeneficiary, isUserAssignedToSchool, updateBeneficiary } from "@/services/repositories/beneficiary.service";
 import { safeConsume } from "../utils/consumerHelper";
 
 // ===== VALIDATORS =====
@@ -17,19 +17,19 @@ const storageCommittedSchema = z.object({
 });
 
 const baseUserSchool = z.object({
-  schoolId: z.string(),
+  beneficiaryId: z.string(),
   userId: z.string(),
   createdBy: z.string().optional(),
 });
 
 // ===== QUEUES =====
-const STORAGE_QUEUE_NAME = "school_service_storage_queue";
+const STORAGE_QUEUE_NAME = "beneficiary_service_storage_queue";
 const STORAGE_ROUTING_KEY = "storage.upload.commit";
 
-const USER_ASSIGN_SCHOOL_QUEUE_NAME = "school_service_assign_user_queue";
-const USER_ASSIGN_SCHOOL_ROUTING_KEY = "school.assign.commit";
+const USER_ASSIGN_BENEFICIARY_QUEUE_NAME = "beneficiary_service_assign_user_queue";
+const USER_ASSIGN_BENEFICIARY_ROUTING_KEY = "beneficiary.assign.commit";
 
-const LOG_QUEUE_NAME = "school_service_log_queue";
+const LOG_QUEUE_NAME = "beneficiary_service_log_queue";
 const LOG_ROUTING_KEY = "log.#";
 
 // ================= HANDLERS =================
@@ -39,9 +39,9 @@ async function handleStorageEvent(data: z.infer<typeof storageCommittedSchema>) 
   const parsed = storageCommittedSchema.parse(data);
 
   if (parsed.entityType === "school" || parsed.entityType === "beneficiary") {
-    await updateSchool(parsed.entityId, {
+    await updateBeneficiary(parsed.entityId, {
       storageId: parsed.storageId,
-      imageURL: parsed.url,
+      imageUrl: parsed.url,
       updatedBy: parsed.meta?.uploadedBy,
     });
 
@@ -59,17 +59,17 @@ async function handleLogEvent(data: any) {
 // User Assign Event
 async function handleAssignToSchool(data: z.infer<typeof baseUserSchool>) {
   const parsed = baseUserSchool.parse(data);
-  if (parsed.userId && parsed.schoolId) {
-    const alreadyAssigned = await isUserAssignedToSchool(parsed.userId, parsed.schoolId);
+  if (parsed.userId && parsed.beneficiaryId) {
+    const alreadyAssigned = await isUserAssignedToSchool(parsed.userId, parsed.beneficiaryId);
     if (!alreadyAssigned) {
-      await assignUserToSchool({
-        schoolId: parsed.schoolId,
+      await assignUserToBeneficiary({
+        beneficiaryId: parsed.beneficiaryId,
         userId: parsed.userId,
         createdBy: parsed.createdBy,
       });
     }
   }
-  console.log(`[USER EVENT] Assign user ${parsed.userId} to school ${parsed.schoolId}`);
+  console.log(`[USER EVENT] Assign user ${parsed.userId} to school ${parsed.beneficiaryId}`);
 }
 
 export async function setupSchoolServiceConsumers(channel: Channel) {
@@ -91,8 +91,8 @@ export async function setupSchoolServiceConsumers(channel: Channel) {
 
   // USER listener
   await channel.assertExchange(EXCHANGES.USER, "topic", { durable: true });
-  const userQueue = await channel.assertQueue(USER_ASSIGN_SCHOOL_QUEUE_NAME, { durable: true });
-  await channel.bindQueue(userQueue.queue, EXCHANGES.USER, USER_ASSIGN_SCHOOL_ROUTING_KEY);
+  const userQueue = await channel.assertQueue(USER_ASSIGN_BENEFICIARY_QUEUE_NAME, { durable: true });
+  await channel.bindQueue(userQueue.queue, EXCHANGES.USER, USER_ASSIGN_BENEFICIARY_ROUTING_KEY);
   channel.prefetch(10);
   channel.consume(userQueue.queue, safeConsume(handleAssignToSchool, channel), { noAck: false });
   console.log(`[*] School Service listening for USER events in ${userQueue.queue}`);

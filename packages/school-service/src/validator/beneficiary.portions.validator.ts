@@ -1,7 +1,7 @@
 import { z } from "zod";
 
-export const CreateSchoolClassroomSchema = z.object({
-  schoolId: z.string(),
+export const CreateBeneficiaryPortionsSchema = z.object({
+  beneficiaryId: z.string(),
   menuPlanId: z.string().optional(),
   date: z.string().optional(),
   name: z.string().min(1, "Class name is required").max(100),
@@ -10,9 +10,9 @@ export const CreateSchoolClassroomSchema = z.object({
   portionType: z.string(),
 });
 
-export type CreateSchoolClassroomSchemaType = z.infer<typeof CreateSchoolClassroomSchema>;
+export type CreateBeneficiaryPortionsSchemaType = z.infer<typeof CreateBeneficiaryPortionsSchema>;
 
-export const BulkUpdateTotalStudentSchema = z.object({
+export const BulkUpdateTotalBeneficiarySchema = z.object({
   items: z.array(
     z.object({
       id: z.string(),
@@ -22,16 +22,16 @@ export const BulkUpdateTotalStudentSchema = z.object({
   ),
 });
 
-export type BulkUpdateTotalStudentSchemaType = z.infer<typeof BulkUpdateTotalStudentSchema>;
+export type BulkUpdateTotalBeneficiarySchemaType = z.infer<typeof BulkUpdateTotalBeneficiarySchema>;
 
-export const ListSchoolClassroomQuerySchema = z.object({
+export const ListBeneficiaryPortionsQuerySchema = z.object({
   page: z.string().optional(),
   limit: z.string().optional(),
   name: z.string().optional(),
   startDate: z.string().optional(),
   endDate: z.string().optional(),
-  schoolId: z.string().optional(),
+  beneficiaryId: z.string().optional(),
   portionType: z.string().optional(),
 });
 
-export type ListSchoolClassroomQuerySchemaType = z.infer<typeof ListSchoolClassroomQuerySchema>;
+export type ListBeneficiaryPortionsQuerySchemaType = z.infer<typeof ListBeneficiaryPortionsQuerySchema>;

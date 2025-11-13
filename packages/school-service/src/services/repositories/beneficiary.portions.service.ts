@@ -1,19 +1,19 @@
 import { db } from "@/db";
-import { schoolClassroom, menuPlans, storage } from "@/db/schemas";
+import { beneficiaryPortions, menuPlans, storage } from "@/db/schemas";
 import { APIPagination } from "@/types/paginations.type";
 import { eq, and, sql, desc, SQLWrapper, or } from "drizzle-orm";
 import { InferInsertModel, InferSelectModel } from "drizzle-orm";
 
-export type SchoolClassroom = InferSelectModel<typeof schoolClassroom>;
-export type NewSchoolClassroom = Omit<
-  InferInsertModel<typeof schoolClassroom>,
+export type BeneficiaryPortions = InferSelectModel<typeof beneficiaryPortions>;
+export type NewBeneficiaryPortions = Omit<
+  InferInsertModel<typeof beneficiaryPortions>,
   "id" | "createdAt" | "isDeleted"
 >;
-export type UpdateSchoolClassroom = Partial<Omit<NewSchoolClassroom, "createdBy">> & {
+export type UpdateBeneficiaryPortions = Partial<Omit<NewBeneficiaryPortions, "createdBy">> & {
   updatedBy: string;
 };
 
-export async function getSchoolClassroomList({
+export async function getBeneficiaryPortionsList({
   page = 1,
   limit = 10,
   name,
@@ -37,7 +37,7 @@ export async function getSchoolClassroomList({
 
   if (name) {
     whereConditions.push(
-      sql`${schoolClassroom.name} ILIKE ${"%" + name.toLowerCase() + "%"}`
+      sql`${beneficiaryPortions.name} ILIKE ${"%" + name.toLowerCase() + "%"}`
     );
   }
 
@@ -45,28 +45,28 @@ export async function getSchoolClassroomList({
     const uuidArray = sql.raw(
       `ARRAY[${schoolIds.map((id) => `'${id}'`).join(",")}]::uuid[]`
     );
-    whereConditions.push(sql`${schoolClassroom.schoolId} = ANY(${uuidArray})`);
+    whereConditions.push(sql`${beneficiaryPortions.beneficiaryId} = ANY(${uuidArray})`);
   }
 
   if (startDate && endDate) {
     whereConditions.push(
-      sql`${schoolClassroom.date} BETWEEN ${startDate} AND ${endDate}`
+      sql`${beneficiaryPortions.date} BETWEEN ${startDate} AND ${endDate}`
     );
   } else if (startDate) {
-    whereConditions.push(sql`${schoolClassroom.date} >= ${startDate}`);
+    whereConditions.push(sql`${beneficiaryPortions.date} >= ${startDate}`);
   } else if (endDate) {
-    whereConditions.push(sql`${schoolClassroom.date} <= ${endDate}`);
+    whereConditions.push(sql`${beneficiaryPortions.date} <= ${endDate}`);
   }
 
   if (portionType !== undefined) {
-    whereConditions.push(eq(schoolClassroom.portionType, portionType));
+    whereConditions.push(eq(beneficiaryPortions.portionType, portionType));
   }
 
-  whereConditions.push(eq(schoolClassroom.isDeleted, isDeleted));
+  whereConditions.push(eq(beneficiaryPortions.isDeleted, isDeleted));
 
   const rawData = await db
     .select({
-      classroom: schoolClassroom,
+      classroom: beneficiaryPortions,
       menuPlan: {
         id: menuPlans.id,
         name: menuPlans.name,
@@ -77,13 +77,13 @@ export async function getSchoolClassroomList({
         imageURL: storage.fileUrl,
       },
     })
-    .from(schoolClassroom)
-    .leftJoin(menuPlans, eq(schoolClassroom.menuPlanId, menuPlans.id))
-    .leftJoin(storage, eq(schoolClassroom.id, storage.entityId))
+    .from(beneficiaryPortions)
+    .leftJoin(menuPlans, eq(beneficiaryPortions.menuPlanId, menuPlans.id))
+    .leftJoin(storage, eq(beneficiaryPortions.id, storage.entityId))
     .where(and(...whereConditions))
     .limit(limit)
     .offset(offset)
-    .orderBy(desc(schoolClassroom.date));
+    .orderBy(desc(beneficiaryPortions.date));
 
   const map = new Map<string, any>();
 
@@ -117,7 +117,7 @@ export async function getSchoolClassroomList({
 
   const countRes = await db
     .select({ count: sql<number>`count(*)` })
-    .from(schoolClassroom)
+    .from(beneficiaryPortions)
     .where(and(...whereConditions));
 
   const total = Number(countRes[0].count);
@@ -134,10 +134,10 @@ export async function getSchoolClassroomList({
 }
 
 
-export async function getSchoolClassroomById(id: string): Promise<any | null> {
+export async function getBeneficiaryPortionsById(id: string): Promise<any | null> {
   const rows = await db
     .select({
-      classroom: schoolClassroom,
+      classroom: beneficiaryPortions,
       menuPlan: {
         id: menuPlans.id,
         name: menuPlans.name,
@@ -151,10 +151,10 @@ export async function getSchoolClassroomById(id: string): Promise<any | null> {
         entityId: storage.entityId,
       },
     })
-    .from(schoolClassroom)
-    .leftJoin(menuPlans, eq(schoolClassroom.menuPlanId, menuPlans.id))
-    .leftJoin(storage, eq(schoolClassroom.id, storage.entityId))
-    .where(and(eq(schoolClassroom.id, id), eq(schoolClassroom.isDeleted, false)));
+    .from(beneficiaryPortions)
+    .leftJoin(menuPlans, eq(beneficiaryPortions.menuPlanId, menuPlans.id))
+    .leftJoin(storage, eq(beneficiaryPortions.id, storage.entityId))
+    .where(and(eq(beneficiaryPortions.id, id), eq(beneficiaryPortions.isDeleted, false)));
 
   if (rows.length === 0) return null;
 
@@ -178,11 +178,11 @@ export async function getSchoolClassroomById(id: string): Promise<any | null> {
 
   return base;
 }
-export async function createSchoolClassroom(
-  data: NewSchoolClassroom
-): Promise<SchoolClassroom> {
+export async function createBeneficiaryPortions(
+  data: NewBeneficiaryPortions
+): Promise<BeneficiaryPortions> {
   const [newClassroom] = await db
-    .insert(schoolClassroom)
+    .insert(beneficiaryPortions)
     .values({
       ...data,
       createdAt: new Date(),
@@ -192,48 +192,48 @@ export async function createSchoolClassroom(
   return newClassroom;
 }
 
-export async function updateSchoolClassroom(
+export async function updateBeneficiaryPortions(
   id: string,
-  data: UpdateSchoolClassroom
-): Promise<SchoolClassroom | null> {
+  data: UpdateBeneficiaryPortions
+): Promise<BeneficiaryPortions | null> {
   const [updatedClassroom] = await db
-    .update(schoolClassroom)
+    .update(beneficiaryPortions)
     .set({
       ...data,
     })
-    .where(eq(schoolClassroom.id, id))
+    .where(eq(beneficiaryPortions.id, id))
     .returning();
   return updatedClassroom ?? null;
 }
 
-export async function softDeleteSchoolClassroom(
+export async function softDeleteBeneficiaryPortions(
   id: string,
   updatedBy: string
-): Promise<SchoolClassroom | null> {
+): Promise<BeneficiaryPortions | null> {
   const [deletedClassroom] = await db
-    .update(schoolClassroom)
+    .update(beneficiaryPortions)
     .set({
       isDeleted: true,
       createdBy: updatedBy,
     })
-    .where(eq(schoolClassroom.id, id))
+    .where(eq(beneficiaryPortions.id, id))
     .returning();
   return deletedClassroom ?? null;
 }
 
 export async function bulkUpdateTotalStudents(
   updates: { id: string; totalRecipient: number; updatedBy: string; }[]
-): Promise<SchoolClassroom[]> {
+): Promise<BeneficiaryPortions[]> {
   if (updates.length === 0) return [];
 
   const results = await db.transaction(async (tx) => {
-    const updated: SchoolClassroom[] = [];
+    const updated: BeneficiaryPortions[] = [];
 
     for (const { id, totalRecipient, updatedBy } of updates) {
       const [row] = await tx
-        .update(schoolClassroom)
+        .update(beneficiaryPortions)
         .set({ totalRecipient, createdBy: updatedBy })
-        .where(eq(schoolClassroom.id, id))
+        .where(eq(beneficiaryPortions.id, id))
         .returning();
 
       if (row) updated.push(row);

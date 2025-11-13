@@ -1,7 +1,7 @@
 import { db } from "@/db";
 import { eq, sql, and, between, gte, lte, or, ilike, desc } from "drizzle-orm";
 import { users, userDetails, userRoles, roles } from "@/db/schemas/user.schema";
-import { schools, schoolClassroom } from "@/db/schemas/school.schema";
+import { beneficiaries, beneficiaryPortions } from "@/db/schemas/school.schema";
 import { kitchens } from "@/db/schemas/kitchen.schema";
 import { drivers } from "@/db/schemas/driver.schema";
 import { eventReports } from "@/db/schemas";
@@ -40,17 +40,17 @@ export async function getEventReportById(eventId: string) {
   if (row.roleDomain === "beneficiary" && row.entityId) {
     const classrooms = await db
       .select({
-        id: schoolClassroom.id,
-        name: schoolClassroom.name,
-        date: schoolClassroom.date,
-        totalRecipient: schoolClassroom.totalRecipient,
-        portionType: schoolClassroom.portionType,
+        id: beneficiaryPortions.id,
+        name: beneficiaryPortions.name,
+        date: beneficiaryPortions.date,
+        totalRecipient: beneficiaryPortions.totalRecipient,
+        portionType: beneficiaryPortions.portionType,
       })
-      .from(schoolClassroom)
+      .from(beneficiaryPortions)
       .where(
         and(
-          eq(schoolClassroom.schoolId, row.entityId),
-          eq(schoolClassroom.isDeleted, false)
+          eq(beneficiaryPortions.beneficiaryId, row.entityId),
+          eq(beneficiaryPortions.isDeleted, false)
         )
       );
 
@@ -62,13 +62,13 @@ export async function getEventReportById(eventId: string) {
 
     entityData = await db
       .select({
-        id: schools.id,
-        name: schools.name,
-        address: schools.address,
-        phoneNumber: schools.phoneNumber,
+        id: beneficiaries.id,
+        name: beneficiaries.name,
+        address: beneficiaries.address,
+        phoneNumber: beneficiaries.phoneNumber,
       })
-      .from(schools)
-      .where(eq(schools.id, row.entityId));
+      .from(beneficiaries)
+      .where(eq(beneficiaries.id, row.entityId));
 
     classroomSummary = {
       totalClassroom,
@@ -228,13 +228,13 @@ export async function getEventReportsWithFilter({
       if (r.roleDomain === "beneficiary" && r.entityId) {
         const classrooms = await db
           .select({
-            id: schoolClassroom.id,
-            name: schoolClassroom.name,
-            totalRecipient: schoolClassroom.totalRecipient,
-            date: schoolClassroom.date,
+            id: beneficiaryPortions.id,
+            name: beneficiaryPortions.name,
+            totalRecipient: beneficiaryPortions.totalRecipient,
+            date: beneficiaryPortions.date,
           })
-          .from(schoolClassroom)
-          .where(and(eq(schoolClassroom.schoolId, r.entityId), eq(schoolClassroom.isDeleted, false)));
+          .from(beneficiaryPortions)
+          .where(and(eq(beneficiaryPortions.beneficiaryId, r.entityId), eq(beneficiaryPortions.isDeleted, false)));
 
         const totalClassroom = classrooms.length;
         const totalStudent = classrooms.reduce((acc, cls) => acc + (cls.totalRecipient ?? 0), 0);

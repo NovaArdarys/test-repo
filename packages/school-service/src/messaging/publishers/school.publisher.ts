@@ -15,7 +15,7 @@ export interface ClientCommitStorageEvent {
  */
 export async function publishClientCommitStorage(data: ClientCommitStorageEvent) {
   try {
-    await safePublish(EXCHANGES.SCHOOL, "client.storage.commit", data);
+    await safePublish(EXCHANGES.BENEFICIARY, "client.storage.commit", data);
 
     console.log(`[SCHOOL PUBLISH] File queued: ${data.storageId}`);
   } catch (err) {
