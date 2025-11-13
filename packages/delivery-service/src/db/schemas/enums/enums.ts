@@ -43,6 +43,7 @@ export const stepKeyEnum = pgEnum("step_key_enum", [
   "receive_small_portion",
   "inspection",
   "distribution",
+  "alergic"
 ]);
 
 export const analysisTypeEnum = pgEnum('analysis_type', [

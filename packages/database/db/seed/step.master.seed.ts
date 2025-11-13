@@ -24,8 +24,8 @@ const stepsByEntity: Record<
   ],
   beneficiary: [
     { stepKey: "inspection", stepName: "Foto Murid", stepOrder: 1 },
-    { stepKey: "receive_big_portion", stepName: "Konfirmasi Penerimaan", stepOrder: 2 },
-    { stepKey: "receive_small_portion", stepName: "Konfirmasi Penerimaan", stepOrder: 3 },
+    { stepKey: "confirmation", stepName: "Foto Menu", stepOrder: 2 },
+    { stepKey: "alergic", stepName: "Foto Menu Alergi", stepOrder: 3 },
   ],
 };
 

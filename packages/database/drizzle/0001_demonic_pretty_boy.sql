@@ -1,0 +1,1 @@
+ALTER TYPE "public"."step_key_enum" ADD VALUE 'alergic';
