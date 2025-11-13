@@ -607,6 +607,20 @@ export async function getDailyReportsList(params?: {
         name: menuPlans.name,
         planEndDate: menuPlans.planEndDate,
         planStartDate: menuPlans.planStartDate,
+        targetPortion: sql`
+        (
+          SELECT json_build_object(
+            'small', COALESCE(SUM(b.small_portion), 0),
+            'large', COALESCE(SUM(b.large_portion), 0),
+            'total', COALESCE(SUM(b.small_portion + b.large_portion), 0)
+          )
+          FROM menu_plan_beneficiaries mpb
+          JOIN beneficiaries b ON b.id = mpb.beneficiary_id
+          WHERE mpb.menu_plan_id = ${menuPlans.id}
+            AND mpb.is_deleted = false
+            AND b.is_deleted = false
+        )
+      `.as("targetPortion"),
       },
       suppliersFoodItem: {
         id: suppliersFoodItems.id,
@@ -664,7 +678,6 @@ export async function getDailyReportsList(params?: {
     .offset((page - 1) * limit)
     .orderBy(desc(dailyReports.date));
 
-  console.log("=====beneficiariesData=====", entityType, endDate, computedEndDate, kitchenIds, driversIds, schoolIds);
   type Supplier = {
     id: string;
     address: string | null;
