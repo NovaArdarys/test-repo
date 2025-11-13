@@ -365,11 +365,15 @@ export async function getDailyReportsList(params?: {
             'id', s.id,
             'name', s.name,
             'address', s.address,
-            'phone_number', s.phone_number
+            'phoneNumber', s.phone_number,
+            'category', s.category,
+            'imageURL', s.image_url,
+            'smallPortion', s.small_portion,
+            'largePortion', s.large_portion
           )
         )
         FROM (
-          SELECT DISTINCT b.id, b.name, b.address, b.phone_number
+          SELECT DISTINCT b.id, b.name, b.address, b.phone_number, b.category, b.image_url, b.small_portion, b.large_portion
           FROM beneficiaries b
           INNER JOIN menu_plan_beneficiaries mpb ON mpb.beneficiary_id = b.id
           INNER JOIN menu_plans mp ON mp.id = mpb.menu_plan_id
@@ -601,13 +605,16 @@ export async function getDailyReportsList(params?: {
     };
   } else {
     const [
-      beneficiariesData
+      beneficiariesData,
+      stepTomorrowData
     ] = await Promise.all([
       db.execute(sql`SELECT (${schoolListField}) AS "beneficiaries"`),
+      db.execute(sql`SELECT (${stepTomorrowField}) AS "stepTomorrow"`),
     ]);
 
     widgets = {
       beneficiaries: beneficiariesData?.rows?.[0]?.beneficiaries as any ?? [],
+      stepTomorrow: stepTomorrowData?.rows?.[0]?.stepTomorrow as any ?? [],
     };
   }
 
@@ -801,7 +808,8 @@ export async function getDailyReportsList(params?: {
   return {
     data: {
       agenda: finalGroupedData,
-      ...(view === "home" ? widgets : { beneficiaries: widgets?.beneficiaries })
+      ...(view === "home" ? widgets : { beneficiaries: widgets?.beneficiaries }),
+      ...(view === "home" ? widgets : { stepTomorrow: widgets?.stepTomorrow })
     },
     meta,
   };
