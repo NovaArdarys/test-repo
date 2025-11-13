@@ -13,21 +13,21 @@ export async function assignPlanDistribution(data: NewMenuPlanSchools): Promise<
   return newItem;
 }
 
-export async function unassignPlanDistribution(menuPlanId: string, schoolId: string): Promise<void> {
+export async function unassignPlanDistribution(menuPlanId: string, beneficiaryId: string): Promise<void> {
   await db.update(menuPlanBeneficiaries)
     .set({ isDeleted: true })
     .where(and(
       eq(menuPlanBeneficiaries.menuPlanId, menuPlanId),
-      eq(menuPlanBeneficiaries.beneficiaryId, schoolId),
+      eq(menuPlanBeneficiaries.beneficiaryId, beneficiaryId),
     ));
 }
 
-export async function isPlanDistributionAssigned(menuPlanId: string, schoolId: string): Promise<boolean> {
+export async function isPlanDistributionAssigned(menuPlanId: string, beneficiaryId: string): Promise<boolean> {
   const result = await db.select({ id: menuPlanBeneficiaries.id })
     .from(menuPlanBeneficiaries)
     .where(and(
       eq(menuPlanBeneficiaries.menuPlanId, menuPlanId),
-      eq(menuPlanBeneficiaries.beneficiaryId, schoolId),
+      eq(menuPlanBeneficiaries.beneficiaryId, beneficiaryId),
       eq(menuPlanBeneficiaries.isDeleted, false)
     ))
     .limit(1);

@@ -3,7 +3,7 @@ import { validate } from '@/middleware/validate.middleware';
 import { permission } from '@/middleware/permission.middleware';
 import { checkAccessToken } from '@/middleware/auth.middleware';
 
-import { recordLocationSchema } from '@/validator/delivery.validator';
+import { RecordLocationSchema } from '@/validator/delivery.validator';
 
 import {
   recordDriverLocationHandler
@@ -15,7 +15,7 @@ app.use(checkAccessToken);
 app.post(
   '/',
   permission(),
-  validate(recordLocationSchema),
+  validate(RecordLocationSchema),
   recordDriverLocationHandler
 );
 

@@ -11,7 +11,7 @@ export type NewBeneficiary = Omit<
 export type UpdateBeneficiary = Partial<Omit<NewBeneficiary, 'createdBy'>> & { updatedBy: string; };
 export type NewUserBeneficiary = Omit<InferInsertModel<typeof userBeneficiaries>, 'createdAt' | 'isDeleted'>;
 
-export async function getBeneficiarysList({
+export async function getBeneficiaryList({
   page,
   limit,
   name,
@@ -223,12 +223,12 @@ export async function unassignUserFromBeneficiary(userId: string, beneficiaryId:
 }
 
 
-export async function isUserAssignedToSchool(userId: string, schoolId: string): Promise<boolean> {
+export async function isUserAssignedToBeneficiary(userId: string, beneficiaryId: string): Promise<boolean> {
   const result = await db.select({ userId: userBeneficiaries.userId })
     .from(userBeneficiaries)
     .where(and(
       eq(userBeneficiaries.userId, userId),
-      eq(userBeneficiaries.beneficiaryId, schoolId),
+      eq(userBeneficiaries.beneficiaryId, beneficiaryId),
       eq(userBeneficiaries.isDeleted, false)
     ))
     .limit(1);
@@ -268,10 +268,10 @@ export async function syncSchoolsByMerge({
     }
 
     const updated: Beneficiary[] = [];
-    for (const schoolId of toAssign) {
+    for (const beneficiaryId of toAssign) {
       const existingSchool = await tx.query.beneficiaries.findFirst({
         where: (s, { eq, and }) => and(
-          eq(s.id, schoolId),
+          eq(s.id, beneficiaryId),
         ),
       });
 
@@ -279,7 +279,7 @@ export async function syncSchoolsByMerge({
 
       const [row] = await tx.update(beneficiaries)
         .set({ ...existingSchool, kitchenId, updatedAt: new Date(), updatedBy })
-        .where(eq(beneficiaries.id, schoolId))
+        .where(eq(beneficiaries.id, beneficiaryId))
         .returning();
 
       if (row) updated.push(row);
@@ -291,19 +291,19 @@ export async function syncSchoolsByMerge({
   return results;
 }
 
-export async function syncUserSchoolByMerge({
-  schoolId,
+export async function syncUserBeneficiaryByMerge({
+  beneficiaryId,
   userId,
   userIds: newUserIds,
 }: {
-  schoolId: string;
+  beneficiaryId: string;
   userId: string;
   userIds: string[];
 }): Promise<NewUserBeneficiary[]> {
   const results = await db.transaction(async (tx) => {
     const currentUsers = await tx.query.userBeneficiaries.findMany({
       where: (us, { eq, and }) =>
-        and(eq(us.beneficiaryId, schoolId), eq(us.isDeleted, false)),
+        and(eq(us.beneficiaryId, beneficiaryId), eq(us.isDeleted, false)),
     });
 
     const currentUserIds = currentUsers.map((u) => u.userId);
@@ -317,7 +317,7 @@ export async function syncUserSchoolByMerge({
         .set({ isDeleted: true })
         .where(
           and(
-            eq(userBeneficiaries.beneficiaryId, schoolId),
+            eq(userBeneficiaries.beneficiaryId, beneficiaryId),
             inArray(userBeneficiaries.userId, toUnassign)
           )
         );
@@ -326,7 +326,7 @@ export async function syncUserSchoolByMerge({
     let inserted: NewUserBeneficiary[] = [];
     if (toAssign.length > 0) {
       const rowsToInsert = toAssign.map((uid) => ({
-        beneficiaryId: schoolId,
+        beneficiaryId: beneficiaryId,
         userId: uid,
         createdBy: userId,
         createdAt: new Date(),

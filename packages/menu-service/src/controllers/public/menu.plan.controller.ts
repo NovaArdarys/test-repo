@@ -31,7 +31,6 @@ export const listMenuPlansHandler = catchAsync(async (c: Context) => {
 
   const page = parseInt(String(query.page || '1'));
   const limit = parseInt(String(query.limit || '10'));
-  const villageId = query.villageId;
   const status = query.status;
   const startDate = query.startDate || null;
   const endDate = query.endDate || null;
@@ -40,28 +39,15 @@ export const listMenuPlansHandler = catchAsync(async (c: Context) => {
 
   const audit = getAuditFields(c);
 
-  console.log({
-    page,
-    limit,
-    villageId,
-    status,
-    startDate,
-    endDate,
-    kitchenIds: audit.kitchenId,
-    schoolIds: audit.schoolId,
-    entityType,
-    menuPlanName: search || ''
-  }, "===== param =====");
-
   const data = await getMenuPlansList({
     page,
     limit,
-    villageId,
+    villageId: "",
     status,
     startDate,
     endDate,
     kitchenIds: audit.kitchenId,
-    schoolIds: audit.schoolId,
+    schoolIds: audit.beneficiaryId,
     entityType,
     menuPlanName: search || ''
   });
@@ -171,12 +157,12 @@ export const listPlanDistributionHandler = catchAsync(async (c: Context) => {
 
 export const assignPlanDistributionHandler = catchAsync(async (c: Context) => {
   const { id: menuPlanId } = c.req.param();
-  const { schoolId } = await c.req.parseBody() as unknown as AssignPlanDistributionSchemaType;
+  const { beneficiaryId } = await c.req.parseBody() as unknown as AssignPlanDistributionSchemaType;
   const audit = getAuditFields(c);
 
   const newDistribution = await assignPlanDistribution({
     menuPlanId,
-    schoolId,
+    beneficiaryId,
     createdBy: audit.createdBy,
   });
 
@@ -185,9 +171,9 @@ export const assignPlanDistributionHandler = catchAsync(async (c: Context) => {
 
 export const unassignPlanDistributionHandler = catchAsync(async (c: Context) => {
   const { id: menuPlanId } = c.req.param();
-  const { schoolId } = c.req.query() as unknown as UnassignPlanDistributionQuerySchemaType;
+  const { beneficiaryId } = c.req.query() as unknown as UnassignPlanDistributionQuerySchemaType;
 
-  await unassignPlanDistribution(menuPlanId, schoolId);
+  await unassignPlanDistribution(menuPlanId, beneficiaryId);
 
   return c.json({ message: "Remove plan from school ." }, 200);
 });

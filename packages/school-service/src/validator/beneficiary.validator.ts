@@ -1,7 +1,7 @@
 import z from "zod";
-import { paginationSchema } from "./globa.validator";
+import { paginationSchema } from "./global.validator";
 
-const schoolBaseSchema = z.object({
+const BeneficiaryBaseSchema = z.object({
   name: z.string().min(3, "Nama sekolah minimal 3 karakter.").max(100),
   kitchenId: z.string().uuid("Kitchen ID harus dalam format UUID."),
   address: z.string().optional(),
@@ -22,9 +22,9 @@ const schoolBaseSchema = z.object({
   villageId: z.string(),
 });
 
-export const createSchoolSchema = schoolBaseSchema.extend({
-  name: schoolBaseSchema.shape.name.nonempty("Nama sekolah wajib diisi."),
-  kitchenId: schoolBaseSchema.shape.kitchenId.nonempty("Kitchen ID wajib diisi."),
+export const CreateBeneficiarySchema = BeneficiaryBaseSchema.extend({
+  name: BeneficiaryBaseSchema.shape.name.nonempty("Nama sekolah wajib diisi."),
+  kitchenId: BeneficiaryBaseSchema.shape.kitchenId.nonempty("Kitchen ID wajib diisi."),
   users: z.array(
     z.string()
   ).optional(),
@@ -32,9 +32,9 @@ export const createSchoolSchema = schoolBaseSchema.extend({
   imageURL: z.string().optional()
 });
 
-export type CreateSchoolSchemaType = z.infer<typeof createSchoolSchema>;
+export type CreateBeneficiarySchemaType = z.infer<typeof CreateBeneficiarySchema>;
 
-export const listSchoolsQuerySchema = paginationSchema.extend({
+export const ListBeneficiaryQuerySchema = paginationSchema.extend({
   name: z.string().optional(),
   kitchenId: z.string().optional(),
   isDeleted: z.preprocess((a) => a === 'true', z.boolean()).optional(),
@@ -44,19 +44,19 @@ export const listSchoolsQuerySchema = paginationSchema.extend({
   swLng: z.string().optional(),
 });
 
-export type ListSchoolsQuerySchemaType = z.infer<typeof listSchoolsQuerySchema>;
+export type ListBeneficiaryQuerySchemaType = z.infer<typeof ListBeneficiaryQuerySchema>;
 
-export const assignUserToSchoolSchema = z.object({
+export const AssignUserToBeneficiarySchema = z.object({
   userId: z.string().nonempty(),
 });
 
-export type AssignUserToSchoolSchemaType = z.infer<typeof assignUserToSchoolSchema>;
+export type AssignUserToBeneficiarySchemaType = z.infer<typeof AssignUserToBeneficiarySchema>;
 
 export const BulkUpdateItemSchema = z.string("ID sekolah harus berupa format UUID yang valid");
 
 export type BulkUpdateItem = z.infer<typeof BulkUpdateItemSchema>;
 
-export const BulkUpdateSchoolSchema = z.object({
+export const BulkUpdateBeneficiarySchema = z.object({
   data: z.array(
     BulkUpdateItemSchema
   ).min(1, "Array bulk update tidak boleh kosong"),
@@ -64,4 +64,4 @@ export const BulkUpdateSchoolSchema = z.object({
   kitchenId: z.string()
 });
 
-export type BulkUpdateSchoolSchemaType = z.infer<typeof BulkUpdateSchoolSchema>;
+export type BulkUpdateBeneficiarySchemaType = z.infer<typeof BulkUpdateBeneficiarySchema>;

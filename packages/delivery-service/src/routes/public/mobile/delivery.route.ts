@@ -3,7 +3,7 @@ import { validate } from '@/middleware/validate.middleware';
 import { checkAccessToken } from '@/middleware/auth.middleware';
 
 import {
-  listDeliveriesQuerySchema,
+  ListDeliveriesQuerySchema,
 } from '@/validator/delivery.validator';
 
 import {
@@ -18,7 +18,8 @@ app.use(checkAccessToken);
 app.get(
   '/:entity',
   validate({
-    query: listDeliveriesQuerySchema, param: z.object({
+    query: ListDeliveriesQuerySchema,
+    param: z.object({
       entity: entityTypeEnum
     })
   }),

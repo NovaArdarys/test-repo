@@ -1,7 +1,6 @@
 import { z } from "zod";
 import { Channel } from "amqplib";
 import { EXCHANGES } from "../events/exchanges";
-import { createAutoDelivery } from "@/services/repositories/delivery.school.driver.service";
 import { safeConsume } from "../utils/consumerHelper";
 import { stepCommittedSchema } from "@/types/delivery.type";
 import { deliveryQueue } from "@/jobs/queue/delivery.queue";

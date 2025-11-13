@@ -53,8 +53,8 @@ export async function getMenuPlansCalendar({
       (entityType === "school" || entityType === "beneficiary") && !isEmpty(schoolIds)
         ? sql`${menuPlans.id} IN (
             SELECT mps.menu_plan_id
-            FROM menu_plan_schools mps
-            WHERE mps.school_id = ANY(ARRAY[${sql.raw(
+            FROM menu_plan_beneficiaries mps
+            WHERE mps.beneficiary_id = ANY(ARRAY[${sql.raw(
           schoolIds.map((id) => `'${id}'`).join(",")
         )}]::uuid[])
               AND mps.is_deleted = false

@@ -36,7 +36,7 @@ export const listDeliveriesHandler = catchAsync(async (c: Context) => {
     limit,
     kitchenIds: audit.kitchenId,
     driverIds: audit.driverId,
-    schoolIds: audit.schoolId,
+    schoolIds: audit.beneficiaryId,
     startDate,
     endDate,
     entity: param?.entity

@@ -3,17 +3,17 @@ import { validate } from '@/middleware/validate.middleware';
 import { permission } from '@/middleware/permission.middleware';
 import { checkAccessToken } from '@/middleware/auth.middleware';
 
-import { idParamSchema, userIdParamSchema } from '@/validator/globa.validator';
-import { createSchoolSchema, assignUserToSchoolSchema, listSchoolsQuerySchema } from '@/validator/school.validator';
+import { idParamSchema, userIdParamSchema } from '@/validator/global.validator';
+import { CreateBeneficiarySchema, AssignUserToBeneficiarySchema, ListBeneficiaryQuerySchema } from '@/validator/beneficiary.validator';
 
 import {
-  listSchoolsHandler,
-  createSchoolHandler,
-  getSchoolByIdHandler,
-  updateSchoolHandler,
-  deleteSchoolHandler,
-  assignUserToSchoolHandler,
-  unassignUserFromSchoolHandler
+  listBeneficiaryHandler,
+  createBeneficiaryHandler,
+  getBeneficiaryByIdHandler,
+  updateBeneficiaryHandler,
+  deleteBeneficiaryHandler,
+  assignUserToBeneficiaryHandler,
+  unassignUserFromBeneficiaryHandler
 } from '@/controllers/public/school.controller';
 
 const app = new Hono();
@@ -23,53 +23,50 @@ app.use(checkAccessToken);
 app.get(
   '/',
   permission(),
-  validate(listSchoolsQuerySchema, 'query'),
-  listSchoolsHandler
+  validate({ query: ListBeneficiaryQuerySchema }),
+  listBeneficiaryHandler
 );
 
 app.post(
   '/',
   permission(),
-  validate(createSchoolSchema),
-  createSchoolHandler
+  validate({ body: CreateBeneficiarySchema }),
+  createBeneficiaryHandler
 );
 
 app.get(
   '/:id',
   permission(),
-  validate(idParamSchema, 'param'),
-  getSchoolByIdHandler
+  validate({ param: idParamSchema }),
+  getBeneficiaryByIdHandler
 );
 
 app.put(
   '/:id',
   permission(),
-  validate(idParamSchema, 'param'),
-  validate(createSchoolSchema),
-  updateSchoolHandler
+  validate({ param: idParamSchema, body: CreateBeneficiarySchema }),
+  updateBeneficiaryHandler
 );
 
 app.delete(
   '/:id',
   permission(),
-  validate(idParamSchema, 'param'),
-  deleteSchoolHandler
+  validate({ param: idParamSchema }),
+  deleteBeneficiaryHandler
 );
 
 app.post(
   '/:id/users',
   permission(),
-  validate(idParamSchema, 'param'),
-  validate(assignUserToSchoolSchema),
-  assignUserToSchoolHandler
+  validate({ param: idParamSchema, body: AssignUserToBeneficiarySchema }),
+  assignUserToBeneficiaryHandler
 );
 
 app.delete(
   '/:id/users/:userId',
   permission(),
-  validate(idParamSchema, 'param'),
-  validate(userIdParamSchema, 'param'),
-  unassignUserFromSchoolHandler
+  validate({ param: idParamSchema.merge(userIdParamSchema) }),
+  unassignUserFromBeneficiaryHandler
 );
 
 export default app;

@@ -1,12 +1,12 @@
 import { Context } from "hono";
 import { catchAsync } from "@/utils/catchAsync";
 import {
-  DeliverySchoolCreatebodySchemaType,
-  DeliverySchoolListQueryType,
-  DeliverySchoolUpdateType,
-  UpdateDeliverySchoolStatusSchemaType,
+  DeliveryBeneficiaryCreatebodySchemaType,
+  DeliveryBeneficiaryListQueryType,
+  DeliveryBeneficiaryUpdateType,
+  UpdateDeliveryBeneficiaryStatusSchemaType,
 } from "@/validator/delivery.school.validation";
-import { assignSchoolToDelivery, getDeliverySchoolById, getDeliverySchoolsList, softDeleteDeliverySchool, updateDeliverySchool, updateDeliverySchoolStatusById } from "@/services/repositories/delivery.schools.service";
+import { assignBeneficiaryToDelivery, getDeliveryBeneficiaryById, getDeliveryBeneficiaryList, softDeleteDeliveryBeneficiary, updateDeliveryBeneficiary, updateDeliveryBeneficiaryStatusById } from "@/services/repositories/delivery.schools.service";
 
 const getAuditFields = (c: Context) => ({
   createdBy: c.get('userId'),
@@ -21,69 +21,69 @@ const getAuditFields = (c: Context) => ({
 });
 
 
-export const listDeliverySchoolsHandler = catchAsync(async (c: Context) => {
-  const query = c.req.query() as unknown as DeliverySchoolListQueryType;
+export const listDeliveryBeneficiaryHandler = catchAsync(async (c: Context) => {
+  const query = c.req.query() as unknown as DeliveryBeneficiaryListQueryType;
 
   const page = parseInt(String(query.page || '1'));
   const limit = parseInt(String(query.limit || '10'));
 
-  const data = await getDeliverySchoolsList({
+  const data = await getDeliveryBeneficiaryList({
     page,
     limit,
     status: query.status,
     deliveryId: query.deliveryId,
     isDeleted: query.isDeleted,
-    schoolId: query.schoolId
+    beneficiaryId: query.beneficiaryId
   });
 
   return c.json({ data: data.data, meta: data.meta }, 200);
 });
 
-export const createDeliverySchoolHandler = catchAsync(async (c: Context) => {
-  const body = await c.req.parseBody() as unknown as DeliverySchoolCreatebodySchemaType;
+export const createDeliveryBeneficiaryHandler = catchAsync(async (c: Context) => {
+  const body = await c.req.parseBody() as unknown as DeliveryBeneficiaryCreatebodySchemaType;
   const { createdBy } = getAuditFields(c);
 
-  const newRecord = await assignSchoolToDelivery({
+  const newRecord = await assignBeneficiaryToDelivery({
     ...body,
     createdBy,
   });
 
-  return c.json({ data: newRecord, message: "Delivery School record created" }, 201);
+  return c.json({ data: newRecord, message: "Delivery Beneficiary record created" }, 201);
 });
 
-export const getDeliverySchoolByIdHandler = catchAsync(async (c: Context) => {
+export const getDeliveryBeneficiaryByIdHandler = catchAsync(async (c: Context) => {
   const { id } = c.req.param();
-  const data = await getDeliverySchoolById(id);
+  const data = await getDeliveryBeneficiaryById(id);
 
   return c.json({ data }, 200);
 });
 
-export const updateDeliverySchoolHandler = catchAsync(async (c: Context) => {
+export const updateDeliveryBeneficiaryHandler = catchAsync(async (c: Context) => {
   const { id } = c.req.param();
-  const body = await c.req.parseBody() as unknown as DeliverySchoolUpdateType;
+  const body = await c.req.parseBody() as unknown as DeliveryBeneficiaryUpdateType;
 
-  const updatedRecord = await updateDeliverySchool(id, body);
+  const updatedRecord = await updateDeliveryBeneficiary(id, body);
 
-  return c.json({ data: updatedRecord, message: "Delivery School record updated" }, 200);
+  return c.json({ data: updatedRecord, message: "Delivery Beneficiary record updated" }, 200);
 });
 
-export const softDeleteDeliverySchoolHandler = catchAsync(async (c: Context) => {
+export const softDeleteDeliveryBeneficiaryHandler = catchAsync(async (c: Context) => {
   const { id } = c.req.param();
 
-  await softDeleteDeliverySchool(id);
+  await softDeleteDeliveryBeneficiary(id);
 
-  return c.json({ message: "Delivery School record soft deleted" }, 200);
+  return c.json({ message: "Delivery Beneficiary record soft deleted" }, 200);
 });
 
-export const updateDeliverySchoolStatusHandler = catchAsync(async (c: Context) => {
+export const updateDeliveryBeneficiaryStatusHandler = catchAsync(async (c: Context) => {
   const { id } = c.req.param();
-  const { status, deliveredAt } = await c.req.parseBody() as unknown as UpdateDeliverySchoolStatusSchemaType;
+  const { status, deliveredAt } = await c.req.parseBody() as unknown as UpdateDeliveryBeneficiaryStatusSchemaType;
 
-  const updatedRecord = await updateDeliverySchoolStatusById(
+  const updatedRecord = await updateDeliveryBeneficiaryStatusById(
     id,
     status,
     deliveredAt ? new Date(deliveredAt) : new Date()
   );
 
-  return c.json({ data: updatedRecord, message: `Delivery school status set to ${status}` }, 200);
+  return c.json({ data: updatedRecord, message: `Delivery Beneficiary status set to ${status}` }, 200);
 });

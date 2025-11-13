@@ -2,18 +2,17 @@ import { Context } from "hono";
 import ApiError from "@/utils/ApiError";
 import { catchAsync } from "@/utils/catchAsync";
 import {
-  createSchool,
-  getSchoolById,
-  getSchoolsList,
-  softDeleteSchool,
-  updateSchool,
-  assignUserToSchool,
-  unassignUserFromSchool,
-  isUserAssignedToSchool,
-  syncSchoolsByMerge,
-  syncUserSchoolByMerge
+  createBeneficiary,
+  getBeneficiaryById,
+  getBeneficiaryList,
+  softDeleteBeneficiary,
+  updateBeneficiary,
+  assignUserToBeneficiary,
+  unassignUserFromBeneficiary,
+  isUserAssignedToBeneficiary,
+  syncUserBeneficiaryByMerge
 } from "@/services/repositories/beneficiary.service";
-import { CreateSchoolSchemaType, AssignUserToSchoolSchemaType } from "@/validator/school.validator";
+import { CreateBeneficiarySchemaType, AssignUserToBeneficiarySchemaType } from "@/validator/beneficiary.validator";
 import { isEmpty } from "lodash";
 
 const getAuditFields = (c: Context) => ({
@@ -29,7 +28,7 @@ const getAuditFields = (c: Context) => ({
 });
 
 
-export const listSchoolsHandler = catchAsync(async (c: Context) => {
+export const listBeneficiaryHandler = catchAsync(async (c: Context) => {
   const query = c.req.query();
   const page = parseInt(query.page || '1');
   const limit = parseInt(query.limit || '10');
@@ -40,7 +39,7 @@ export const listSchoolsHandler = catchAsync(async (c: Context) => {
   const swLat = query.swLat;
   const swLng = query.swLng;
 
-  const data = await getSchoolsList({
+  const data = await getBeneficiaryList({
     page,
     limit,
     name,
@@ -54,12 +53,12 @@ export const listSchoolsHandler = catchAsync(async (c: Context) => {
   return c.json({ data: data.data, meta: data.meta }, 200);
 });
 
-export const createSchoolHandler = catchAsync(async (c: Context) => {
+export const createBeneficiaryHandler = catchAsync(async (c: Context) => {
   const body = await c.get("validatedData").body ?? {};
   const audit = getAuditFields(c);
 
-  const newSchool = await createSchool({
-    ...body as unknown as CreateSchoolSchemaType,
+  const newSchool = await createBeneficiary({
+    ...body as unknown as CreateBeneficiarySchemaType,
     lon: String(body.lon),
     lat: String(body.lat),
     createdBy: audit.createdBy,
@@ -70,16 +69,16 @@ export const createSchoolHandler = catchAsync(async (c: Context) => {
   console.log(console.log(usersArray), body, "===== ok ======");
 
   if (!isEmpty(usersArray)) {
-    await syncUserSchoolByMerge({ schoolId: newSchool.id, userId: audit.createdBy, userIds: usersArray });
+    await syncUserBeneficiaryByMerge({ beneficiaryId: newSchool.id, userId: audit.createdBy, userIds: usersArray });
   }
 
   return c.json({ data: newSchool, message: "School Created" }, 201);
 });
 
-export const getSchoolByIdHandler = catchAsync(async (c: Context) => {
+export const getBeneficiaryByIdHandler = catchAsync(async (c: Context) => {
   const { id } = c.req.param();
 
-  const school = await getSchoolById(id);
+  const school = await getBeneficiaryById(id);
 
   if (!school) {
     throw new ApiError(404, { message: "School Not Found" });
@@ -88,66 +87,64 @@ export const getSchoolByIdHandler = catchAsync(async (c: Context) => {
   return c.json({ data: school }, 200);
 });
 
-export const updateSchoolHandler = catchAsync(async (c: Context) => {
+export const updateBeneficiaryHandler = catchAsync(async (c: Context) => {
   const { id } = c.req.param();
-  const body = await c.get("validatedData").body ?? {} as unknown as CreateSchoolSchemaType;
+  const body = await c.get("validatedData").body ?? {} as unknown as CreateBeneficiarySchemaType;
   const audit = getAuditFields(c);
 
-  const existingSchool = await getSchoolById(id);
-  if (!existingSchool) {
+  const existingData = await getBeneficiaryById(id);
+  if (!existingData) {
     throw new ApiError(404, { message: "School Not Found" });
   }
 
-  const updatedSchool = await updateSchool(id, {
+  const updatedData = await updateBeneficiary(id, {
     ...body,
     lon: String(body.lon),
     lat: String(body.lat),
     updatedBy: audit.updatedBy,
   });
 
-  if (!updatedSchool) {
+  if (!updatedData) {
     throw new ApiError(500, { message: "Failed Update School" });
   }
 
   const usersArray = body.users as unknown as string[] || body["users[]"] || [];
 
-  console.log(console.log(usersArray), body, "===== ok ======");
-
   if (!isEmpty(usersArray)) {
-    await syncUserSchoolByMerge({ schoolId: updatedSchool.id, userId: audit.createdBy, userIds: usersArray });
+    await syncUserBeneficiaryByMerge({ beneficiaryId: updatedData.id, userId: audit.createdBy, userIds: usersArray });
   }
-  return c.json({ data: updatedSchool, message: "Updated School" }, 200);
+  return c.json({ data: updatedData, message: "Updated School" }, 200);
 });
 
-export const deleteSchoolHandler = catchAsync(async (c: Context) => {
+export const deleteBeneficiaryHandler = catchAsync(async (c: Context) => {
   const { id } = c.req.param();
   const audit = getAuditFields(c);
 
-  const deletedSchool = await softDeleteSchool(id, audit.updatedBy);
+  const deletedBeneficiary = await softDeleteBeneficiary(id, audit.updatedBy);
 
-  if (!deletedSchool) {
+  if (!deletedBeneficiary) {
     throw new ApiError(404, { message: "School Not Found" });
   }
 
   return c.json({ message: "Sekolah berhasil dihapus." }, 200);
 });
-export const assignUserToSchoolHandler = catchAsync(async (c: Context) => {
-  const { id: schoolId } = c.req.param();
-  const { userId } = await c.get("validatedData").body ?? {} as unknown as AssignUserToSchoolSchemaType;
+export const assignUserToBeneficiaryHandler = catchAsync(async (c: Context) => {
+  const { id: beneficiaryId } = c.req.param();
+  const { userId } = await c.get("validatedData").body ?? {} as unknown as AssignUserToBeneficiarySchemaType;
   const audit = getAuditFields(c);
 
-  const school = await getSchoolById(schoolId);
+  const school = await getBeneficiaryById(beneficiaryId);
   if (!school) {
     throw new ApiError(404, { message: "School Not Found" });
   }
 
-  const alreadyAssigned = await isUserAssignedToSchool(userId, schoolId);
+  const alreadyAssigned = await isUserAssignedToBeneficiary(userId, beneficiaryId);
   if (alreadyAssigned) {
     throw new ApiError(409, { message: "Failed Assign To School" });
   }
 
-  await assignUserToSchool({
-    schoolId: schoolId,
+  await assignUserToBeneficiary({
+    beneficiaryId: beneficiaryId,
     userId: userId,
     createdBy: audit.createdBy,
   });
@@ -155,15 +152,15 @@ export const assignUserToSchoolHandler = catchAsync(async (c: Context) => {
   return c.json({ message: "User Assigned To School" }, 201);
 });
 
-export const unassignUserFromSchoolHandler = catchAsync(async (c: Context) => {
-  const { id: schoolId, userId } = c.req.param();
+export const unassignUserFromBeneficiaryHandler = catchAsync(async (c: Context) => {
+  const { id: beneficiaryId, userId } = c.req.param();
 
-  const isAssigned = await isUserAssignedToSchool(userId, schoolId);
+  const isAssigned = await isUserAssignedToBeneficiary(userId, beneficiaryId);
   if (!isAssigned) {
     throw new ApiError(404, { message: "Assigned Not Found" });
   }
 
-  await unassignUserFromSchool(userId, schoolId);
+  await unassignUserFromBeneficiary(userId, beneficiaryId);
 
   return c.json({ message: "User Unassigned From School" }, 200);
 });

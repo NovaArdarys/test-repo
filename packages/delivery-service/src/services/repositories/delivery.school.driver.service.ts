@@ -2,14 +2,13 @@ import { db } from '@/db';
 import {
   dailyReports,
   deliveries,
-  deliverySchools,
+  deliveryBeneficiaries,
   driverLocations,
   drivers,
   kitchens,
   masterSteps,
-  menuPlans,
-  menuPlanSchools,
-  schools,
+  menuPlanBeneficiaries,
+  beneficiaries,
   stepReports,
 } from '@/db/schemas';
 import { format } from 'date-fns';
@@ -62,15 +61,15 @@ export async function createAutoDelivery(data: CreateAutoDeliveryInput) {
 
     const planSchools = await tx
       .select({
-        schoolId: menuPlanSchools.schoolId,
-        menuPlanId: menuPlanSchools.menuPlanId,
-        lat: schools.lat,
-        lon: schools.lon,
-        name: schools.name,
+        beneficiaryId: menuPlanBeneficiaries.beneficiaryId,
+        menuPlanId: menuPlanBeneficiaries.menuPlanId,
+        lat: beneficiaries.lat,
+        lon: beneficiaries.lon,
+        name: beneficiaries.name,
       })
-      .from(menuPlanSchools)
-      .innerJoin(schools, eq(menuPlanSchools.schoolId, schools.id))
-      .where(eq(menuPlanSchools.menuPlanId, data.menuPlanId));
+      .from(menuPlanBeneficiaries)
+      .innerJoin(beneficiaries, eq(menuPlanBeneficiaries.beneficiaryId, beneficiaries.id))
+      .where(eq(menuPlanBeneficiaries.menuPlanId, data.menuPlanId));
 
     if (!planSchools.length && menuPlan)
       throw new Error('No schools found for this menu plan');
@@ -128,12 +127,12 @@ export async function createAutoDelivery(data: CreateAutoDeliveryInput) {
 
       const deliverySchoolsBatch = assigned.map((s) => ({
         deliveryId: newDelivery.id,
-        schoolId: s.schoolId,
+        beneficiaryId: s.beneficiaryId,
         menuPlanId: s.menuPlanId,
         createdBy: data.createdBy,
       }));
       const insertedSchools = await tx
-        .insert(deliverySchools)
+        .insert(deliveryBeneficiaries)
         .values(deliverySchoolsBatch)
         .returning();
 

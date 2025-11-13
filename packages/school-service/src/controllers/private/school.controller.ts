@@ -1,7 +1,7 @@
 import { syncSchoolsByMerge } from '@/services/repositories/beneficiary.service';
 import ApiError from '@/utils/ApiError';
 import { catchAsync } from '@/utils/catchAsync';
-import { BulkUpdateSchoolSchemaType } from '@/validator/school.validator';
+import { BulkUpdateSchoolSchemaType } from '@/validator/beneficiary.validator';
 import { Context } from 'hono';
 
 const getAuditFields = (c: Context) => ({

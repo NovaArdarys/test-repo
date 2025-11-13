@@ -1,9 +1,8 @@
 
 import { db } from "@/db";
-import { deliveries, deliverySchools, drivers, kitchens, schools, userDetails, } from "@/db/schemas";
-import { APIPagination } from "@/types/paginations.type";
+import { deliveries, } from "@/db/schemas";
 import { entityTypeEnum } from "@/validator/globa.validator";
-import { eq, and, sql, desc, SQLWrapper, InferSelectModel, InferInsertModel, inArray } from "drizzle-orm";
+import { eq, InferSelectModel, InferInsertModel } from "drizzle-orm";
 import { isEmpty } from "lodash";
 import z from "zod";
 
@@ -74,13 +73,13 @@ export async function getDeliveriesList({
     : "";
 
   const schoolFilterSql = !isEmpty(schoolIds)
-    ? `AND ds.school_id = ANY(ARRAY[${schoolIds?.map((id) => `'${id}'`).join(",")}]::uuid[])`
+    ? `AND ds.beneficiary_id = ANY(ARRAY[${schoolIds?.map((id) => `'${id}'`).join(",")}]::uuid[])`
     : "";
 
   conditions.push(`
     EXISTS (
       SELECT 1
-      FROM delivery_schools ds
+      FROM delivery_beneficiaries ds
       JOIN menu_plans mp ON ds.menu_plan_id = mp.id
       WHERE ds.delivery_id = d.id
       ${schoolFilterSql}
@@ -139,13 +138,13 @@ export async function getDeliveriesList({
             'imageURL', s.image_url
           )
         )
-        FROM delivery_schools ds
-        JOIN schools s ON ds.school_id = s.id
+        FROM delivery_beneficiaries ds
+        JOIN beneficiaries s ON ds.beneficiary_id = s.id
         JOIN menu_plans mp ON ds.menu_plan_id = mp.id
         WHERE ds.delivery_id = d.id
         ${schoolFilterSql}
         ${kitchenFilterSql}
-      ) AS school
+      ) AS beneficiaries
     FROM deliveries d
     LEFT JOIN kitchens k ON d.kitchen_id = k.id
     LEFT JOIN drivers dr ON d.driver_id = dr.id

@@ -1,101 +1,101 @@
 import { db } from "@/db";
-import { deliverySchools, schools, menuPlans, } from "@/db/schemas";
-import { DeliverySchoolListQueryType } from "@/validator/delivery.school.validation";
+import { deliveryBeneficiaries, beneficiaries, menuPlans, } from "@/db/schemas";
+import { DeliveryBeneficiaryListQueryType } from "@/validator/delivery.school.validation";
 import { eq, and, sql, InferSelectModel, InferInsertModel, desc, SQLWrapper } from "drizzle-orm";
 
-export type DeliverySchool = InferSelectModel<typeof deliverySchools>;
-export type DeliverySchoolStatus = DeliverySchool['status'];
+export type DeliveryBeneficiary = InferSelectModel<typeof deliveryBeneficiaries>;
+export type DeliveryBeneficiaryStatus = DeliveryBeneficiary['status'];
 
-export type DeliverySchoolUpdateBody = {
+export type DeliveryBeneficiaryUpdateBody = {
   notes?: string;
 };
 
-export async function getDeliverySchoolById(id: string): Promise<DeliverySchool | null> {
-  const record = await db.query.deliverySchools.findFirst({
-    where: (deliverySchools, { eq, and }) => and(
-      eq(deliverySchools.id, id),
-      eq(deliverySchools.isDeleted, false)
+export async function getDeliveryBeneficiaryById(id: string): Promise<DeliveryBeneficiary | null> {
+  const record = await db.query.deliveryBeneficiaries.findFirst({
+    where: (deliveryBeneficiaries, { eq, and }) => and(
+      eq(deliveryBeneficiaries.id, id),
+      eq(deliveryBeneficiaries.isDeleted, false)
     ),
   });
   return record ?? null;
 }
 
-export async function updateDeliverySchool(
+export async function updateDeliveryBeneficiary(
   id: string,
-  data: DeliverySchoolUpdateBody
-): Promise<DeliverySchool | null> {
-  const [updatedItem] = await db.update(deliverySchools)
+  data: DeliveryBeneficiaryUpdateBody
+): Promise<DeliveryBeneficiary | null> {
+  const [updatedItem] = await db.update(deliveryBeneficiaries)
     .set({ ...data })
     .where(and(
-      eq(deliverySchools.id, id),
-      eq(deliverySchools.isDeleted, false)
+      eq(deliveryBeneficiaries.id, id),
+      eq(deliveryBeneficiaries.isDeleted, false)
     ))
     .returning();
   return updatedItem ?? null;
 }
 
-export async function softDeleteDeliverySchool(id: string): Promise<void> {
-  await db.update(deliverySchools)
+export async function softDeleteDeliveryBeneficiary(id: string): Promise<void> {
+  await db.update(deliveryBeneficiaries)
     .set({ isDeleted: true })
-    .where(eq(deliverySchools.id, id));
+    .where(eq(deliveryBeneficiaries.id, id));
 }
 
-export async function updateDeliverySchoolStatusById(
+export async function updateDeliveryBeneficiaryStatusById(
   id: string,
-  status: DeliverySchoolStatus,
+  status: DeliveryBeneficiaryStatus,
   deliveredAt: Date
-): Promise<DeliverySchool | null> {
+): Promise<DeliveryBeneficiary | null> {
 
-  const record = await getDeliverySchoolById(id);
+  const record = await getDeliveryBeneficiaryById(id);
 
   if (!record) {
     return null;
   }
 
-  const [updatedItem] = await db.update(deliverySchools)
+  const [updatedItem] = await db.update(deliveryBeneficiaries)
     .set({ status: status, deliveredAt: deliveredAt })
     .where(and(
-      eq(deliverySchools.deliveryId, record.deliveryId),
-      eq(deliverySchools.schoolId, record.schoolId),
-      eq(deliverySchools.isDeleted, false)
+      eq(deliveryBeneficiaries.deliveryId, record.deliveryId),
+      eq(deliveryBeneficiaries.beneficiaryId, record.beneficiaryId),
+      eq(deliveryBeneficiaries.isDeleted, false)
     ))
     .returning();
 
   return updatedItem ?? null;
 }
 
-export type NewDeliverySchool = Omit<
-  InferInsertModel<typeof deliverySchools>,
+export type NewDeliveryBeneficiary = Omit<
+  InferInsertModel<typeof deliveryBeneficiaries>,
   'id' | 'createdAt' | 'isDeleted' | 'status'
-> & { status?: DeliverySchoolStatus; };
+> & { status?: DeliveryBeneficiaryStatus; };
 
-export async function getDeliverySchoolsList({
-  page, limit, deliveryId, schoolId, status, isDeleted = false
-}: DeliverySchoolListQueryType): Promise<{ data: DeliverySchool[], meta: { page: number, limit: number, total: number, totalPages: number; }; }> {
+export async function getDeliveryBeneficiaryList({
+  page, limit, deliveryId, beneficiaryId, status, isDeleted = false
+}: DeliveryBeneficiaryListQueryType): Promise<{ data: DeliveryBeneficiary[], meta: { page: number, limit: number, total: number, totalPages: number; }; }> {
 
   const offset = (page - 1) * limit;
-  const whereConditions: SQLWrapper[] = [eq(deliverySchools.isDeleted, isDeleted)];
+  const whereConditions: SQLWrapper[] = [eq(deliveryBeneficiaries.isDeleted, isDeleted)];
 
-  if (deliveryId) whereConditions.push(eq(deliverySchools.deliveryId, deliveryId));
-  if (schoolId) whereConditions.push(eq(deliverySchools.schoolId, schoolId));
-  if (status) whereConditions.push(eq(deliverySchools.status, status));
+  if (deliveryId) whereConditions.push(eq(deliveryBeneficiaries.deliveryId, deliveryId));
+  if (beneficiaryId) whereConditions.push(eq(deliveryBeneficiaries.beneficiaryId, beneficiaryId));
+  if (status) whereConditions.push(eq(deliveryBeneficiaries.status, status));
 
   const dataPromise = db.select()
-    .from(deliverySchools)
+    .from(deliveryBeneficiaries)
     .where(and(...whereConditions))
     .limit(limit)
     .offset(offset)
-    .orderBy(desc(deliverySchools.createdAt));
+    .orderBy(desc(deliveryBeneficiaries.createdAt));
 
   const countPromise = db.select({ count: sql<number>`count(*)` })
-    .from(deliverySchools)
+    .from(deliveryBeneficiaries)
     .where(and(...whereConditions));
 
   const [data, countResult] = await Promise.all([dataPromise, countPromise]);
   const total = Number(countResult[0].count);
 
   return {
-    data: data as DeliverySchool[],
+    data: data as DeliveryBeneficiary[],
     meta: {
       page,
       limit,
@@ -105,70 +105,70 @@ export async function getDeliverySchoolsList({
   };
 }
 
-export async function assignSchoolToDelivery(data: NewDeliverySchool): Promise<DeliverySchool> {
-  const [newItem] = await db.insert(deliverySchools)
+export async function assignBeneficiaryToDelivery(data: NewDeliveryBeneficiary): Promise<DeliveryBeneficiary> {
+  const [newItem] = await db.insert(deliveryBeneficiaries)
     .values({ ...data, status: data?.status || 'PENDING' })
     .returning();
   return newItem;
 }
 
-export async function unassignSchoolFromDelivery(
+export async function unassignBeneficiaryFromDelivery(
   deliveryId: string,
-  schoolId: string
+  beneficiaryId: string
 ): Promise<void> {
-  await db.update(deliverySchools)
+  await db.update(deliveryBeneficiaries)
     .set({ isDeleted: true })
     .where(and(
-      eq(deliverySchools.deliveryId, deliveryId),
-      eq(deliverySchools.schoolId, schoolId)
+      eq(deliveryBeneficiaries.deliveryId, deliveryId),
+      eq(deliveryBeneficiaries.beneficiaryId, beneficiaryId)
     ));
 }
 
-export async function updateDeliverySchoolStatus(
+export async function updateDeliveryBeneficiaryStatus(
   deliveryId: string,
-  schoolId: string,
-  status: DeliverySchoolStatus,
+  beneficiaryId: string,
+  status: DeliveryBeneficiaryStatus,
   deliveredAt: Date | null = new Date()
-): Promise<DeliverySchool | null> {
+): Promise<DeliveryBeneficiary | null> {
 
-  const [updatedItem] = await db.update(deliverySchools)
+  const [updatedItem] = await db.update(deliveryBeneficiaries)
     .set({
       status: status,
       deliveredAt: deliveredAt,
     })
     .where(and(
-      eq(deliverySchools.deliveryId, deliveryId),
-      eq(deliverySchools.schoolId, schoolId),
-      eq(deliverySchools.isDeleted, false)
+      eq(deliveryBeneficiaries.deliveryId, deliveryId),
+      eq(deliveryBeneficiaries.beneficiaryId, beneficiaryId),
+      eq(deliveryBeneficiaries.isDeleted, false)
     ))
     .returning();
   return updatedItem ?? null;
 }
 
-export async function getSchoolsByDeliveryId(deliveryId: string): Promise<
+export async function getBeneficiarysByDeliveryId(deliveryId: string): Promise<
   Array<{
     recordId: string;
-    school: InferSelectModel<typeof schools>;
+    beneficiary: InferSelectModel<typeof beneficiaries>;
     menuPlan: InferSelectModel<typeof menuPlans>;
-    status: DeliverySchoolStatus;
+    status: DeliveryBeneficiaryStatus;
     deliveredAt: Date | null;
   }>
 > {
-  const schoolsList = await db.select({
-    recordId: deliverySchools.id,
-    status: deliverySchools.status,
-    deliveredAt: deliverySchools.deliveredAt,
-    school: schools,
+  const beneficaryList = await db.select({
+    recordId: deliveryBeneficiaries.id,
+    status: deliveryBeneficiaries.status,
+    deliveredAt: deliveryBeneficiaries.deliveredAt,
+    beneficiary: beneficiaries,
     menuPlan: menuPlans,
   })
-    .from(deliverySchools)
-    .innerJoin(schools, eq(deliverySchools.schoolId, schools.id))
-    .innerJoin(menuPlans, eq(deliverySchools.menuPlanId, menuPlans.id))
+    .from(deliveryBeneficiaries)
+    .innerJoin(beneficiaries, eq(deliveryBeneficiaries.beneficiaryId, beneficiaries.id))
+    .innerJoin(menuPlans, eq(deliveryBeneficiaries.menuPlanId, menuPlans.id))
     .where(and(
-      eq(deliverySchools.deliveryId, deliveryId),
-      eq(deliverySchools.isDeleted, false),
-      eq(schools.isDeleted, false)
+      eq(deliveryBeneficiaries.deliveryId, deliveryId),
+      eq(deliveryBeneficiaries.isDeleted, false),
+      eq(beneficiaries.isDeleted, false)
     ));
 
-  return schoolsList as Array<any>;
+  return beneficaryList as Array<any>;
 }

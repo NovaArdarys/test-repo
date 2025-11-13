@@ -2,16 +2,16 @@ import { Context } from "hono";
 import ApiError from "@/utils/ApiError";
 import { catchAsync } from "@/utils/catchAsync";
 import {
-  createSchoolClassroom,
-  getSchoolClassroomById,
-  getSchoolClassroomList,
-  updateSchoolClassroom,
-  softDeleteSchoolClassroom,
+  createBeneficiaryPortions,
+  getBeneficiaryPortionsById,
+  getBeneficiaryPortionsList,
+  updateBeneficiaryPortions,
+  softDeleteBeneficiaryPortions,
   bulkUpdateTotalStudents
 } from "@/services/repositories/beneficiary.portions.service";
 import {
-  CreateSchoolClassroomSchemaType,
-  BulkUpdateTotalStudentSchemaType
+  CreateBeneficiaryPortionsSchemaType,
+  BulkUpdateTotalBeneficiarySchemaType
 } from "@/validator/beneficiary.portions.validator";
 import { publishClientCommitStorage } from "@/messaging/publishers/school.publisher";
 
@@ -40,11 +40,11 @@ export const listSchoolClassroomHandler = catchAsync(async (c: Context) => {
 
   const audit = getAuditFields(c);
 
-  const data = await getSchoolClassroomList({
+  const data = await getBeneficiaryPortionsList({
     page,
     limit,
     name,
-    schoolIds: audit.schoolId,
+    schoolIds: audit.beneficiaryId,
     portionType,
     endDate,
     startDate
@@ -53,11 +53,11 @@ export const listSchoolClassroomHandler = catchAsync(async (c: Context) => {
   return c.json({ data: data.data, meta: data.meta }, 200);
 });
 
-export const createSchoolClassroomHandler = catchAsync(async (c: Context) => {
-  const body = await c.get("validatedData").body as CreateSchoolClassroomSchemaType;
+export const createBeneficiaryPortionsHandler = catchAsync(async (c: Context) => {
+  const body = await c.get("validatedData").body as CreateBeneficiaryPortionsSchemaType;
   const audit = getAuditFields(c);
 
-  const newClassroom = await createSchoolClassroom({
+  const newClassroom = await createBeneficiaryPortions({
     ...body,
     createdBy: audit.createdBy,
   });
@@ -67,10 +67,10 @@ export const createSchoolClassroomHandler = catchAsync(async (c: Context) => {
   return c.json({ data: newClassroom, message: "Classroom Created" }, 201);
 });
 
-export const getSchoolClassroomByIdHandler = catchAsync(async (c: Context) => {
+export const getBeneficiaryPortionsByIdHandler = catchAsync(async (c: Context) => {
   const { id } = await c.get("validatedData").param;
 
-  const classroom = await getSchoolClassroomById(id);
+  const classroom = await getBeneficiaryPortionsById(id);
 
   if (!classroom) {
     throw new ApiError(404, { message: "Classroom Not Found" });
@@ -79,17 +79,17 @@ export const getSchoolClassroomByIdHandler = catchAsync(async (c: Context) => {
   return c.json({ data: classroom }, 200);
 });
 
-export const updateSchoolClassroomHandler = catchAsync(async (c: Context) => {
+export const updateBeneficiaryPortionsHandler = catchAsync(async (c: Context) => {
   const { id } = await c.get("validatedData").param;
-  const body = await c.get("validatedData").body as CreateSchoolClassroomSchemaType;
+  const body = await c.get("validatedData").body as CreateBeneficiaryPortionsSchemaType;
   const audit = getAuditFields(c);
 
-  const existing = await getSchoolClassroomById(id);
+  const existing = await getBeneficiaryPortionsById(id);
   if (!existing) {
     throw new ApiError(404, { message: "Classroom Not Found" });
   }
 
-  const updated = await updateSchoolClassroom(id, {
+  const updated = await updateBeneficiaryPortions(id, {
     ...body,
     updatedBy: audit.updatedBy,
   });
@@ -107,7 +107,7 @@ export const deleteSchoolClassroomHandler = catchAsync(async (c: Context) => {
   const { id } = await c.get("validatedData").param;
   const audit = getAuditFields(c);
 
-  const deleted = await softDeleteSchoolClassroom(id, audit.updatedBy);
+  const deleted = await softDeleteBeneficiaryPortions(id, audit.updatedBy);
 
   if (!deleted) {
     throw new ApiError(404, { message: "Classroom Not Found" });
@@ -117,7 +117,7 @@ export const deleteSchoolClassroomHandler = catchAsync(async (c: Context) => {
 });
 
 export const bulkUpdateTotalStudentsHandler = catchAsync(async (c: Context) => {
-  const body = await c.get("validatedData").body as BulkUpdateTotalStudentSchemaType;
+  const body = await c.get("validatedData").body as BulkUpdateTotalBeneficiarySchemaType;
 
   if (!Array.isArray(body.items) || body.items.length === 0) {
     throw new ApiError(400, { message: "No update items provided." });

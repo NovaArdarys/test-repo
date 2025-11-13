@@ -62,8 +62,8 @@ export async function getMenuPlansList({
             !isEmpty(schoolIds) && (entityType === "school" || entityType === "beneficiary")
                 ? sql`${menuPlans.id} IN (
           SELECT menu_plan_id 
-          FROM menu_plan_schools
-          WHERE school_id = ANY(ARRAY[${sql.raw(
+          FROM menu_plan_beneficiaries
+          WHERE beneficiary_id = ANY(ARRAY[${sql.raw(
                     schoolIds.map((id) => `'${id}'`).join(",")
                 )}]::uuid[])
         )`

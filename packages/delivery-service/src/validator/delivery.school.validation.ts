@@ -1,37 +1,37 @@
 import z from "zod";
 import { paginationSchema } from "./globa.validator";
-import { deliverySchoolStatusTypeEnum } from "./delivery.validator";
+import { DeliveryBeneficiaryStatusTypeEnum } from "./delivery.validator";
 
-export const assignSchoolSchema = z.object({
-  schoolId: z.string(),
+export const AssignBeneficiarySchema = z.object({
+  beneficiaryId: z.string(),
   deliveryId: z.string(),
   menuPlanId: z.string(),
   notes: z.string().optional(),
 });
-export type AssignSchoolSchemaType = z.infer<typeof assignSchoolSchema>;
+export type AssignBeneficiarySchemaType = z.infer<typeof AssignBeneficiarySchema>;
 
-export const updateDeliverySchoolStatusSchema = z.object({
-  status: deliverySchoolStatusTypeEnum,
+export const UpdateDeliveryBeneficiaryStatusSchema = z.object({
+  status: DeliveryBeneficiaryStatusTypeEnum,
   deliveredAt: z.string().optional(),
 });
 
-export const deliverySchoolUpdateBodySchema = z.object({
+export const DeliveryBeneficiaryUpdateBodySchema = z.object({
   notes: z.string().optional(),
 });
 
-export const deliverySchoolCreatebodySchema = assignSchoolSchema.extend({
+export const DeliveryBeneficiaryCreatebodySchema = AssignBeneficiarySchema.extend({
 });
 
-export const deliverySchoolListQuerySchema = paginationSchema.extend({
+export const DeliveryBeneficiaryListQuerySchema = paginationSchema.extend({
   deliveryId: z.string().optional(),
-  schoolId: z.string().optional(),
-  status: deliverySchoolStatusTypeEnum,
+  beneficiaryId: z.string().optional(),
+  status: DeliveryBeneficiaryStatusTypeEnum,
   isDeleted: z.preprocess((a) => a === 'true', z.boolean())
 });
 
-export type DeliverySchoolListQueryType = z.infer<typeof deliverySchoolListQuerySchema>;
+export type DeliveryBeneficiaryListQueryType = z.infer<typeof DeliveryBeneficiaryListQuerySchema>;
 
-export type DeliverySchoolUpdateType = z.infer<typeof deliverySchoolUpdateBodySchema>;
+export type DeliveryBeneficiaryUpdateType = z.infer<typeof DeliveryBeneficiaryUpdateBodySchema>;
 
-export type UpdateDeliverySchoolStatusSchemaType = z.infer<typeof updateDeliverySchoolStatusSchema>;
-export type DeliverySchoolCreatebodySchemaType = z.infer<typeof deliverySchoolCreatebodySchema>;
+export type UpdateDeliveryBeneficiaryStatusSchemaType = z.infer<typeof UpdateDeliveryBeneficiaryStatusSchema>;
+export type DeliveryBeneficiaryCreatebodySchemaType = z.infer<typeof DeliveryBeneficiaryCreatebodySchema>;
