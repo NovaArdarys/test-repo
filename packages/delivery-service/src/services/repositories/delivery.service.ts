@@ -217,14 +217,6 @@ export async function updateDelivery(id: string, data: UpdateDelivery): Promise<
   return updatedItem ?? null;
 }
 
-export async function updateDeliveryStatus(id: string, status: DeliveryStatus, updatedBy: string): Promise<Delivery | null> {
-  const [updatedItem] = await db.update(deliveries)
-    .set({ status: status, updatedBy: updatedBy, updatedAt: new Date() })
-    .where(eq(deliveries.id, id))
-    .returning();
-  return updatedItem ?? null;
-}
-
 export async function softDeleteDelivery(id: string, updatedBy: string): Promise<Delivery | null> {
   const [deletedItem] = await db.update(deliveries)
     .set({ isDeleted: true, updatedBy: updatedBy, updatedAt: new Date() })
@@ -232,3 +224,33 @@ export async function softDeleteDelivery(id: string, updatedBy: string): Promise
     .returning();
   return deletedItem ?? null;
 }
+
+interface UpdateDeliveryStatusInput {
+  deliveryId: string;
+  status: "PENDING" | "IN_PROGRESS" | "DELIVERED" | "FAILED";
+  updatedBy: string;
+}
+
+export const updateDeliveryStatus = async ({
+  deliveryId,
+  status,
+  updatedBy
+}: UpdateDeliveryStatusInput) => {
+
+  const isFinished =
+    status === "DELIVERED" ||
+    status === "FAILED";
+
+  const [updated] = await db
+    .update(deliveries)
+    .set({
+      status,
+      endTime: isFinished ? new Date() : null,
+      updatedAt: new Date(),
+      updatedBy
+    })
+    .where(eq(deliveries.id, deliveryId))
+    .returning();
+
+  return updated;
+};

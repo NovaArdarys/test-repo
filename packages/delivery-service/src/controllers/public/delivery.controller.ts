@@ -101,13 +101,24 @@ export const softDeleteDeliveryHandler = catchAsync(async (c: Context) => {
 });
 
 export const updateDeliveryStatusHandler = catchAsync(async (c: Context) => {
-  const { id } = c.req.param();
-  const { status } = await c.req.parseBody() as unknown as UpdateDeliveryStatusSchemaType;
+  const deliveryId = c.req.param("id");
+
+  const { status } = c.req.parseBody() as unknown as {
+    status: "PENDING" | "IN_PROGRESS" | "DELIVERED" | "FAILED";
+  };
+
   const { updatedBy } = getAuditFields(c);
 
-  const updatedDelivery = await updateDeliveryStatus(id, status, updatedBy);
+  const updatedDelivery = await updateDeliveryStatus({
+    deliveryId,
+    status,
+    updatedBy
+  });
 
-  return c.json({ data: updatedDelivery, message: `Delivery status set to ${status}` }, 200);
+  return c.json(
+    { data: updatedDelivery, message: "Delivery status updated" },
+    200
+  );
 });
 
 export const listBeneficiaryByDeliveryIdHandler = catchAsync(async (c: Context) => {
