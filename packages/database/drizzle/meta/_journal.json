@@ -36,6 +36,13 @@
       "when": 1763050875554,
       "tag": "0004_bumpy_bucky",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1763051599852,
+      "tag": "0005_careful_vulcan",
+      "breakpoints": true
     }
   ]
 }

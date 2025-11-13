@@ -39,7 +39,8 @@ export const dailyReports = pgTable(
       table.entityType,
       table.entityId,
       table.menuPlanId,
-      table.date
+      table.date,
+      table.portionType
     ),
   })
 );
