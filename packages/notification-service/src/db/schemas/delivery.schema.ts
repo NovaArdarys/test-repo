@@ -1,4 +1,4 @@
-import { boolean, date, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { boolean, date, integer, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import { deliveryBeneficiaryStatusEnum, deliveryStatusEnum } from "./enums/enums";
 
 export const deliveries = pgTable('deliveries', {
@@ -17,6 +17,9 @@ export const deliveries = pgTable('deliveries', {
   updatedAt: timestamp('updated_at').notNull(),
   updatedBy: uuid('updated_by'),
   portionType: text("portion_type").default("DEFAULT"),
+  targetPortion: integer("target_portion").default(0).notNull(),
+  receivedPortion: integer("received_portion").default(0).notNull(),
+  takenTray: integer("taken_tray").default(0).notNull(),
 }, (table) => ({
   uniqKitchenDriverDate: uniqueIndex('uniq_kitchen_driver_date').on(
     table.kitchenId,
