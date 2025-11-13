@@ -528,7 +528,7 @@ export async function getDailyReportsList(params?: {
     table: dailyReports,
     tableName: "daily_reports",
     base: {
-      entityType,
+      entityType: entityType === "beneficiary" ? "school" : entityType,
       entityId,
       status,
       date: {
@@ -591,8 +591,6 @@ export async function getDailyReportsList(params?: {
     ] = await Promise.all([
       db.execute(sql`SELECT (${schoolListField}) AS "beneficiaries"`),
     ]);
-
-    console.log(beneficiariesData?.rows?.[0]?.beneficiaries, "=====beneficiariesData=====", entityType, endDate, computedEndDate, kitchenIds, driversIds, schoolIds);
 
     widgets = {
       beneficiaries: beneficiariesData?.rows?.[0]?.beneficiaries as any ?? [],
@@ -671,6 +669,7 @@ export async function getDailyReportsList(params?: {
     .limit(limit)
     .offset((page - 1) * limit)
     .orderBy(desc(dailyReports.date));
+  console.log("=====beneficiariesData=====", entityType, endDate, computedEndDate, kitchenIds, driversIds, schoolIds);
 
   type Supplier = {
     id: string;
