@@ -1,11 +1,11 @@
 import { Hono } from 'hono';
 import { validate } from '@/middleware/validate.middleware';
 import {
-    forgotPasswordSchema,
-    loginSchema,
-    refreshTokenSchema,
-    registerSchema,
-    resetPasswordSchema,
+    ForgotPasswordSchema,
+    LoginSchema,
+    RefreshTokenSchema,
+    RegisterSchema,
+    ResetPasswordSchema,
 } from '@/validator/auth.validator';
 import { logoutHandler } from '@/controllers/logout.controller';
 import { refreshHandler } from '@/controllers/refresh.controller';
@@ -17,11 +17,11 @@ import { loginHandler } from '@/controllers/login.controller';
 
 // const { loginHandler, loginValidation } = loginRoute;
 const app = new Hono()
-    .post('/login', validate({ body: loginSchema }), loginHandler)
-    .post('/register', checkAccessToken, validate({ body: registerSchema }), registerHandler)
-    .post('/refresh', validate({ body: refreshTokenSchema }), refreshHandler)
-    .post('/logout', validate({ body: refreshTokenSchema }), logoutHandler)
-    .post('/forgot-password', validate({ body: forgotPasswordSchema }), forgotPasswordHandler)
-    .post('/reset-password', validate({ body: resetPasswordSchema }), resetPasswordHandler);
+    .post('/login', validate({ body: LoginSchema }), loginHandler)
+    .post('/register', checkAccessToken, validate({ body: RegisterSchema }), registerHandler)
+    .post('/refresh', validate({ body: RefreshTokenSchema }), refreshHandler)
+    .post('/logout', validate({ body: RefreshTokenSchema }), logoutHandler)
+    .post('/forgot-password', validate({ body: ForgotPasswordSchema }), forgotPasswordHandler)
+    .post('/reset-password', validate({ body: ResetPasswordSchema }), resetPasswordHandler);
 
 export default app;

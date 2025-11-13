@@ -1,11 +1,11 @@
 import { revokeRefreshTokenServiceClient } from "@/services/clients/user.service";
 import ApiError from "@/utils/ApiError";
 import { catchAsync } from "@/utils/catchAsync";
-import { refreshTokenSchemaType } from "@/validator/auth.validator";
+import { RefreshTokenSchemaType } from "@/validator/auth.validator";
 import * as HttpStatus from "http-status";
 
 export const logoutHandler = catchAsync(async (c) => {
-  const { refreshToken }: refreshTokenSchemaType = await c.get("validatedData").body;
+  const { refreshToken }: RefreshTokenSchemaType = await c.get("validatedData").body;
 
   if (!refreshToken) {
     throw new ApiError(HttpStatus.default.BAD_REQUEST, { message: "Refresh token required" });

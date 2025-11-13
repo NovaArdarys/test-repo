@@ -1,6 +1,6 @@
 import { createUserServiceClient } from "@/services/clients/user.service";
 import { catchAsync } from "@/utils/catchAsync";
-import { registerSchemaType } from "@/validator/auth.validator";
+import { RegisterSchemaType } from "@/validator/auth.validator";
 import { Context } from "hono";
 
 const getAuditFields = (c: Context) => ({
@@ -18,7 +18,7 @@ const getAuditFields = (c: Context) => ({
 
 export const registerHandler = catchAsync(async (c) => {
 
-  const { email, password, address, dateOfBirth, fullName, phoneNumber, roleId, isActive, domainId }: registerSchemaType = await c.get("validatedData").body;
+  const { email, password, address, dateOfBirth, fullName, phoneNumber, roleId, isActive, domainId }: RegisterSchemaType = await c.get("validatedData").body;
   const audit = getAuditFields(c);
 
   const [firstName, lastName] = fullName?.split(" ") || ["", ""];

@@ -1,18 +1,18 @@
 import { z } from 'zod';
 import { uploadFileSchema } from './global.validator';
 
-const passwordSchema = z.string()
+const PasswordSchema = z.string()
   .min(1, "Password must be at least 1 character long.")
   .regex(/[A-Z]/, "Password must contain at least one uppercase letter.")
   .regex(/\d/, "Password must contain at least one number.");
 // .regex(/[!@#$%^&*(),.?":{}|<>]/, "Password must contain at least one symbol.");
 
-export const loginSchema = z.object({
+export const LoginSchema = z.object({
   username: z.string().min(1),
   password: z.string().min(1),
 });
 
-export type loginSchemaType = z.infer<typeof loginSchema>;
+export type LoginSchemaType = z.infer<typeof LoginSchema>;
 
 export const userDetailSchema = z.object({
   fullName: z.string().max(1000).optional(),
@@ -21,9 +21,9 @@ export const userDetailSchema = z.object({
   dateOfBirth: z.string().pipe(z.coerce.date()).optional(),
 }).partial();
 
-export const registerSchema = z.object({
+export const RegisterSchema = z.object({
   email: z.string().min(1),
-  password: passwordSchema,
+  password: PasswordSchema,
   file: uploadFileSchema,
   roleId: z.string(),
   domainId: z.string().optional(),
@@ -31,21 +31,21 @@ export const registerSchema = z.object({
   ...userDetailSchema.shape,
 });
 
-export type registerSchemaType = z.infer<typeof registerSchema>;
+export type RegisterSchemaType = z.infer<typeof RegisterSchema>;
 
-export const refreshTokenSchema = z.object({
+export const RefreshTokenSchema = z.object({
   refreshToken: z.string().min(1, "Refresh token is required."),
 });
 
-export type refreshTokenSchemaType = z.infer<typeof refreshTokenSchema>;
+export type RefreshTokenSchemaType = z.infer<typeof RefreshTokenSchema>;
 
-export const forgotPasswordSchema = z.object({
+export const ForgotPasswordSchema = z.object({
   username: z.string().min(1),
 });
 
-export type ForgotPasswordSchemaType = z.infer<typeof forgotPasswordSchema>;
+export type ForgotPasswordSchemaType = z.infer<typeof ForgotPasswordSchema>;
 
-export const resetPasswordSchema = z.object({
+export const ResetPasswordSchema = z.object({
   token: z.string().min(1, "Token is required"),
   password: z.string()
     .min(8, "Password must be at least 8 characters")
@@ -57,4 +57,4 @@ export const resetPasswordSchema = z.object({
     path: ["confirmPassword"],
   });
 
-export type ResetPasswordSchemaType = z.infer<typeof resetPasswordSchema>;
+export type ResetPasswordSchemaType = z.infer<typeof ResetPasswordSchema>;

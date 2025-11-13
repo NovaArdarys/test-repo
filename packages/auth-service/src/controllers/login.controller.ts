@@ -1,4 +1,3 @@
-import { loginSchema } from "../validator/auth.validator";
 import ApiError from "../utils/ApiError";
 import { catchAsync } from "../utils/catchAsync";
 import { isEmpty } from "lodash";

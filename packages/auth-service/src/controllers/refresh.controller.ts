@@ -2,7 +2,7 @@ import { catchAsync } from "@/utils/catchAsync";
 import { verifyToken, generateToken, generateRefreshToken } from "@/utils/jwt";
 import ApiError from "@/utils/ApiError";
 import { saveTokenServiceClient, validateRefreshTokenServiceClient } from "@/services/clients/user.service";
-import { refreshTokenSchemaType } from "@/validator/auth.validator";
+import { RefreshTokenSchemaType } from "@/validator/auth.validator";
 import * as HttpStatus from "http-status";
 import { parseDeviceInfo } from "@/utils/device.util";
 import { REDIS_PERMIISONS_KEY_PREFIX, TIMESTAMP_30_DAYS } from "@/constants/config";
@@ -10,7 +10,7 @@ import redis from "@/constants/redis";
 import { getUserRolePermissonsClientService } from "@/services/clients/role.permissions.service";
 
 export const refreshHandler = catchAsync(async (c) => {
-  const { refreshToken }: refreshTokenSchemaType = await c.get("validatedData").body;
+  const { refreshToken }: RefreshTokenSchemaType = await c.get("validatedData").body;
 
   if (!refreshToken) {
     throw new ApiError(HttpStatus.default.BAD_REQUEST, { message: "Refresh token required" });
