@@ -16,8 +16,6 @@ export const loginHandler = catchAsync(async (c) => {
 
   const findUser = await getUserInfoServiceClient({ username });
 
-  console.log(findUser, "===== findUser =====");
-
   if (isEmpty(findUser)) {
     throw new ApiError(HttpStatus.default.UNAUTHORIZED, { message: "Unauthorized" });
   }
@@ -55,11 +53,15 @@ export const loginHandler = catchAsync(async (c) => {
       type: 'kitchen',
       kitchenIds: findUser.userKitchens.map((k: any) => k.kitchenId).slice(0, 5),
     };
+    console.log(context.kitchen, "=====masuk kc=====");
+
   } else if (findUser.userBeneficiaries?.length > 0) {
     context.beneficiary = {
       type: 'beneficiary',
       beneficiaryIds: findUser.userBeneficiaries.map((s: any) => s.beneficiaryId).slice(0, 5),
     };
+    console.log(context.beneficiary, "=====masuk bf=====");
+
   } else if (findUser.drivers?.length > 0) {
     context.driver = {
       type: 'driver',
@@ -70,6 +72,9 @@ export const loginHandler = catchAsync(async (c) => {
       type: 'kitchen',
       kitchenIds: findUser.drivers.map((d: any) => d.kitchenId).slice(0, 5),
     };
+
+    console.log(context.driver, "=====masuk dv=====", context.kitchen);
+
   }
 
   const payload = {

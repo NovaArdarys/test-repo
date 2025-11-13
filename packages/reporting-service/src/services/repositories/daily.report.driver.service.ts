@@ -15,7 +15,6 @@ export async function getDriverDeliveries(params: {
 }) {
   const { driverId, startDate, endDate, page = 1, limit = 10, view, entityType = "driver" } = params;
 
-
   let computedEndDate = endDate;
   if (view === "home" && endDate) {
     try {
@@ -237,7 +236,7 @@ export async function getDriverDeliveries(params: {
     meta: {
       page,
       limit,
-      total: count ?? total,
+      total: Number(count) ?? Number(total),
       totalPages: Math.ceil((count ?? total) / limit),
     },
   };

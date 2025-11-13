@@ -19,6 +19,8 @@ export const checkAccessToken = async (c: Context, next: Next) => {
       accessToken
     ) as tokenParams;
 
+    console.log(data, "====middleware=====");
+
     c.set('userId', id);
     c.set('roleId', roleId);
     c.set('beneficiaryId', data?.beneficiary?.beneficiaryIds || []);

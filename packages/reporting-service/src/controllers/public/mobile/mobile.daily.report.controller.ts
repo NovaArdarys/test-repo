@@ -40,6 +40,7 @@ export const listDailyReportsHandler = catchAsync(async (c: Context) => {
       endDate: query.endDate,
       page,
       limit,
+      view
     });
 
     return c.json(data);
