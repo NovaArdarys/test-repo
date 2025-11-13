@@ -4,12 +4,14 @@ import { checkAccessToken } from '@/middleware/auth.middleware';
 
 import {
   ListDeliveriesQuerySchema,
+  UpdateDeliveryStatusSchema,
 } from '@/validator/delivery.validator';
 
 import {
   listDeliveriesHandler,
+  updateDeliveryStatusHandler,
 } from '@/controllers/public/delivery.controller';
-import { entityTypeEnum } from '@/validator/globa.validator';
+import { entityTypeEnum, idParamSchema } from '@/validator/globa.validator';
 import z from 'zod';
 
 const app = new Hono();
@@ -24,6 +26,12 @@ app.get(
     })
   }),
   listDeliveriesHandler
+);
+
+app.put(
+  '/:id/status"',
+  validate({ body: UpdateDeliveryStatusSchema, param: idParamSchema }),
+  updateDeliveryStatusHandler
 );
 
 export default app;

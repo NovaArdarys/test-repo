@@ -103,7 +103,7 @@ export const softDeleteDeliveryHandler = catchAsync(async (c: Context) => {
 export const updateDeliveryStatusHandler = catchAsync(async (c: Context) => {
   const deliveryId = c.req.param("id");
 
-  const { status } = c.req.parseBody() as unknown as {
+  const { status } = c.get("validatedData").body as unknown as {
     status: "PENDING" | "IN_PROGRESS" | "DELIVERED" | "FAILED";
   };
 
@@ -133,7 +133,7 @@ export const listBeneficiaryByDeliveryIdHandler = catchAsync(async (c: Context) 
 
 export const assignBeneficiaryToDeliveryHandler = catchAsync(async (c: Context) => {
   const { id: deliveryId } = c.req.param();
-  const body = await c.req.parseBody() as unknown as AssignBeneficiarySchemaType;
+  const body = await c.get("validatedData").body as unknown as AssignBeneficiarySchemaType;
   const { createdBy } = getAuditFields(c);
 
   await getDeliveryById(deliveryId);

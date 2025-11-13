@@ -5,8 +5,7 @@ import { checkAccessToken } from '@/middleware/auth.middleware';
 
 import { idParamSchema } from '@/validator/globa.validator';
 import {
-  ListDeliveriesQuerySchema,
-  UpdateDeliveryStatusSchema
+  ListDeliveriesQuerySchema
 } from '@/validator/delivery.validator';
 
 import {
@@ -19,19 +18,15 @@ app.use(checkAccessToken);
 
 app.get(
   '/',
+  permission(),
   validate({ query: ListDeliveriesQuerySchema }),
   listDeliveriesHandler
 );
 
 app.get(
   '/:id',
+  permission(),
   validate({ param: idParamSchema }),
-  getDeliveryByIdHandler
-);
-
-app.get(
-  '/:id/status"',
-  validate({ body: UpdateDeliveryStatusSchema, param: idParamSchema }),
   getDeliveryByIdHandler
 );
 
