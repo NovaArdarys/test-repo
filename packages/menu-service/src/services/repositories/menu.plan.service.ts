@@ -41,12 +41,29 @@ export async function getMenuPlansList({
     menuPlanName?: string;
 }) {
 
+    console.log({
+        page,
+        limit,
+        villageId,
+        status,
+        isDeleted,
+        startDate,
+        endDate,
+        kitchenIds,
+        schoolIds,
+        entityType,
+        menuPlanName
+    }, "====okasaskapskapsk=====");
+
+    const cleanVillageId = villageId && villageId.trim() !== "" ? villageId : undefined;
+
+
     const { where, meta } = await buildPaginatedWhere({
         table: menuPlans,
         tableName: "menu_plans",
         base: {
             isDeleted,
-            villageId,
+            villageId: cleanVillageId,
             status,
             planStartDate: { gte: startDate ?? undefined },
             planEndDate: { lte: endDate ?? undefined },
