@@ -123,6 +123,7 @@ export async function createAutoDelivery(data: CreateAutoDeliveryInput) {
               updatedBy: data.createdBy,
               deliveryDate: menuPlan.planStartDate,
               portionType,
+              targetPortion: portionType === "SMALL" ? beneficiary?.smallPortion || 0 : portionType === "LARGE" ? beneficiary?.largePortion || 0 : 0,
               endTime: null
             })
             .returning();
