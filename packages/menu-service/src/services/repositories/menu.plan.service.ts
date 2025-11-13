@@ -392,7 +392,7 @@ export async function createMenuPlan(
             for (const beneficiary of beneficiariesByKitchen) {
                 const beneficiaryDailyReports: typeof allDailyReports = [];
 
-                if (beneficiary?.smallPortion > 0) {
+                if (beneficiary?.smallPortion && beneficiary?.smallPortion > 0) {
                     const [smallReport] = await trx
                         .insert(dailyReports)
                         .values({
@@ -410,7 +410,7 @@ export async function createMenuPlan(
                     beneficiaryDailyReports.push(smallReport);
                 }
 
-                if (beneficiary.largePortion > 0) {
+                if (beneficiary.largePortion && beneficiary.largePortion > 0) {
                     const [largeReport] = await trx
                         .insert(dailyReports)
                         .values({
