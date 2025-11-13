@@ -3,7 +3,7 @@ import { validate } from '@/middleware/validate.middleware';
 import { permission } from '@/middleware/permission.middleware';
 import { checkAccessToken } from '@/middleware/auth.middleware';
 
-import { idParamSchema } from '@/validator/globa.validator';
+import { idParamSchema } from '@/validator/global.validator';
 import { listDriversQuerySchema, createDriverSchema } from '@/validator/driver.validator';
 
 import {

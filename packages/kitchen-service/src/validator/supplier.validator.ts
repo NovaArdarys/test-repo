@@ -1,5 +1,5 @@
 import z from "zod";
-import { paginationSchema } from "./globa.validator";
+import { paginationSchema } from "./global.validator";
 
 export const BulkFoodIdsItemSchema = z.string("ID komponen makanan harus berupa format UUID yang valid");
 

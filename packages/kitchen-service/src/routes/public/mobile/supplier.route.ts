@@ -9,7 +9,7 @@ import {
 } from "@/controllers/public/mobile/suppliers.controller";
 import { validate } from "@/middleware/validate.middleware";
 import { createSupplierSchema, ItemsQuerySchema, updateSupplierSchema } from "@/validator/supplier.validator";
-import { idParamSchema } from "@/validator/globa.validator";
+import { idParamSchema } from "@/validator/global.validator";
 
 const app = new Hono();
 app.use(checkAccessToken);

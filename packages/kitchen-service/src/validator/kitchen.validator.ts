@@ -1,5 +1,5 @@
 import z from "zod";
-import { paginationSchema } from "./globa.validator";
+import { paginationSchema } from "./global.validator";
 
 const kitchenBaseSchema = z.object({
   name: z.string().min(3, "Nama dapur minimal 3 karakter.").max(100),

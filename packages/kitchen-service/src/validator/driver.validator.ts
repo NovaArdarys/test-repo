@@ -1,5 +1,5 @@
 import z from "zod";
-import { paginationSchema } from "./globa.validator";
+import { paginationSchema } from "./global.validator";
 
 const driverBaseSchema = z.object({
   licenseNumber: z.string().max(50).optional(),
