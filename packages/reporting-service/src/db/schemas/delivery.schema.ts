@@ -16,6 +16,7 @@ export const deliveries = pgTable('deliveries', {
   createdBy: uuid('created_by'),
   updatedAt: timestamp('updated_at').notNull(),
   updatedBy: uuid('updated_by'),
+  portionType: text("portion_type").default("DEFAULT"),
 }, (table) => ({
   uniqKitchenDriverDate: uniqueIndex('uniq_kitchen_driver_date').on(
     table.kitchenId,
