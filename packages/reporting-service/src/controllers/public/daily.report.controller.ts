@@ -59,7 +59,7 @@ export const listDailyReportsHandler = catchAsync(async (c: Context) => {
     startDate: query.startDate,
     endDate: query.endDate,
     kitchenIds: audit.kitchenId,
-    schoolIds: audit.schoolId,
+    schoolIds: audit.beneficiaryId,
     driversIds: audit.driverId,
     page,
     limit,
