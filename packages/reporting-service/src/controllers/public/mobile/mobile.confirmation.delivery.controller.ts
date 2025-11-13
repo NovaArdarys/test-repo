@@ -20,7 +20,7 @@ const getAuditFields = (c: Context) => ({
 
 export const createEventReportDeliveryBeneficiaryHandler = catchAsync(async (c) => {
   const deliveryId = c.req.param("id");
-  const body = await c.req.parseBody() as unknown as z.infer<typeof CreateDeliveryEventReportSchema>;
+  const body = await c.get("validatedData").body as unknown as z.infer<typeof CreateDeliveryEventReportSchema>;
   const { createdBy } = getAuditFields(c);
 
   const newReport = await createEventReport({
@@ -46,7 +46,7 @@ export const createEventReportDeliveryBeneficiaryHandler = catchAsync(async (c) 
 
 export const createEventReportDeliveryDriverHandler = catchAsync(async (c: Context) => {
   const deliveryId = c.req.param("id");
-  const body = await c.req.parseBody() as unknown as z.infer<typeof CreateDeliveryEventReportSchema>;
+  const body = await c.get("validatedData").body as unknown as z.infer<typeof CreateDeliveryEventReportSchema>;
   const { createdBy } = getAuditFields(c);
 
   const newReport = await createEventReport({
