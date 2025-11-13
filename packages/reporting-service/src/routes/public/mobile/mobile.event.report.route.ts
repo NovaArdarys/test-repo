@@ -18,6 +18,8 @@ import {
   updateEventReportHandler,
   softDeleteEventReportHandler,
 } from "@/controllers/public/event.report.controller";
+import { createEventReportDeliveryBeneficiaryHandler, createEventReportDeliveryDriverHandler } from "@/controllers/public/mobile/mobile.confirmation.delivery.controller";
+import { CreateDeliveryEventReportSchema } from "@/validator/confirm.delivery.validation";
 
 const app = new Hono();
 
@@ -39,6 +41,18 @@ app.post(
   "/",
   validate({ body: CreateEventReportSchema }),
   createEventReportHandler
+);
+
+app.post(
+  "/delivery-confirmation/:id/beneficiary",
+  validate({ body: CreateDeliveryEventReportSchema, param: idParamSchema }),
+  createEventReportDeliveryBeneficiaryHandler
+);
+
+app.post(
+  "/delivery-confirmation/:id/driver",
+  validate({ body: CreateDeliveryEventReportSchema, param: idParamSchema }),
+  createEventReportDeliveryDriverHandler
 );
 
 app.put(
