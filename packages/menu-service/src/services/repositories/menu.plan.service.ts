@@ -268,6 +268,8 @@ async function validateEntity(entityType: string, entityId: string) {
             return db.query.drivers.findMany({ where: eq(drivers.id, entityId) });
         case "school":
             return db.query.beneficiaries.findMany({ where: eq(beneficiaries.id, entityId) });
+        case "beneficiary":
+            return db.query.beneficiaries.findMany({ where: eq(beneficiaries.id, entityId) });
         default:
             throw new Error(`Unknown entity type: ${entityType}`);
     }
@@ -387,59 +389,78 @@ export async function createMenuPlan(
             );
 
             // school(s)
-            for (const school of beneficiariesByKitchen) {
-                const [dailySchool] = await trx
-                    .insert(dailyReports)
-                    .values({
-                        date: newPlan.planStartDate,
-                        entityId: school.id,
-                        entityType: "school",
-                        menuPlanId: newPlan.id,
-                        status: "PENDING",
-                        createdAt: newPlan.createdAt,
-                        createdBy: newPlan.createdBy,
-                    })
-                    .returning();
+            for (const beneficiary of beneficiariesByKitchen) {
+                const beneficiaryDailyReports: typeof allDailyReports = [];
 
-                allDailyReports.push(dailySchool);
+                if (beneficiary?.smallPortion > 0) {
+                    const [smallReport] = await trx
+                        .insert(dailyReports)
+                        .values({
+                            date: newPlan.planStartDate,
+                            entityId: beneficiary.id,
+                            entityType: "beneficiary",
+                            menuPlanId: newPlan.id,
+                            portionType: "SMALL",
+                            status: "PENDING",
+                            createdAt: newPlan.createdAt,
+                            createdBy: newPlan.createdBy,
+                        })
+                        .returning();
 
-                const schoolSteps = await planEntity("school");
-                await trx.insert(stepReports).values(
-                    schoolSteps.map((step) => ({
-                        dailyReportId: dailySchool.id,
-                        stepId: step.id,
-                        isCompleted: false,
-                        createdBy: newPlan.createdBy,
-                    }))
-                );
+                    beneficiaryDailyReports.push(smallReport);
+                }
+
+                if (beneficiary.largePortion > 0) {
+                    const [largeReport] = await trx
+                        .insert(dailyReports)
+                        .values({
+                            date: newPlan.planStartDate,
+                            entityId: beneficiary.id,
+                            entityType: "beneficiary",
+                            menuPlanId: newPlan.id,
+                            portionType: "LARGE",
+                            status: "PENDING",
+                            createdAt: newPlan.createdAt,
+                            createdBy: newPlan.createdBy,
+                        })
+                        .returning();
+
+                    beneficiaryDailyReports.push(largeReport);
+                }
+
+                if (beneficiaryDailyReports.length === 0) {
+                    const [defaultReport] = await trx
+                        .insert(dailyReports)
+                        .values({
+                            date: newPlan.planStartDate,
+                            entityId: beneficiary.id,
+                            entityType: "beneficiary",
+                            menuPlanId: newPlan.id,
+                            portionType: "DEFAULT",
+                            status: "PENDING",
+                            createdAt: newPlan.createdAt,
+                            createdBy: newPlan.createdBy,
+                        })
+                        .returning();
+
+                    beneficiaryDailyReports.push(defaultReport);
+                }
+
+                allDailyReports.push(...beneficiaryDailyReports);
+
+                const steps = await planEntity("beneficiary");
+                for (const report of beneficiaryDailyReports) {
+                    await trx.insert(stepReports).values(
+                        steps.map((step) => ({
+                            dailyReportId: report.id,
+                            stepId: step.id,
+                            isCompleted: false,
+                            createdBy: newPlan.createdBy,
+                        }))
+                    );
+                }
             }
-            // driver(s)
-            // for (const driver of driverByKitchen) {
-            //     const [dailyDriver] = await trx
-            //         .insert(dailyReports)
-            //         .values({
-            //             date: newPlan.planStartDate,
-            //             entityId: driver.id,
-            //             entityType: "driver",
-            //             menuPlanId: newPlan.id,
-            //             status: "PENDING",
-            //             createdAt: newPlan.createdAt,
-            //             createdBy: newPlan.createdBy,
-            //         })
-            //         .returning();
 
-            //     allDailyReports.push(dailyDriver);
-
-            //     const schoolSteps = await planEntity("driver");
-            //     await trx.insert(stepReports).values(
-            //         schoolSteps.map((step) => ({
-            //             dailyReportId: dailyDriver.id,
-            //             stepId: step.id,
-            //             isCompleted: false,
-            //             createdBy: newPlan.createdBy,
-            //         }))
-            //     );
-            // }
         }
 
         return {
@@ -501,7 +522,7 @@ export async function updateMenuPlan(
 
         const planDates = generateDates(data?.planStartDate || "", data?.planEndDate || "");
         await trx.delete(dailyReports).where(eq(dailyReports.menuPlanId, id));
-        for (const entity of ["kitchen", "school"]) {
+        for (const entity of ["kitchen", "beneficiary"]) {
             if (entity === "kitchen" && kitchenId) {
                 for (const date of planDates) {
                     const [daily] = await trx.insert(dailyReports).values({

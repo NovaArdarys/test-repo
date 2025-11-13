@@ -20,6 +20,7 @@ export const dailyReports = pgTable(
     date: date("date").notNull(),
     entityType: entityTypeEnum("entity_type").notNull(),
     entityId: uuid("entity_id").notNull(),
+    portionType: text("portion_type").default("DEFAULT"),
     menuPlanId: uuid("menu_plan_id")
       .notNull()
       .references(() => menuPlans.id, { onDelete: "cascade" }),
