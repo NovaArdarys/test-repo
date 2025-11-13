@@ -123,6 +123,7 @@ export async function createAutoDelivery(data: CreateAutoDeliveryInput) {
               updatedBy: data.createdBy,
               deliveryDate: menuPlan.planStartDate,
               portionType,
+              endTime: null
             })
             .returning();
 

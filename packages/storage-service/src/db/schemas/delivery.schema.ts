@@ -21,7 +21,8 @@ export const deliveries = pgTable('deliveries', {
   uniqKitchenDriverDate: uniqueIndex('uniq_kitchen_driver_date').on(
     table.kitchenId,
     table.driverId,
-    table.deliveryDate
+    table.deliveryDate,
+    table.portionType
   ),
 }));
 
