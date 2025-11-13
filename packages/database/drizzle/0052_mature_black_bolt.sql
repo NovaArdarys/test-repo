@@ -1,1 +1,0 @@
-ALTER TABLE "school_class_room" ALTER COLUMN "portionType" SET DATA TYPE varchar;

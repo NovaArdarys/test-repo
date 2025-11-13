@@ -1,1 +1,0 @@
-ALTER TABLE "deliveries" ALTER COLUMN "kitchen_id" DROP NOT NULL;

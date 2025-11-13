@@ -1,1 +1,0 @@
-ALTER TABLE "daily_reports" ALTER COLUMN "entity_type" SET DATA TYPE "public"."entity_type_enum" USING "entity_type"::"public"."entity_type_enum";

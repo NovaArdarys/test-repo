@@ -1,1 +1,0 @@
-ALTER TABLE "ai_analysis_logs" ALTER COLUMN "entity_type" DROP NOT NULL;

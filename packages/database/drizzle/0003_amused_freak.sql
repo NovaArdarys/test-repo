@@ -1,1 +1,0 @@
-CREATE UNIQUE INDEX "unique_user_token" ON "user_tokens" USING btree ("user_id","type");

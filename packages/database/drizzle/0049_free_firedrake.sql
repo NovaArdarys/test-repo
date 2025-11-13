@@ -1,1 +1,0 @@
-ALTER TABLE "event_reports" ADD COLUMN "description" text;
