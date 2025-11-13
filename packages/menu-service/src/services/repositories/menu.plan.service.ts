@@ -370,6 +370,7 @@ export async function createMenuPlan(
                     entityId: kitchenId,
                     entityType: "kitchen",
                     menuPlanId: newPlan.id,
+                    portionType: "DEFAULT",
                     status: "PENDING",
                     createdAt: newPlan.createdAt,
                     createdBy: newPlan.createdBy,
