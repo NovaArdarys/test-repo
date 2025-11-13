@@ -94,12 +94,12 @@ export async function getDeliveriesList({
   const query = `
     SELECT
       d.id,
-      d.kitchen_id AS "kitchenId",
-      d.driver_id AS "driverId",
       d.start_time AS "startTime",
       d.end_time AS "endTime",
       d.estimated_delivery_time AS "estimatedDeliveryTime",
       d.notes,
+      d.portion_type AS "portionType",
+      d.status,
       d.created_at AS "createdAt",
       json_build_object(
         'id', k.id,
@@ -109,41 +109,54 @@ export async function getDeliveriesList({
         'lon', k.lon,
         'lat', k.lat,
         'storageId', k.storage_id,
-        'imageURL', k.image_url,
-        'driver', json_build_object(
-          'id', dr.id,
-          'licenseNumber', dr.license_number,
-          'profile', json_build_object(
-            'userId', ud.user_id,
-            'firstName', ud.first_name,
-            'lastName', ud.last_name,
-            'phoneNumber', ud.phone_number,
-            'address', ud.address,
-            'dateOfBirth', ud.date_of_birth,
-            'storageId', ud.storage_id,
-            'imageURL', ud.image_url
-          )
-        )
+        'imageURL', k.image_url
       ) AS kitchen,
+      json_build_object(
+        'id', dr.id,
+        'licenseNumber', dr.license_number,
+        'profile', json_build_object(
+          'firstName', ud.first_name,
+          'lastName', ud.last_name,
+          'phoneNumber', ud.phone_number,
+          'address', ud.address,
+          'dateOfBirth', ud.date_of_birth,
+          'storageId', ud.storage_id,
+          'imageURL', ud.image_url
+        ),
+        'locations',
+        (
+        SELECT json_build_object(
+          'id', dl.id,
+          'lon', dl.lon,
+          'lat', dl.lat,
+          'recordedAt', dl.recorded_at
+        )
+        FROM driver_locations dl
+        WHERE dl.driver_id = dr.id
+          AND dl.delivery_id = d.id
+        ORDER BY dl.recorded_at DESC
+        LIMIT 1
+      )
+      ) AS driver,
       (
         SELECT json_agg(
           json_build_object(
-            'id', s.id,
-            'name', s.name,
-            'address', s.address,
-            'phoneNumber', s.phone_number,
-            'lon', s.lon,
-            'lat', s.lat,
-            'storageId', s.storage_id,
-            'imageURL', s.image_url
+            'id', b.id,
+            'name', b.name,
+            'address', b.address,
+            'phoneNumber', b.phone_number,
+            'lon', b.lon,
+            'lat', b.lat,
+            'category', b.category,
+            'imageURL', b.image_url,
+            'smallPortion', b.small_portion,
+            'largePortion', b.large_portion,
+            'status', b.status
           )
         )
-        FROM delivery_beneficiaries ds
-        JOIN beneficiaries s ON ds.beneficiary_id = s.id
-        JOIN menu_plans mp ON ds.menu_plan_id = mp.id
-        WHERE ds.delivery_id = d.id
-        ${schoolFilterSql}
-        ${kitchenFilterSql}
+        FROM delivery_beneficiaries db
+        JOIN beneficiaries b ON b.id = db.beneficiary_id
+        WHERE db.delivery_id = d.id
       ) AS beneficiaries
     FROM deliveries d
     LEFT JOIN kitchens k ON d.kitchen_id = k.id
