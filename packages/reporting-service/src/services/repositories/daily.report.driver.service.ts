@@ -111,6 +111,7 @@ export async function getDriverDeliveries(params: {
   const baseQuery = db
     .select({
       deliveryId: deliveries.id,
+      portionType: deliveries.portionType,
       deliveryBeneficiaryId: deliveryBeneficiaries.id,
       menuPlanId: menuPlans.id,
       planName: menuPlans.name,
@@ -213,6 +214,7 @@ export async function getDriverDeliveries(params: {
       },
       status: row.deliveryStatus,
       deliveredAt: row.deliveredAt,
+      portionType: row.portionType,
       steps,
     });
 
