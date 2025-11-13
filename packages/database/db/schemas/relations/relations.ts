@@ -17,6 +17,7 @@ import {
   beneficiaryPortions,
   beneficiaries,
   userBeneficiaries,
+  beneficiaryFoodAllergies,
 } from "../school.schema";
 import {
   foodItems,
@@ -398,6 +399,27 @@ export const beneficiariesRelations = relations(beneficiaries, ({ many, one }) =
   }),
   menuPlanBeneficiaries: many(menuPlanBeneficiaries),
   deliveryBeneficiaries: many(deliveryBeneficiaries),
+  beneficiaryAllergies: many(beneficiaryFoodAllergies),
+}));
+
+export const beneficiaryFoodAllergiesRelations = relations(beneficiaryFoodAllergies, ({ one }) => ({
+  beneficiary: one(beneficiaries, {
+    fields: [beneficiaryFoodAllergies.beneficiaryId],
+    references: [beneficiaries.id],
+    relationName: "beneficiary_food_allergies_beneficiary",
+  }),
+
+  allergicFood: one(foodItems, {
+    fields: [beneficiaryFoodAllergies.foodAlergicId],
+    references: [foodItems.id],
+    relationName: "beneficiary_food_allergies_allergic_food",
+  }),
+
+  alternativeFood: one(foodItems, {
+    fields: [beneficiaryFoodAllergies.foodAltId],
+    references: [foodItems.id],
+    relationName: "beneficiary_food_allergies_alternative_food",
+  }),
 }));
 
 /**

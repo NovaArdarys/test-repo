@@ -12,7 +12,7 @@ import {
   date,
 } from "drizzle-orm/pg-core";
 import { storage } from "./storage.schema";
-import { menuPlans } from "./food.schema";
+import { foodItems, menuPlans } from "./food.schema";
 
 export const beneficiaries = pgTable("beneficiaries", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -89,3 +89,27 @@ export const beneficiaryPortions = pgTable(
     ),
   })
 );
+
+export const beneficiaryFoodAllergies = pgTable("beneficiary_food_allergies", {
+  id: uuid("id").primaryKey().defaultRandom(),
+
+  beneficiaryId: uuid("beneficiary_id")
+    .notNull()
+    .references(() => beneficiaries.id, { onDelete: "cascade" }),
+
+  totalAlergic: integer("total_alergic").default(0).notNull(),
+
+  foodAlergicId: uuid("food_alergic_id")
+    .references(() => foodItems.id, { onDelete: "set null" }),
+
+  foodAltId: uuid("food_alt_id")
+    .references(() => foodItems.id, { onDelete: "set null" }),
+
+  description: text("description"),
+
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  createdBy: uuid("created_by").notNull(),
+
+  updatedAt: timestamp("updated_at"),
+  updatedBy: uuid("updated_by"),
+});

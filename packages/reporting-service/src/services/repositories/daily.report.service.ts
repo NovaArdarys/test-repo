@@ -357,8 +357,8 @@ export async function getDailyReportsList(params?: {
         )
         FROM (
           SELECT DISTINCT b.id, b.name, b.address, b.phone_number
-          FROM schools b
-          INNER JOIN menu_plan_schools mpb ON mpb.school_id = b.id
+          FROM beneficiaries b
+          INNER JOIN menu_plan_beneficiaries mpb ON mpb.beneficiary_id = b.id
           INNER JOIN menu_plans mp ON mp.id = mpb.menu_plan_id
           WHERE b.is_deleted = false
             AND mp.is_deleted = false
