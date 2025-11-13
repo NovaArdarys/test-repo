@@ -19,6 +19,7 @@ export const beneficiaries = pgTable("beneficiaries", {
   name: varchar("name", { length: 100 }).notNull().unique(),
   kitchenId: uuid("kitchen_id"),
   address: text("address"),
+  category: text("address"),
   phoneNumber: varchar("phone_number", { length: 20 }),
   lon: decimal("lon", { precision: 10, scale: 6 }),
   lat: decimal("lat", { precision: 10, scale: 6 }),
