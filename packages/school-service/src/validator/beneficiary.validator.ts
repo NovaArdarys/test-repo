@@ -21,6 +21,7 @@ const BeneficiaryBaseSchema = z.object({
   districtId: z.string(),
   villageId: z.string(),
   joinedDate: z.string(),
+  category: z.string(),
   smallPortion: z.number().min(0).default(0),
   largePortion: z.number().min(0).default(0),
   status: z.enum(["ACTIVE", "INACTIVE"]).default("ACTIVE"),

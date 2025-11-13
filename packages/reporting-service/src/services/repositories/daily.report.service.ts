@@ -529,7 +529,7 @@ export async function getDailyReportsList(params?: {
     table: dailyReports,
     tableName: "daily_reports",
     base: {
-      entityType: entityType === "beneficiary" ? "school" : entityType,
+      entityType: entityType,
       entityId,
       status,
       date: {
