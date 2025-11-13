@@ -624,56 +624,47 @@ export async function getDailyReportsList(params?: {
         description: suppliers.description,
         phoneNumber: suppliers.phoneNumber,
       },
-      stepData: {
-        id: stepReports.id,
-        isCompleted: stepReports.isCompleted,
-        notes: stepReports.notes,
-      },
-      stepMeta: {
-        stepKey: masterSteps.stepKey,
-        stepName: masterSteps.stepName,
-        stepOrder: masterSteps.stepOrder,
-      },
-      storage: {
-        imageURL: storage.fileUrl,
-      },
 
+      steps: sql`
+        COALESCE(
+          json_agg(
+            json_build_object(
+              'id', ${stepReports.id},
+              'isCompleted', ${stepReports.isCompleted},
+              'notes', ${stepReports.notes},
+              'stepKey', ${masterSteps.stepKey},
+              'stepName', ${masterSteps.stepName},
+              'stepOrder', ${masterSteps.stepOrder},
+              'imageURL', ${storage.fileUrl}
+            )
+          ) FILTER (WHERE ${stepReports.id} IS NOT NULL),
+          '[]'::json
+        )
+      `.as("steps"),
     })
     .from(dailyReports)
-    .leftJoin(
-      menuPlans,
-      eq(dailyReports.menuPlanId, menuPlans.id)
-    )
-    .leftJoin(
-      suppliersFoodItems,
-      eq(menuPlans.id, suppliersFoodItems.menuPlanId)
-    )
-    .leftJoin(
-      foodItems,
-      eq(suppliersFoodItems.foodItemId, foodItems.id)
-    )
-    .leftJoin(
-      suppliers,
-      eq(suppliersFoodItems.supplierId, suppliers.id)
-    )
-    .leftJoin(
-      stepReports,
-      eq(dailyReports.id, stepReports.dailyReportId)
-    )
-    .leftJoin(
-      masterSteps,
-      eq(stepReports.stepId, masterSteps.id)
-    )
-    .leftJoin(
-      storage,
-      eq(stepReports.id, storage.entityId)
-    )
+    .leftJoin(menuPlans, eq(dailyReports.menuPlanId, menuPlans.id))
+    .leftJoin(suppliersFoodItems, eq(menuPlans.id, suppliersFoodItems.menuPlanId))
+    .leftJoin(foodItems, eq(suppliersFoodItems.foodItemId, foodItems.id))
+    .leftJoin(suppliers, eq(suppliersFoodItems.supplierId, suppliers.id))
+
+    .leftJoin(stepReports, eq(dailyReports.id, stepReports.dailyReportId))
+    .leftJoin(masterSteps, eq(stepReports.stepId, masterSteps.id))
+    .leftJoin(storage, eq(stepReports.id, storage.entityId))
+
     .where(where)
+    .groupBy(
+      dailyReports.id,
+      menuPlans.id,
+      suppliersFoodItems.id,
+      foodItems.id,
+      suppliers.id
+    )
     .limit(limit)
     .offset((page - 1) * limit)
     .orderBy(desc(dailyReports.date));
-  console.log("=====beneficiariesData=====", entityType, endDate, computedEndDate, kitchenIds, driversIds, schoolIds);
 
+  console.log("=====beneficiariesData=====", entityType, endDate, computedEndDate, kitchenIds, driversIds, schoolIds);
   type Supplier = {
     id: string;
     address: string | null;
@@ -690,11 +681,11 @@ export async function getDailyReportsList(params?: {
     if (!reportMap.has(reportId)) {
       reportMap.set(reportId, {
         ...row.dailyReports,
-        menuPlan: row.menuPlan ? {
-          ...row.menuPlan,
-          _foodItemMap: new Map(),
-        } : null,
-        _stepMap: new Map(),
+        menuPlan: row.menuPlan
+          ? { ...row.menuPlan, _foodItemMap: new Map() }
+          : null,
+
+        steps: row.steps,
       });
     }
 
@@ -704,71 +695,43 @@ export async function getDailyReportsList(params?: {
     const foodItemId = row.foodItem?.id;
 
     if (sfiId && report.menuPlan) {
-      const existingFoodItem = report.menuPlan._foodItemMap.get(sfiId);
+      let foodRow = report.menuPlan._foodItemMap.get(sfiId);
 
-      if (!existingFoodItem) {
-        const newFoodItem = {
+      if (!foodRow) {
+        foodRow = {
           ...(row.foodItem ?? {}),
           id: sfiId,
           foodId: foodItemId,
-          suppliers: [] as Supplier[],
+          suppliers: [],
         };
+        report.menuPlan._foodItemMap.set(sfiId, foodRow);
+      }
 
-        if (row.supplier) {
-          newFoodItem.suppliers.push(row.supplier);
-        }
-
-        report.menuPlan._foodItemMap.set(sfiId, newFoodItem);
-      } else if (
+      if (
         row.supplier &&
-        !existingFoodItem.suppliers.some((s: any) => s.id === row?.supplier?.id)
+        !foodRow.suppliers.some((s: Supplier) => s.id === row.supplier?.id)
       ) {
-        existingFoodItem.suppliers.push(row.supplier);
-      }
-    }
-
-    const stepReportId = row.stepData?.id;
-    const fileUrl = row.storage?.imageURL;
-
-    if (stepReportId) {
-      let step = report._stepMap.get(stepReportId);
-
-      if (!step) {
-        step = {
-          ...row.stepData,
-          ...row.stepMeta,
-          imageURLs: [] as string[],
-        };
-        report._stepMap.set(stepReportId, step);
-      }
-
-      if (fileUrl && !step.imageURLs.includes(fileUrl)) {
-        step.imageURLs.push(fileUrl);
+        foodRow.suppliers.push(row.supplier);
       }
     }
   });
 
-  const finalGroupedData = Array.from(reportMap.values()).map(report => {
-
+  const finalGroupedData = Array.from(reportMap.values()).map((report) => {
     if (report.menuPlan) {
-      report.menuPlan.foodItems = Array.from(report.menuPlan._foodItemMap.values()).map((foodItem: any) => {
-        const { ...restFoodItem } = foodItem;
-        return restFoodItem;
-      });
+      report.menuPlan.foodItems = Array.from(
+        report.menuPlan._foodItemMap.values()
+      );
       delete report.menuPlan._foodItemMap;
 
-      const { planEndDate, planStartDate, ...menuPlan } = report.menuPlan;
+      const { planEndDate, planStartDate, ...rest } = report.menuPlan;
+
       report.menuPlan = {
         date: planStartDate,
-        ...menuPlan,
+        ...rest,
       };
     }
 
-    report.steps = orderBy(Array.from(report._stepMap.values()).map((step: any) => {
-      const { ...restStep } = step;
-      return restStep;
-    }), "stepOrder", "asc");
-    delete report._stepMap;
+    report.steps = orderBy(report.steps, "stepOrder", "asc");
 
     const {
       id,
