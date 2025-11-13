@@ -4,7 +4,6 @@ import { DeliveryBeneficiaryListQueryType } from "@/validator/delivery.school.va
 import { eq, and, sql, InferSelectModel, InferInsertModel, desc, SQLWrapper } from "drizzle-orm";
 
 export type DeliveryBeneficiary = InferSelectModel<typeof deliveryBeneficiaries>;
-export type DeliveryBeneficiaryStatus = DeliveryBeneficiary['status'];
 
 export type DeliveryBeneficiaryUpdateBody = {
   notes?: string;
@@ -22,10 +21,9 @@ export async function getDeliveryBeneficiaryById(id: string): Promise<DeliveryBe
 
 export async function updateDeliveryBeneficiary(
   id: string,
-  data: DeliveryBeneficiaryUpdateBody
 ): Promise<DeliveryBeneficiary | null> {
   const [updatedItem] = await db.update(deliveryBeneficiaries)
-    .set({ ...data })
+    .set({})
     .where(and(
       eq(deliveryBeneficiaries.id, id),
       eq(deliveryBeneficiaries.isDeleted, false)
@@ -42,8 +40,6 @@ export async function softDeleteDeliveryBeneficiary(id: string): Promise<void> {
 
 export async function updateDeliveryBeneficiaryStatusById(
   id: string,
-  status: DeliveryBeneficiaryStatus,
-  deliveredAt: Date
 ): Promise<DeliveryBeneficiary | null> {
 
   const record = await getDeliveryBeneficiaryById(id);
@@ -53,7 +49,7 @@ export async function updateDeliveryBeneficiaryStatusById(
   }
 
   const [updatedItem] = await db.update(deliveryBeneficiaries)
-    .set({ status: status, deliveredAt: deliveredAt })
+    .set({})
     .where(and(
       eq(deliveryBeneficiaries.deliveryId, record.deliveryId),
       eq(deliveryBeneficiaries.beneficiaryId, record.beneficiaryId),
@@ -67,7 +63,7 @@ export async function updateDeliveryBeneficiaryStatusById(
 export type NewDeliveryBeneficiary = Omit<
   InferInsertModel<typeof deliveryBeneficiaries>,
   'id' | 'createdAt' | 'isDeleted' | 'status'
-> & { status?: DeliveryBeneficiaryStatus; };
+>;
 
 export async function getDeliveryBeneficiaryList({
   page, limit, deliveryId, beneficiaryId, status, isDeleted = false
@@ -78,7 +74,6 @@ export async function getDeliveryBeneficiaryList({
 
   if (deliveryId) whereConditions.push(eq(deliveryBeneficiaries.deliveryId, deliveryId));
   if (beneficiaryId) whereConditions.push(eq(deliveryBeneficiaries.beneficiaryId, beneficiaryId));
-  if (status) whereConditions.push(eq(deliveryBeneficiaries.status, status));
 
   const dataPromise = db.select()
     .from(deliveryBeneficiaries)
@@ -107,7 +102,7 @@ export async function getDeliveryBeneficiaryList({
 
 export async function assignBeneficiaryToDelivery(data: NewDeliveryBeneficiary): Promise<DeliveryBeneficiary> {
   const [newItem] = await db.insert(deliveryBeneficiaries)
-    .values({ ...data, status: data?.status || 'PENDING' })
+    .values({ ...data, })
     .returning();
   return newItem;
 }
@@ -127,14 +122,11 @@ export async function unassignBeneficiaryFromDelivery(
 export async function updateDeliveryBeneficiaryStatus(
   deliveryId: string,
   beneficiaryId: string,
-  status: DeliveryBeneficiaryStatus,
   deliveredAt: Date | null = new Date()
 ): Promise<DeliveryBeneficiary | null> {
 
   const [updatedItem] = await db.update(deliveryBeneficiaries)
     .set({
-      status: status,
-      deliveredAt: deliveredAt,
     })
     .where(and(
       eq(deliveryBeneficiaries.deliveryId, deliveryId),
@@ -150,14 +142,10 @@ export async function getBeneficiarysByDeliveryId(deliveryId: string): Promise<
     recordId: string;
     beneficiary: InferSelectModel<typeof beneficiaries>;
     menuPlan: InferSelectModel<typeof menuPlans>;
-    status: DeliveryBeneficiaryStatus;
-    deliveredAt: Date | null;
   }>
 > {
   const beneficaryList = await db.select({
     recordId: deliveryBeneficiaries.id,
-    status: deliveryBeneficiaries.status,
-    deliveredAt: deliveryBeneficiaries.deliveredAt,
     beneficiary: beneficiaries,
     menuPlan: menuPlans,
   })

@@ -62,7 +62,7 @@ export const updateDeliveryBeneficiaryHandler = catchAsync(async (c: Context) =>
   const { id } = c.req.param();
   const body = await c.req.parseBody() as unknown as DeliveryBeneficiaryUpdateType;
 
-  const updatedRecord = await updateDeliveryBeneficiary(id, body);
+  const updatedRecord = await updateDeliveryBeneficiary(id);
 
   return c.json({ data: updatedRecord, message: "Delivery Beneficiary record updated" }, 200);
 });
@@ -81,8 +81,6 @@ export const updateDeliveryBeneficiaryStatusHandler = catchAsync(async (c: Conte
 
   const updatedRecord = await updateDeliveryBeneficiaryStatusById(
     id,
-    status,
-    deliveredAt ? new Date(deliveredAt) : new Date()
   );
 
   return c.json({ data: updatedRecord, message: `Delivery Beneficiary status set to ${status}` }, 200);

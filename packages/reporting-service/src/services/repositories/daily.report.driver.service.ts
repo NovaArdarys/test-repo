@@ -118,8 +118,8 @@ export async function getDriverDeliveries(params: {
       planDate: menuPlans.planStartDate,
       beneficiaryId: beneficiaries.id,
       beneficiaryName: beneficiaries.name,
-      deliveryStatus: deliveryBeneficiaries.status,
-      deliveredAt: deliveryBeneficiaries.deliveredAt,
+      deliveryStatus: deliveries.status,
+      deliveredAt: deliveries.endTime,
     })
     .from(deliveries)
     .leftJoin(deliveryBeneficiaries, eq(deliveries.id, deliveryBeneficiaries.deliveryId))
