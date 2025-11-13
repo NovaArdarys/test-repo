@@ -3,7 +3,7 @@ import { paginationSchema } from "./global.validator";
 
 export const BulkFoodIdsItemSchema = z.string("ID komponen makanan harus berupa format UUID yang valid");
 
-export const supplierBaseSchema = z.object({
+export const SupplierBaseSchema = z.object({
   name: z.string().min(3, "Nama supplier minimal 3 karakter").max(100),
   kitchenId: z.string("Kitchen ID harus dalam format UUID.").optional(),
   phoneNumber: z.string().max(20).optional(),
@@ -15,23 +15,23 @@ export const supplierBaseSchema = z.object({
   ).optional(),
 });
 
-export const createSupplierSchema = supplierBaseSchema.extend({});
-export const updateSupplierSchema = supplierBaseSchema.partial();
+export const CreateSupplierSchema = SupplierBaseSchema.extend({});
+export const UpdateSupplierSchema = SupplierBaseSchema.partial();
 
-export type CreateSupplierSchemaType = z.infer<typeof createSupplierSchema>;
-export type UpdateSupplierSchemaType = z.infer<typeof updateSupplierSchema>;
+export type CreateSupplierSchemaType = z.infer<typeof CreateSupplierSchema>;
+export type UpdateSupplierSchemaType = z.infer<typeof UpdateSupplierSchema>;
 
-export const supplierFoodItemBaseSchema = z.object({
+export const SupplierFoodItemBaseSchema = z.object({
   supplierId: z.string("Supplier ID harus dalam format UUID."),
   foodItemId: z.string("Food Item ID harus dalam format UUID."),
   menuPlanId: z.string("Menu Plan ID harus dalam format UUID.").optional(),
 });
 
-export const createSupplierFoodItemSchema = supplierFoodItemBaseSchema.extend({});
-export const updateSupplierFoodItemSchema = supplierFoodItemBaseSchema.partial();
+export const CreateSupplierFoodItemSchema = SupplierFoodItemBaseSchema.extend({});
+export const UpdateSupplierFoodItemSchema = SupplierFoodItemBaseSchema.partial();
 
-export type CreateSupplierFoodItemSchemaType = z.infer<typeof createSupplierFoodItemSchema>;
-export type UpdateSupplierFoodItemSchemaType = z.infer<typeof updateSupplierFoodItemSchema>;
+export type CreateSupplierFoodItemSchemaType = z.infer<typeof CreateSupplierFoodItemSchema>;
+export type UpdateSupplierFoodItemSchemaType = z.infer<typeof UpdateSupplierFoodItemSchema>;
 
 export const ItemsQuerySchema = paginationSchema.extend({
   search: z.string().optional(),

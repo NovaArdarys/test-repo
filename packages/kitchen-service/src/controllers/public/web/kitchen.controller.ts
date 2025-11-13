@@ -4,7 +4,7 @@ import { createKitchen, getKitchenById, getKitchensList, softDeleteKitchen, upda
 import { catchAsync } from "@/utils/catchAsync";
 import { assignUserToKitchen, isUserAssignedToKitchen, syncUserKitchenByMerge, unassignUserFromKitchen } from "@/services/repositories/user.kitchen.service";
 import { AssignUserToKitchenSchemaType, CreateKitchenSchemaType } from "@/validator/kitchen.validator";
-import { updateSchoolServiceClient } from "../../services/clients/school.service";
+import { updateSchoolServiceClient } from "../../../services/clients/school.service";
 import { isEmpty } from "lodash";
 
 const getAuditFields = (c: Context) => ({

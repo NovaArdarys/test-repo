@@ -6,7 +6,7 @@ import {
   createSupplierHandler,
   updateSupplierHandler,
   deleteSupplierHandler,
-} from "@/controllers/public/suppliers.controller";
+} from "@/controllers/public/web/suppliers.controller";
 
 const app = new Hono();
 app.use(checkAccessToken);

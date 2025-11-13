@@ -14,7 +14,7 @@ import {
   deleteKitchenHandler,
   assignUserToKitchenHandler,
   unassignUserFromKitchenHandler
-} from '@/controllers/public/kitchen.controller';
+} from '@/controllers/public/web/kitchen.controller';
 
 const app = new Hono();
 

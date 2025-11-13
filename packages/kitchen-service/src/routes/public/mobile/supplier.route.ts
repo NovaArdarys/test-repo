@@ -8,7 +8,7 @@ import {
   deleteSupplierHandler,
 } from "@/controllers/public/mobile/suppliers.controller";
 import { validate } from "@/middleware/validate.middleware";
-import { createSupplierSchema, ItemsQuerySchema, updateSupplierSchema } from "@/validator/supplier.validator";
+import { CreateSupplierSchema, ItemsQuerySchema, UpdateSupplierSchema } from "@/validator/supplier.validator";
 import { idParamSchema } from "@/validator/global.validator";
 
 const app = new Hono();
@@ -16,8 +16,8 @@ app.use(checkAccessToken);
 
 app.get("/", validate({ query: ItemsQuerySchema }), listSuppliersHandler);
 app.get("/:id", validate({ param: idParamSchema }), getSupplierHandler);
-app.post("/", validate({ body: createSupplierSchema }), createSupplierHandler);
-app.put("/:id", validate({ body: updateSupplierSchema }), updateSupplierHandler);
+app.post("/", validate({ body: CreateSupplierSchema }), createSupplierHandler);
+app.put("/:id", validate({ body: UpdateSupplierSchema }), updateSupplierHandler);
 app.delete("/:id", validate({ param: idParamSchema }), deleteSupplierHandler);
 
 export default app;
