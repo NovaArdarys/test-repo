@@ -107,7 +107,7 @@ export async function createAutoDelivery(data: CreateAutoDeliveryInput) {
       );
       const estimatedDeliveryTime = new Date(Date.now() + estimatedMinutes * 60000);
 
-      // 🧩 INSERT DELIVERY
+      // INSERT DELIVERY
       const [newDelivery] = await tx
         .insert(deliveries)
         .values({
@@ -136,7 +136,7 @@ export async function createAutoDelivery(data: CreateAutoDeliveryInput) {
         .values(deliverySchoolsBatch)
         .returning();
 
-      // 📆 DAILY REPORTS
+      // DAILY REPORTS
       const dailyReportsBatch = insertedSchools.map((ds) => ({
         date: format(new Date(), "yyyy-MM-dd"),
         entityId: ds.id,
@@ -150,7 +150,7 @@ export async function createAutoDelivery(data: CreateAutoDeliveryInput) {
         .values(dailyReportsBatch)
         .returning();
 
-      // 🧱 STEP REPORTS (flat insert)
+      // STEP REPORTS (flat insert)
       const stepReportsBatch = insertedDailyReports.flatMap((dr) =>
         stepsTemplate.map((step) => ({
           dailyReportId: dr.id,
@@ -161,7 +161,7 @@ export async function createAutoDelivery(data: CreateAutoDeliveryInput) {
       );
       await tx.insert(stepReports).values(stepReportsBatch);
 
-      // 📍 DRIVER LOCATION
+      // DRIVER LOCATION
       const [newLocation] = await tx
         .insert(driverLocations)
         .values({

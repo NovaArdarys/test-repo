@@ -93,42 +93,42 @@ export async function getMenuPlansList({
             planEndDate: true,
             planStartDate: true,
         },
-        with: {
-            suppliersFoodItems: {
-                with: {
-                    foodItem: {
-                        columns: {
-                            id: true,
-                            description: true,
-                            name: true,
-                            type: true,
-                        },
-                    },
-                    supplier: {
-                        columns: {
-                            id: true,
-                            address: true,
-                            name: true,
-                            description: true,
-                            phoneNumber: true,
-                        },
-                    },
-                },
-            },
-            menuPlanBeneficiaries: {
-                with: {
-                    beneficiary: {
-                        columns: {
-                            id: true,
-                            address: true,
-                            name: true,
-                            phoneNumber: true,
-                            updatedAt: true,
-                        },
-                    },
-                },
-            },
-        },
+        // with: {
+        //     suppliersFoodItems: {
+        //         with: {
+        //             foodItem: {
+        //                 columns: {
+        //                     id: true,
+        //                     description: true,
+        //                     name: true,
+        //                     type: true,
+        //                 },
+        //             },
+        //             supplier: {
+        //                 columns: {
+        //                     id: true,
+        //                     address: true,
+        //                     name: true,
+        //                     description: true,
+        //                     phoneNumber: true,
+        //                 },
+        //             },
+        //         },
+        //     },
+        //     menuPlanBeneficiaries: {
+        //         with: {
+        //             beneficiary: {
+        //                 columns: {
+        //                     id: true,
+        //                     address: true,
+        //                     name: true,
+        //                     phoneNumber: true,
+        //                     updatedAt: true,
+        //                 },
+        //             },
+        //         },
+        //     },
+        // },
         orderBy: (table) => sql`${table.planStartDate} ASC`,
         offset: (page - 1) * limit,
         limit,
@@ -137,32 +137,32 @@ export async function getMenuPlansList({
     // 🔧 Grouping logic
     const groupedData = data.map((report) => {
         const foodItemMap = new Map<string, any>();
-        report.suppliersFoodItems.forEach((sfi) => {
-            const foodItem = {
-                ...sfi.foodItem,
-                id: sfi.id,
-                foodId: sfi.foodItem.id,
-            };
-            const supplier = sfi.supplier;
-            if (!foodItem) return;
+        // report.suppliersFoodItems.forEach((sfi) => {
+        //     const foodItem = {
+        //         ...sfi.foodItem,
+        //         id: sfi.id,
+        //         foodId: sfi.foodItem.id,
+        //     };
+        //     const supplier = sfi.supplier;
+        //     if (!foodItem) return;
 
-            const fi = foodItemMap.get(foodItem.id) ?? {
-                ...foodItem,
-                suppliers: [],
-            };
-            if (supplier) fi.suppliers.push(supplier);
-            foodItemMap.set(foodItem.id, fi);
-        });
+        //     const fi = foodItemMap.get(foodItem.id) ?? {
+        //         ...foodItem,
+        //         suppliers: [],
+        //     };
+        //     if (supplier) fi.suppliers.push(supplier);
+        //     foodItemMap.set(foodItem.id, fi);
+        // });
 
         const schoolMap = new Map<string, any>();
-        report.menuPlanBeneficiaries.forEach((mpsk) => {
-            if (mpsk.beneficiary?.id)
-                schoolMap.set(mpsk.beneficiary.id, { ...mpsk.beneficiary, portion: 0 });
-        });
+        // report.menuPlanBeneficiaries.forEach((mpsk) => {
+        //     if (mpsk.beneficiary?.id)
+        //         schoolMap.set(mpsk.beneficiary.id, { ...mpsk.beneficiary, portion: 0 });
+        // });
 
         const {
-            menuPlanBeneficiaries,
-            suppliersFoodItems,
+            // menuPlanBeneficiaries,
+            // suppliersFoodItems,
             planEndDate,
             planStartDate,
             ...menuPlan
@@ -171,8 +171,8 @@ export async function getMenuPlansList({
         return {
             ...menuPlan,
             date: planStartDate,
-            foodItems: Array.from(foodItemMap.values()),
-            schools: Array.from(schoolMap.values()),
+            // foodItems: Array.from(foodItemMap.values()),
+            // schools: Array.from(schoolMap.values()),
         };
     });
 
@@ -269,7 +269,7 @@ export async function getMenuPlanById(
         ...menuPlan,
         date: planStartDate,
         foodItems: Array.from(foodItemMap.values()),
-        schools: Array.from(schoolMap.values())
+        beneficiaries: Array.from(schoolMap.values())
     };
 
     return {

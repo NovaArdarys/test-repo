@@ -16,7 +16,8 @@ app.use(checkAccessToken);
 app.get(
   '/:entity',
   validate({
-    query: listCalendarQuerySchema, param: z.object({
+    query: listCalendarQuerySchema,
+    param: z.object({
       entity: entityTypeEnum
     }),
   }),

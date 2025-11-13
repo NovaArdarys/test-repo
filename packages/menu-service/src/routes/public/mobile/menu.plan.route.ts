@@ -32,9 +32,8 @@ app.get(
 app.get(
   '/:entity/:id',
   validate({
-    param: z.object({
+    param: idParamSchema.extend({
       entity: entityTypeEnum,
-      idParamSchema,
     }),
   }),
   getMenuPlanByIdHandler

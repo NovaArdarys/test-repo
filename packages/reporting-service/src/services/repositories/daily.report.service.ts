@@ -335,7 +335,7 @@ export async function getDailyReportsList(params?: {
                        )`
           : sql``
         }
-            AND mp.plan_start_date > ${endDate}
+            AND mp.plan_start_date >= ${endDate}
             AND mp.plan_start_date <= ${computedEndDate}
           ORDER BY mp.plan_start_date ASC
         ) t
@@ -344,6 +344,47 @@ export async function getDailyReportsList(params?: {
       : sql`'[]'::jsonb`;
 
 
+  const schoolListField =
+    sql`
+      COALESCE((
+        SELECT jsonb_agg(
+          jsonb_build_object(
+            'id', s.id,
+            'name', s.name,
+            'address', s.address,
+            'phone_number', s.phone_number
+          )
+        )
+        FROM (
+          SELECT DISTINCT b.id, b.name, b.address, b.phone_number
+          FROM schools b
+          INNER JOIN menu_plan_schools mpb ON mpb.school_id = b.id
+          INNER JOIN menu_plans mp ON mp.id = mpb.menu_plan_id
+          WHERE b.is_deleted = false
+            AND mp.is_deleted = false
+            ${entityType === "driver" && driversIds.length > 0
+        ? sql`AND mp.kitchen_id IN (
+                      SELECT uk.kitchen_id
+                      FROM user_kitchens uk
+                      WHERE uk.user_id = ANY(${sql.raw(`ARRAY[${driversIds.map(id => `'${id}'`).join(",")}]::uuid[]`)})
+                        AND uk.is_deleted = false
+                    )`
+        : sql``
+      }
+            ${entityType === "kitchen" && kitchenIds.length > 0
+        ? sql`AND mp.kitchen_id = ANY(${sql.raw(`ARRAY[${kitchenIds.map(id => `'${id}'`).join(",")}]::uuid[]`)})`
+        : sql``
+      }
+            ${(entityType === "school" || entityType === "beneficiary") && schoolIds.length > 0
+        ? sql`AND b.id = ANY(${sql.raw(`ARRAY[${schoolIds.map(id => `'${id}'`).join(",")}]::uuid[]`)})`
+        : sql``
+      }
+            AND mp.plan_start_date >= ${endDate}
+            AND mp.plan_start_date <= ${computedEndDate}
+          ORDER BY b.name ASC
+        ) s
+      ), '[]'::jsonb)
+  `;
 
   const eventReportsField =
     view === "home"
@@ -488,7 +529,7 @@ export async function getDailyReportsList(params?: {
     table: dailyReports,
     tableName: "daily_reports",
     base: {
-      entityType,
+      entityType: entityType === "beneficiary" ? "school" : entityType,
       entityId,
       status,
       date: {
@@ -522,6 +563,7 @@ export async function getDailyReportsList(params?: {
     eventReports: [],
     topSuppliers: [],
     stepTomorrow: [],
+    beneficiaries: [],
   };
 
 
@@ -530,7 +572,7 @@ export async function getDailyReportsList(params?: {
       threeDaysMenuData,
       eventReportsData,
       topSuppliersData,
-      stepTomorrowData
+      stepTomorrowData,
     ] = await Promise.all([
       db.execute(sql`SELECT (${threeDaysMenuField}) AS "threeDaysMenu"`),
       db.execute(sql`SELECT (${eventReportsField}) AS "eventReports"`),
@@ -543,6 +585,16 @@ export async function getDailyReportsList(params?: {
       eventReports: eventReportsData?.rows?.[0]?.eventReports as any ?? [],
       topSuppliers: topSuppliersData?.rows?.[0]?.topSuppliers as any ?? [],
       stepTomorrow: stepTomorrowData?.rows?.[0]?.stepTomorrow as any ?? [],
+    };
+  } else {
+    const [
+      beneficiariesData
+    ] = await Promise.all([
+      db.execute(sql`SELECT (${schoolListField}) AS "beneficiaries"`),
+    ]);
+
+    widgets = {
+      beneficiaries: beneficiariesData?.rows?.[0]?.beneficiaries as any ?? [],
     };
   }
   const data = await db
@@ -618,6 +670,7 @@ export async function getDailyReportsList(params?: {
     .limit(limit)
     .offset((page - 1) * limit)
     .orderBy(desc(dailyReports.date));
+  console.log("=====beneficiariesData=====", entityType, endDate, computedEndDate, kitchenIds, driversIds, schoolIds);
 
   type Supplier = {
     id: string;
@@ -735,7 +788,7 @@ export async function getDailyReportsList(params?: {
   return {
     data: {
       agenda: finalGroupedData,
-      ...widgets
+      ...(view === "home" ? widgets : { beneficiaries: widgets?.beneficiaries })
     },
     meta,
   };

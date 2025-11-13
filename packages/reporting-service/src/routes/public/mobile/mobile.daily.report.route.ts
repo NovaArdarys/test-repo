@@ -29,7 +29,7 @@ app.get(
   validate({
     query: getDailyReportListSchema.omit({ entityType: true, entityId: true }),
     param: z.object({
-      entity: z.enum(["kitchen", "driver", "beneficiary"]),
+      entity: z.enum(["kitchen", "driver", "school", "beneficiary"]),
       view: z.enum([
         "home",
         "calendar",
@@ -43,7 +43,7 @@ app.get(
   "/:entity/:view/:id",
   validate({
     param: idParamSchema.extend({
-      entity: z.enum(["kitchen", "driver", "beneficiary"]),
+      entity: z.enum(["kitchen", "driver", "school", "beneficiary"]),
       view: z.enum([
         "home",
         "calendar",
