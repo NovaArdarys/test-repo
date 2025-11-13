@@ -139,25 +139,24 @@ export async function getDeliveriesList({
       )
       ) AS driver,
       (
-        SELECT json_agg(
-          json_build_object(
-            'id', b.id,
-            'name', b.name,
-            'address', b.address,
-            'phoneNumber', b.phone_number,
-            'lon', b.lon,
-            'lat', b.lat,
-            'category', b.category,
-            'imageURL', b.image_url,
-            'smallPortion', b.small_portion,
-            'largePortion', b.large_portion,
-            'status', b.status
-          )
+        SELECT json_build_object(
+          'id', b.id,
+          'name', b.name,
+          'address', b.address,
+          'phoneNumber', b.phone_number,
+          'lon', b.lon,
+          'lat', b.lat,
+          'category', b.category,
+          'imageURL', b.image_url,
+          'smallPortion', b.small_portion,
+          'largePortion', b.large_portion,
+          'status', b.status
         )
         FROM delivery_beneficiaries db
         JOIN beneficiaries b ON b.id = db.beneficiary_id
         WHERE db.delivery_id = d.id
-      ) AS beneficiaries
+        LIMIT 1
+      ) AS beneficiary
     FROM deliveries d
     LEFT JOIN kitchens k ON d.kitchen_id = k.id
     LEFT JOIN drivers dr ON d.driver_id = dr.id
