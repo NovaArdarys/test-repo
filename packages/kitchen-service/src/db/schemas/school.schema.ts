@@ -31,6 +31,12 @@ export const beneficiaries = pgTable("beneficiaries", {
   }),
   imageUrl: text("image_url"),
   isDeleted: boolean("is_deleted").default(false).notNull(),
+
+  joinedDate: timestamp("joined_date").defaultNow(),
+  smallPortion: integer("small_portion").default(0),
+  largePortion: integer("large_portion").default(0),
+  status: varchar("status", { length: 20 }).default("ACTIVE"),
+
   createdAt: timestamp("created_at").defaultNow().notNull(),
   createdBy: uuid("created_by").notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),

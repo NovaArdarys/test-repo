@@ -15,6 +15,13 @@
       "when": 1763040676407,
       "tag": "0001_demonic_pretty_boy",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1763048105260,
+      "tag": "0002_overconfident_dreaming_celestial",
+      "breakpoints": true
     }
   ]
 }
