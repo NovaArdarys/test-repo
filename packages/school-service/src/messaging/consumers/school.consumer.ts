@@ -58,18 +58,23 @@ async function handleLogEvent(data: any) {
 
 // User Assign Event
 async function handleAssignToSchool(data: z.infer<typeof baseUserSchool>) {
-  const parsed = baseUserSchool.parse(data);
-  if (parsed.userId && parsed.beneficiaryId) {
-    const alreadyAssigned = await isUserAssignedToBeneficiary(parsed.userId, parsed.beneficiaryId);
-    if (!alreadyAssigned) {
-      await assignUserToBeneficiary({
-        beneficiaryId: parsed.beneficiaryId,
-        userId: parsed.userId,
-        createdBy: parsed.createdBy,
-      });
+  try {
+    const parsed = baseUserSchool.parse(data);
+    if (parsed.userId && parsed.beneficiaryId) {
+      const alreadyAssigned = await isUserAssignedToBeneficiary(parsed.userId, parsed.beneficiaryId);
+      if (!alreadyAssigned) {
+        await assignUserToBeneficiary({
+          beneficiaryId: parsed.beneficiaryId,
+          userId: parsed.userId,
+          createdBy: parsed.createdBy,
+        });
+      }
     }
+    console.log(`[USER EVENT] Assign user ${parsed.userId} to school ${parsed.beneficiaryId}`);
+  } catch (error) {
+    console.log("====asas=a=s=as=a=s=a=s=");
+
   }
-  console.log(`[USER EVENT] Assign user ${parsed.userId} to school ${parsed.beneficiaryId}`);
 }
 
 export async function setupSchoolServiceConsumers(channel: Channel) {

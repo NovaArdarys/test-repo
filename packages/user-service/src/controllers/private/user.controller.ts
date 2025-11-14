@@ -40,7 +40,7 @@ export const registerHandler = catchAsync(async (c) => {
 
   const result = await createUser({
     email,
-    password,
+    password: password || "",
     createdBy: createdBy || null,
     createdAt: new Date(),
     updatedBy: null,

@@ -82,7 +82,7 @@ export const updateUserHandler = catchAsync(async (c) => {
 
   const result = await updateUserAll(id, {
     email,
-    password,
+    password: "",
     isActive
   }, {
     address: address || "",
@@ -92,9 +92,11 @@ export const updateUserHandler = catchAsync(async (c) => {
     phoneNumber: phoneNumber || "",
   }, roleId || "");
 
+
   if (roleId) {
 
     const role = await getRoleById(roleId);
+    console.log(role, "======== ppppp ========");
 
     if (role?.domain === "kitchen" && domainId) {
       await publishAssignUserToKitchen({

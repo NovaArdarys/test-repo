@@ -159,6 +159,7 @@ export async function getUserById(id: string) {
     .select({
       id: users.id,
       email: users.email,
+      isActive: users.isActive,
       dateOfBirth: userDetails.dateOfBirth,
       phoneNumber: userDetails.phoneNumber,
       address: userDetails.address,

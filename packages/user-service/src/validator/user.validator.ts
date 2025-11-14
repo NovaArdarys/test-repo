@@ -36,45 +36,45 @@ export const userDetailSchema = z
     email: z.string().optional(),
     storageId: z.string().optional(),
     imageURL: z.string().optional(),
-    password: z
-      .string()
-      .min(6, { message: "Password minimal 6 karakter" })
-      .optional()
-      .nullable()
-      .refine((val) => val === null || val?.trim() !== "", {
-        message: "Password tidak boleh kosong",
-      }),
-    confirmationPassword: z.string().optional(),
+
+    password: z.string().optional().nullable(),
+    confirmationPassword: z.string().optional().nullable(),
   })
-  .partial()
   .superRefine((data, ctx) => {
-    if (data.password && !data.confirmationPassword) {
+    const password = data.password;
+    const confirm = data.confirmationPassword;
+
+    if (!password || password.trim() === "") return;
+
+    if (password.length < 6) {
       ctx.addIssue({
         code: "custom",
-        message: "Konfirmasi password wajib diisi",
-        path: ["confirmationPassword"],
+        path: ["password"],
+        message: "Password minimal 6 karakter",
       });
     }
 
-    if (
-      data.password &&
-      data.confirmationPassword &&
-      data.password !== data.confirmationPassword
-    ) {
+    if (!confirm || confirm.trim() === "") {
       ctx.addIssue({
         code: "custom",
-        message: "Konfirmasi password tidak cocok",
         path: ["confirmationPassword"],
+        message: "Konfirmasi password wajib diisi",
+      });
+    }
+
+    if (confirm && password !== confirm) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["confirmationPassword"],
+        message: "Konfirmasi password tidak cocok",
       });
     }
   });
-
 export type SaveTokenType = z.infer<typeof saveTokenSchema>;
 export type userDetailType = z.infer<typeof userDetailSchema>;
 
 export const registerSchema = userDetailSchema.safeExtend({
   email: z.string({ message: "Email wajib diisi" }),
-  password: z.string().min(6, { message: "Minimal 6 karakter mengandung 1 huruf besar dan 1 angka" }),
   roleId: z.string().optional(),
   domainId: z.string().optional(),
   isActive: z.coerce.boolean().optional(),

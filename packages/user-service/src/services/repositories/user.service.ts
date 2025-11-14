@@ -125,7 +125,7 @@ export async function updateUserAll(
       .update(users)
       .set({
         ...(data.email && { email: data.email.toLowerCase() }),
-        ...(hashedPassword && { password: hashedPassword }),
+        // ...(hashedPassword && { password: hashedPassword }),
         ...(data.isActive !== undefined && { isActive: data.isActive }),
         updatedAt: new Date(),
       })
