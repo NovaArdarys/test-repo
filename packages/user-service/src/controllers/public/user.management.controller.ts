@@ -7,6 +7,10 @@ import {
   type UpdateUserDetailInput
 } from "@/db/schemas";
 import { catchAsync } from '@/utils/catchAsync';
+import { registerSchemaType } from '@/validator/user.validator';
+import { getRoleById } from "@/services/repositories/role.permission.service";
+import { publishAssignProfileDriver, publishAssignUserToBeneficiary, publishAssignUserToKitchen } from '@/messaging/publishers/user.publisher';
+import { updateUserAll } from '@/services/repositories/user.service';
 
 const getAuditFields = (c: Context) => ({
   createdBy: c.get('userId'),
@@ -73,11 +77,53 @@ export const getUserByIdHandler = catchAsync(async (c) => {
 
 export const updateUserHandler = catchAsync(async (c) => {
   const id = c.req.param('id');
-  const data = await c.req.parseBody() as unknown as UpdateUserInput;
+  const { email, password, address, dateOfBirth, firstName, lastName, phoneNumber, roleId, isActive, domainId, createdBy } = await c.get("validatedData").body as unknown as registerSchemaType;
   const audit = getAuditFields(c);
 
-  const result = await UserService.updateUser(id, { ...data, updated_by: audit.updatedBy });
-  return c.json({ message: 'User updated successfully', data: { ...result, ...data } }, 200);
+  const result = await updateUserAll(id, {
+    email,
+    password,
+    isActive
+  }, {
+    address: address || "",
+    dateOfBirth: dateOfBirth || new Date(),
+    firstName: firstName || "",
+    lastName: lastName || "",
+    phoneNumber: phoneNumber || "",
+  }, roleId || "");
+
+  if (roleId) {
+
+    const role = await getRoleById(roleId);
+
+    if (role?.domain === "kitchen" && domainId) {
+      await publishAssignUserToKitchen({
+        kitchenId: domainId,
+        userId: result.userId,
+        createdBy: createdBy || ""
+      });
+    }
+
+    if (role?.domain === "beneficiary" && domainId) {
+      await publishAssignUserToBeneficiary({
+        beneficiaryId: domainId,
+        userId: result.userId,
+        createdBy: createdBy || ""
+      });
+    }
+
+    if (role?.domain === "driver" && domainId) {
+      await publishAssignProfileDriver({
+        kitchenId: domainId,
+        userId: result.userId,
+        createdBy: createdBy || ""
+      });
+    }
+
+    return c.json({ data: { ...result, [role?.domain || "domainId"]: domainId } });
+  }
+
+  return c.json({ message: 'User updated successfully', data: { ...result } }, 200);
 });
 
 export const deleteUserHandler = catchAsync(async (c) => {

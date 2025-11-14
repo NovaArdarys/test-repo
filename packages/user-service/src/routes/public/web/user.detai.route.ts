@@ -7,7 +7,7 @@ import {
   getUserProfile
 } from '@/controllers/public/user.management.controller';
 import { UserListQuerySchema } from '@/validator/role.permission.validator';
-import { createUserSchema, updateUserSchema, userDetailSchema } from '@/validator/user.validator';
+import { createUserSchema, registerSchema, userDetailSchema } from '@/validator/user.validator';
 import { idParamSchema } from '@/validator/global.validator';
 import { checkAccessToken } from '@/middleware/auth.middleware';
 
@@ -32,14 +32,12 @@ app.use(checkAccessToken)
     createUserHandler
   )
   .get('/:id',
-    permission(),
     validate(idParamSchema, 'param'),
     getUserByIdHandler
   )
   .put('/:id',
     permission(),
-    validate(idParamSchema, 'param'),
-    validate(updateUserSchema),
+    validate({ body: registerSchema, param: idParamSchema }),
     updateUserHandler
   )
   .delete('/:id',

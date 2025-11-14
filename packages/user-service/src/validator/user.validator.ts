@@ -96,9 +96,11 @@ export type refreshTokenSchemaType = z.infer<typeof refreshTokenSchema>;
 export const createUserSchema = z.object({
   email: z.string("Email tidak valid."),
   password: z.string().min(8, "Password minimal 8 karakter."),
-  is_active: z.boolean().optional(),
+  isActive: z.boolean().optional(),
 });
 
-export const updateUserSchema = createUserSchema.partial().extend({
+export const UpdateUserSchemaType = createUserSchema.partial().extend({
   password: z.string().min(8).optional(),
 });
+
+export type UpdateUserSchemaType = z.infer<typeof UpdateUserSchemaType>;
