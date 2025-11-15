@@ -1,16 +1,12 @@
 
 import { bcryptHash } from "@/utils/hashing";
 import { CreateUserInput, userDetails, userRoles, users, userSessions } from "@/db/schemas";
-import { and, eq, sql } from "drizzle-orm";
-import { or } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { isEmpty } from "lodash";
 import { db } from "@/db";
-import { timestamp } from "drizzle-orm/pg-core";
 import redis from "@/constants/redis";
-import ApiError from "@/utils/ApiError";
 import { UpdateUserSchemaType, userDetailType } from "@/validator/user.validator";
 import { transformPhoneNumber } from "@/utils/phone.formater.util";
-import { buildPaginatedWhere } from "@/utils/pagination";
 const TOKEN_KEY_PREFIX = 'revoked:';
 
 export async function getUser({ email }: { email: string; phone?: string; }) {
@@ -174,7 +170,6 @@ export async function updateUserAll(
     };
   });
 }
-
 
 // login
 export async function saveRefreshToken(userId: string, token: string, expiresAt: number, ipAddress: string, deviceInfo: string) {

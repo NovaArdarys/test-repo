@@ -133,7 +133,6 @@ export async function getUsersList({
   };
 }
 
-
 export async function createUser(data: CreateUserInput & { created_by: string; }) {
   const existingUser = await getUserByEmail({ email: data.email });
   if (existingUser) {
@@ -152,7 +151,6 @@ export async function createUser(data: CreateUserInput & { created_by: string; }
 
   return { id: newUser.id, email: data.email };
 }
-
 
 export async function getUserById(id: string) {
   const user = await db
