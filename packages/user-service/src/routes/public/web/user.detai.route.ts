@@ -3,8 +3,8 @@ import { validate } from '@/middleware/validate.middleware'; // Asumsi middlewar
 import { permission } from '@/middleware/permission.middleware'; // Asumsi middleware permission // Skema Validasi
 import {
   listUsersHandler, createUserHandler, getUserByIdHandler, updateUserHandler, deleteUserHandler,
-  getUserDetailsHandler, updateUserDetailsHandler,
-  getUserProfile
+  getUserProfile,
+  updateUserDetailsHandler
 } from '@/controllers/public/user.management.controller';
 import { UserListQuerySchema } from '@/validator/role.permission.validator';
 import { createUserSchema, registerSchema, userDetailSchema } from '@/validator/user.validator';
@@ -44,17 +44,6 @@ app.use(checkAccessToken)
     permission(),
     validate(idParamSchema, 'param'),
     deleteUserHandler
-  )
-  .get('/:id/details',
-    permission(),
-    validate(idParamSchema, 'param'),
-    getUserDetailsHandler
-  )
-  .put('/:id/details',
-    permission(),
-    validate(idParamSchema, 'param'),
-    validate(userDetailSchema),
-    updateUserDetailsHandler
   );
 
 export default app;

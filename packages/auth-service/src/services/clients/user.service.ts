@@ -51,7 +51,6 @@ const requestWithRetry = async (
 
 
     if (isAxiosError(err)) {
-      console.log(err.response, "-----err-----");
       const status = err.response?.status || 500;
       const apiError = err.response?.data || {
         error: "Upstream Service Error",
