@@ -52,6 +52,7 @@ export async function getUser({ email }: { email: string; phone?: string; }) {
 
   return user ? user : null;
 }
+
 export async function createUser(data: CreateUserInput, userDetail: userDetailType, roleId: string) {
   return await db.transaction(async (tx) => {
 
