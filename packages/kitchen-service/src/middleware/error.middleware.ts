@@ -66,7 +66,7 @@ export const errorConverter = (
   }
 
   if (error instanceof HTTPException) {
-    console.log("===== HTTPException =====", error.status);
+
 
     return new ApiError(error.status, {
       message: error.message,
