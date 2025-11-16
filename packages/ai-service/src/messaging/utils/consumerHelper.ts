@@ -26,7 +26,7 @@ export function safeConsume<T extends Record<string, any>>(
       const redisKey = `processed:${eventId}`;
       const alreadyProcessed = await redis.get(redisKey);
       if (alreadyProcessed) {
-        console.log(`[SAFE CONSUME] Skip duplicate: ${eventId}`);
+        console.log(`[SAFE CONSUME] Skip duplicate: ${eventId} - EXCHANGE: ${parsed?._meta?.exchange} - ROUTING KEY: ${parsed?._meta?.routingKey}`);
         return channel.ack(msg);
       }
 
