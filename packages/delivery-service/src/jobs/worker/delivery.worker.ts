@@ -16,7 +16,7 @@ export const deliveryWorker = createLoggedWorker<z.infer<typeof stepCommittedSch
           kitchenId: entityId,
           menuPlanId,
           status: "PENDING",
-          createdBy: "00000000-0000-0000-0000-000000000000",
+          createdBy: "11111111-1111-1111-1111-111111111111",
         });
         break;
       }

@@ -31,7 +31,7 @@ async function handleLogEvent(msg: amqplib.ConsumeMessage | null) {
       content.userId &&
       content.userId.length === 36 &&
       content.userId !== 'anonymous'
-    ) ? content.userId : '00000000-0000-0000-0000-000000000000';
+    ) ? content.userId : '11111111-1111-1111-1111-111111111111';
 
     console.log(`\n[EVENT IN] [${routingKey}] Log received.`, msg.content.toString());
 

@@ -78,7 +78,7 @@ async function handleAssignToKitchen(data: z.infer<typeof baseUserKitchen>) {
       await createDriver({
         kitchenId: parsed.kitchenId,
         userId: parsed.userId,
-        createdBy: parsed.createdBy || "00000000-0000-0000-0000-000000000000",
+        createdBy: parsed.createdBy || "11111111-1111-1111-1111-111111111111",
       });
     }
   }
