@@ -22,6 +22,7 @@ export function safeConsume<T extends Record<string, any>>(
       const parsed = JSON.parse(msg.content.toString());
       const eventId = parsed._meta?.eventId;
       if (!eventId) return channel.nack(msg, false, false);
+      console.log("[CONSUME IN]", msg.fields.exchange, msg.fields.routingKey);
 
       const redisKey = `processed:${eventId}`;
       const alreadyProcessed = await redis.get(redisKey);

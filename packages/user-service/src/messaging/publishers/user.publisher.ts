@@ -19,7 +19,7 @@ export async function publishAssignUserToKitchen(data: { userId: string; kitchen
 
 export async function publishAssignUserToBeneficiary(data: { userId: string; beneficiaryId: string; createdBy: string; }) {
   try {
-    await safePublish(EXCHANGES.USER, "beneficiary.assign.commit", data);
+    await safePublish(EXCHANGES.BENEFICIARY, "beneficiary.assign.commit", data);
   } catch (error) {
     console.error("[PUBLISH ERROR] Failed to publish eneficiary.assign.commit:", error);
   }

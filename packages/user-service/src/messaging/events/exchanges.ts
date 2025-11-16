@@ -6,7 +6,7 @@ export const EXCHANGES = {
   STORAGE: "storage.exchange",
   REPORT: "report.exchange",
   KITCHEN: "report.kitchen",
-  SCHOOL: "school.kitchen",
+  BENEFICIARY: "beneficiary.kitchen",
   DELIVERY: "delivery.exchange",
   TRACK: "track.exchange",
   MENU: "menu.exchange",

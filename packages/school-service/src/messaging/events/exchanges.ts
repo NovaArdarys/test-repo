@@ -7,5 +7,8 @@ export const EXCHANGES = {
   REPORT: "report.exchange",
   KITCHEN: "report.kitchen",
   BENEFICIARY: "beneficiary.kitchen",
-  DELIVERY: "delivery.exchange"
+  DELIVERY: "delivery.exchange",
+  TRACK: "track.exchange",
+  MENU: "menu.exchange",
+  AI: "ai.exchange"
 };
