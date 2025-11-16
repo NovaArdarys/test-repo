@@ -96,13 +96,12 @@ export const updateUserHandler = catchAsync(async (c) => {
   if (roleId) {
 
     const role = await getRoleById(roleId);
-    console.log(role, "======== ppppp ========");
 
     if (role?.domain === "kitchen" && domainId) {
       await publishAssignUserToKitchen({
         kitchenId: domainId,
         userId: result.userId,
-        createdBy: createdBy || ""
+        createdBy: createdBy || audit.createdBy || ""
       });
     }
 
@@ -110,7 +109,7 @@ export const updateUserHandler = catchAsync(async (c) => {
       await publishAssignUserToBeneficiary({
         beneficiaryId: domainId,
         userId: result.userId,
-        createdBy: createdBy || ""
+        createdBy: createdBy || audit.createdBy || ""
       });
     }
 
@@ -118,7 +117,7 @@ export const updateUserHandler = catchAsync(async (c) => {
       await publishAssignProfileDriver({
         kitchenId: domainId,
         userId: result.userId,
-        createdBy: createdBy || ""
+        createdBy: createdBy || audit.createdBy || ""
       });
     }
 
