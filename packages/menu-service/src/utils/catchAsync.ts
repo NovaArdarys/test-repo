@@ -56,72 +56,49 @@ const logRequestActivity = async (
   await sendAppLog(level, payload);
 };
 
-export const catchAsync = <T>(fn: (c: Context, next: Next) => T) => async (c: Context, next: Next) => {
-  const start = Date.now();
+export function catchAsync<
+  Fn extends (c: any, next: Next) => Promise<any> | any
+>(fn: Fn) {
+  return (async (
+    c: Parameters<Fn>[0],
+    next: Next
+  ): Promise<Awaited<ReturnType<Fn>>> => {
+    const start = Date.now();
 
-  try {
-    const result = await fn(c, next) as T;
+    try {
+      const result = await fn(c, next);
+      const duration = Date.now() - start;
 
-    const duration = Date.now() - start;
+      const responseStatus = c.res.status || 200;
+      if (responseStatus >= 200 && responseStatus < 300) {
+        await logRequestActivity(
+          c,
+          "INFO",
+          `SUCCESS | ${c.req.method} ${new URL(c.req.url).pathname} completed in ${duration}ms`
+        );
+      }
 
-    const responseStatus = c.res.status || 200;
-    if (responseStatus >= 200 && responseStatus < 300) {
-      await logRequestActivity(
-        c,
-        'INFO' as LogLevel,
-        `SUCCESS | ${c.req.method} ${new URL(c.req.url).pathname} completed in ${duration}ms`
-      );
-    }
+      return result;
+    } catch (error: any) {
+      let logMessage: string;
+      let logStatusCode: number;
+      let stack: string | undefined;
 
-
-    return result as T extends Promise<infer U> ? U : T;
-  } catch (error: any) {
-    // if (error instanceof ApiError) {
-    //   const { message, statusCode } = await errorConverter({ message: error.message, statusCode: error.statusCode });
-    //   throw new HTTPException(statusCode, { message });
-    // } else {
-    //   const { message, statusCode } = await errorConverter(error);
-    //   throw new HTTPException(statusCode, { message });
-    // }
-
-    let logMessage: string;
-    let logStatusCode: number;
-    let stack: string | undefined;
-
-    if (error instanceof ApiError) {
-      const { statusCode, message } = await errorConverter({ message: error.message, statusCode: error.statusCode });
-      logStatusCode = statusCode;
-      logMessage = `API_ERROR | ${error.message}`;
-      stack = error.stack;
-
-      throw new HTTPException(statusCode, { message: message });
-
-    } else if (error instanceof HTTPException) {
-      logStatusCode = error.status;
-      logMessage = `HTTP_EXCEPTION | ${error.message}`;
-      stack = error.stack;
-
-      await logRequestActivity(
-        c,
-        logStatusCode >= 500 ? 'ERROR' as LogLevel : 'WARN' as LogLevel,
-        `${logStatusCode} | ${logMessage}`,
-        stack
-      );
-      throw error;
-
-    } else {
       const { statusCode, message } = await errorConverter(error);
+      console.log(error, "==== catch async =====", statusCode, message);
+
       logStatusCode = statusCode;
       logMessage = `FATAL_ERROR | ${message}`;
       stack = error.stack;
 
       await logRequestActivity(
         c,
-        logStatusCode >= 500 ? 'ERROR' as LogLevel : 'WARN' as LogLevel,
+        logStatusCode >= 500 ? "ERROR" : "WARN",
         `${logStatusCode} | ${logMessage}`,
         stack
       );
-      throw new HTTPException(statusCode, { message: message });
+
+      throw new HTTPException(statusCode, { message });
     }
-  }
-};
+  }) as typeof fn;
+}

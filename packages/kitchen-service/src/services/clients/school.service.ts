@@ -2,6 +2,8 @@ import { enqueueRetry, processRetryQueue } from "@/utils/retryQueue";
 import { callWithBreaker } from "@/utils/circuitBreaker";
 import axios, { AxiosRequestConfig } from "axios";
 import { isAxiosError } from "axios";
+import { errorConverter } from "@/middleware/error.middleware";
+import { HTTPException } from "hono/http-exception";
 
 const USER_SERVICE_BASE = process.env.SCHOOL_SERVICE_URL || "http://school-service:3010/api";
 const SERVICE_TOKEN = process.env.SERVICE_TOKEN || "secret";
@@ -40,9 +42,7 @@ const requestWithRetry = async (
 ) => {
   try {
     return await safeRequest(path, method, payload);
-  } catch (err) {
-    console.log(err, "-----err-----");
-
+  } catch (error) {
     await enqueueRetry({
       id: `${idPrefix}:${Date.now()}`,
       data: { fn: fnName, payload: payload },
@@ -50,24 +50,9 @@ const requestWithRetry = async (
       backoffMs: 2000,
     });
 
+    const { statusCode, message } = await errorConverter(error);
+    throw new HTTPException(statusCode, { message });
 
-
-    if (isAxiosError(err)) {
-      const status = err.response?.status || 500;
-      const apiError = err.response?.data || {
-        error: "Upstream Service Error",
-        message: err.message,
-      };
-      console.log(err.response?.data, "-----err-----");
-
-      const formattedError = new Error(apiError.error || apiError.message || "Unknown Error");
-      (formattedError as any).status = status;
-      (formattedError as any).details = apiError.details || null;
-
-      throw formattedError;
-    }
-
-    throw err;
   }
 };
 

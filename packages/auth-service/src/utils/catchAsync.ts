@@ -84,33 +84,9 @@ export function catchAsync<
       let logStatusCode: number;
       let stack: string | undefined;
 
-      if (error instanceof ApiError) {
-        const { statusCode, message } = await errorConverter({
-          message: error.message,
-          statusCode: error.statusCode,
-        });
-        logStatusCode = statusCode;
-        logMessage = `API_ERROR | ${error.message}`;
-        stack = error.stack;
-
-        throw new HTTPException(statusCode, { message });
-      }
-
-      if (error instanceof HTTPException) {
-        logStatusCode = error.status;
-        logMessage = `HTTP_EXCEPTION | ${error.message}`;
-        stack = error.stack;
-
-        await logRequestActivity(
-          c,
-          logStatusCode >= 500 ? "ERROR" : "WARN",
-          `${logStatusCode} | ${logMessage}`,
-          stack
-        );
-        throw error;
-      }
-
       const { statusCode, message } = await errorConverter(error);
+      console.log(error, "==== catch async =====", statusCode, message);
+
       logStatusCode = statusCode;
       logMessage = `FATAL_ERROR | ${message}`;
       stack = error.stack;
