@@ -53,7 +53,8 @@ async function handleStorageEvent(data: z.infer<typeof storageCommittedSchema>) 
 
 // Log Event
 async function handleLogEvent(data: any) {
-  console.warn(`[LOG EVENT IN] [${data._meta?.routingKey ?? "log"}]`, data);
+  console.warn(`  console.warn(`[LOG EVENT IN][${ data._meta?.routingKey ?? "log" }]`, data?._meta?.eventId);
+ [${data._meta?.routingKey ?? "log"}]`, data);
 }
 
 // User Assign Event

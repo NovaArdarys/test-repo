@@ -38,7 +38,8 @@ async function handleStepCommit(data: z.infer<typeof stepCommittedSchema>) {
 
 // Handle Log Events
 async function handleLogEvent(data: any) {
-  console.warn(`[LOG EVENT IN] [${data._meta?.routingKey ?? "log"}]`, data);
+  console.warn(`  console.warn(`[LOG EVENT IN][${ data._meta?.routingKey ?? "log" }]`, data?._meta?.eventId);
+ [${data._meta?.routingKey ?? "log"}]`, data);
 }
 
 
