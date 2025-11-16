@@ -36,6 +36,8 @@ export const errorConverter = (
   if (error instanceof ApiError) return error;
 
   if (isAxiosError(error)) {
+    console.log("===== axios =====");
+
     const status = error.response?.status || 500;
     const apiError = error.response?.data || {
       error: "Upstream Service Error",
@@ -56,19 +58,22 @@ export const errorConverter = (
   const originalPgError = drizzleWrappedError.error || drizzleWrappedError.originalError || drizzleWrappedError.cause;
 
   if (originalPgError instanceof DatabaseError) {
+    console.log("===== db =====");
+
     return handleDatabaseError(originalPgError);
   } else if (originalPgError && typeof originalPgError === 'object' && 'code' in originalPgError) {
     return handleDatabaseError(originalPgError as DatabaseError);
   }
 
   if (error instanceof HTTPException) {
+    console.log("===== HTTPException =====", error.status);
+
     return new ApiError(error.status, {
       message: error.message,
       isOperational: true,
     });
   }
 
-  console.log(error, "====== 🌋 error =====");
 
   const statusCode = (error as any)?.statusCode || 500;
   const message = (error as any)?.message || "Internal Server Error";
@@ -81,12 +86,6 @@ export const errorConverter = (
 
 export const errorHandler: ErrorHandler = (err, c) => {
   const convertedError = errorConverter(err);
-
-  console.error({
-    name: err instanceof Error ? err.name : "UnknownError",
-    message: err instanceof Error ? err.message : String(err),
-    stack: err instanceof Error ? err.stack : undefined,
-  }, convertedError.statusCode, "====== err ======");
 
   return c.json(
     {
