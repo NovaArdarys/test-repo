@@ -28,8 +28,8 @@ async function handleClientStorageCommit(data: z.infer<typeof storageClientCommi
 
 // Log 
 async function handleLogEvent(data: any) {
-  console.warn(`  console.warn(`[LOG EVENT IN][${ data._meta?.routingKey ?? "log" }]`, data?._meta?.eventId);
- [${data._meta?.routingKey ?? "log"}]`, data);
+  console.warn(`[LOG EVENT IN] [${data._meta?.routingKey ?? "log"}]`, data?._meta?.eventId);
+
 }
 
 export async function setupStorageConsumer(channel: Channel) {
