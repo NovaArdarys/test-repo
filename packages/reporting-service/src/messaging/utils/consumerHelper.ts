@@ -20,7 +20,6 @@ export function safeConsume<T extends Record<string, any>>(
 
     try {
       const parsed = JSON.parse(msg.content.toString());
-      console.log(parsed._meta, "======= parsed._meta? ========");
 
       const eventId = parsed._meta?.eventId;
       if (!eventId) return channel.nack(msg, false, false);
