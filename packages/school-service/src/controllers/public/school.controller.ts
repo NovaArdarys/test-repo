@@ -61,6 +61,7 @@ export const createBeneficiaryHandler = catchAsync(async (c: Context) => {
 
   const newSchool = await createBeneficiary({
     ...body as CreateBeneficiarySchemaType,
+    kitchenId: audit.kitchenId?.[0] || null,
     joinedDate: new Date(body.joinedDate),
     lon: String(body.lon),
     lat: String(body.lat),
@@ -102,6 +103,7 @@ export const updateBeneficiaryHandler = catchAsync(async (c: Context) => {
 
   const updatedData = await updateBeneficiary(id, {
     ...body,
+    kitchenId: body?.kitchenId ? body?.kitchenId : audit.kitchenId?.[0] || null,
     joinedDate: new Date(body.joinedDate),
     lon: String(body.lon),
     lat: String(body.lat),
