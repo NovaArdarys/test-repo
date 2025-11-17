@@ -14,6 +14,7 @@ import {
   GetEventReportListSchemaType,
 } from "@/validator/event.report.validator";
 import { publishEventReportCommit } from "@/messaging/publishers/reporting.publisher";
+import { isEmpty } from "lodash";
 
 const getAuditFields = (c: Context) => ({
   createdBy: c.get('userId'),
@@ -49,10 +50,12 @@ export const listEventReportsHandler = catchAsync(async (c: Context) => {
 
 export const createEventReportHandler = catchAsync(async (c: Context) => {
   const body = await await c.get("validatedData").body as CreateEventReportSchemaType;
-  const { createdBy } = getAuditFields(c);
+  const { createdBy, domain, driverId, kitchenId, beneficiaryId } = getAuditFields(c);
 
   const newReport = await createEventReport({
     ...body,
+    entityId: domain === "kitchen" ? !isEmpty(driverId) ? driverId?.[0] ?? null : kitchenId?.[0] ?? null : domain === "beneficiary" ? beneficiaryId?.[0] ?? null : null,
+    reportType: !isEmpty(driverId) ? "driver" : domain,
     date: body.date,
     createdBy,
   });
@@ -78,10 +81,12 @@ export const getEventReportByIdHandler = catchAsync(async (c: Context) => {
 export const updateEventReportHandler = catchAsync(async (c: Context) => {
   const { id } = await c.get("validatedData").param;
   const body = await c.req.parseBody() as unknown as UpdateEventReportSchemaType;
-  const { updatedBy } = getAuditFields(c);
+  const { updatedBy, domain, driverId, kitchenId, beneficiaryId } = getAuditFields(c);
 
   const updatedReport = await updateEventReport(id, {
     ...body,
+    entityId: domain === "kitchen" ? !isEmpty(driverId) ? driverId?.[0] ?? null : kitchenId?.[0] ?? null : domain === "beneficiary" ? beneficiaryId?.[0] ?? null : null,
+    reportType: !isEmpty(driverId) ? "driver" : domain,
     updatedBy,
   });
 
@@ -90,7 +95,7 @@ export const updateEventReportHandler = catchAsync(async (c: Context) => {
 
 export const softDeleteEventReportHandler = catchAsync(async (c: Context) => {
   const { id } = await c.get("validatedData").param;
-  const { updatedBy } = getAuditFields(c);
+  const { updatedBy, domain, driverId, kitchenId, beneficiaryId } = getAuditFields(c);
 
   await softDeleteEventReport(id, updatedBy);
 
