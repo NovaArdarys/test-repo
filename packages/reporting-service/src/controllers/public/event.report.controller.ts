@@ -16,10 +16,16 @@ import {
 import { publishEventReportCommit } from "@/messaging/publishers/reporting.publisher";
 
 const getAuditFields = (c: Context) => ({
-  createdBy: c.get("userId"),
-  updatedBy: c.get("userId"),
+  createdBy: c.get('userId'),
+  updatedBy: c.get('userId'),
+  userId: c.get('userId'),
+  domain: c.get('domain'),
+  kitchenId: c.get("kitchenId") as string[],
+  driverId: c.get("driverId") as string[],
+  beneficiaryId: c.get("beneficiaryId") as string[],
+  driverKitchenId: c.get("driverKitchenId") as string[],
   updatedAt: new Date(),
-  createdAt: new Date(),
+  createdAt: new Date()
 });
 
 export const listEventReportsHandler = catchAsync(async (c: Context) => {
@@ -47,6 +53,7 @@ export const createEventReportHandler = catchAsync(async (c: Context) => {
 
   const newReport = await createEventReport({
     ...body,
+
     date: body.date,
     createdBy,
   });
