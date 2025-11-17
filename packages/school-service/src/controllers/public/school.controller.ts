@@ -61,6 +61,7 @@ export const createBeneficiaryHandler = catchAsync(async (c: Context) => {
 
   const newSchool = await createBeneficiary({
     ...body as CreateBeneficiarySchemaType,
+    imageUrl: body?.imageURL,
     kitchenId: audit.kitchenId?.[0] || null,
     joinedDate: new Date(body.joinedDate),
     lon: String(body.lon),
@@ -103,6 +104,7 @@ export const updateBeneficiaryHandler = catchAsync(async (c: Context) => {
 
   const updatedData = await updateBeneficiary(id, {
     ...body,
+    imageUrl: body?.imageURL,
     kitchenId: body?.kitchenId ? body?.kitchenId : audit.kitchenId?.[0] || null,
     joinedDate: new Date(body.joinedDate),
     lon: String(body.lon),
