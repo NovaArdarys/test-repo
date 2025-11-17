@@ -67,6 +67,7 @@ export const createMenuPlanHandler = catchAsync(async (c: Context) => {
 
   const newPlan = await createMenuPlan({
     ...body,
+    kitchenId: body?.kitchenId ? body?.kitchenId : audit.kitchenId?.[0] || null,
     createdBy: audit.createdBy,
     planStartDate: body?.planStartDate || new Date().toISOString().split("T")[0],
     planEndDate: body?.planEndDate || new Date().toISOString().split("T")[0],
@@ -93,6 +94,7 @@ export const updateMenuPlanHandler = catchAsync(async (c: Context) => {
 
   const updatedPlan = await updateMenuPlan(id, {
     ...body,
+    kitchenId: body?.kitchenId ? body?.kitchenId : audit.kitchenId?.[0] || null,
     updatedBy: audit.updatedBy,
     planStartDate: body?.planStartDate,
     planEndDate: body?.planEndDate,
