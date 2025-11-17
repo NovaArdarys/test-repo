@@ -3,7 +3,7 @@ import { paginationSchema } from "./global.validator";
 
 const BeneficiaryBaseSchema = z.object({
   name: z.string().min(3, "Nama sekolah minimal 3 karakter.").max(100),
-  kitchenId: z.string().uuid("Kitchen ID harus dalam format UUID."),
+  kitchenId: z.string(),
   address: z.string().optional(),
   phoneNumber: z.string().max(20).optional(),
 
@@ -24,12 +24,12 @@ const BeneficiaryBaseSchema = z.object({
   category: z.string(),
   smallPortion: z.number().min(0).default(0),
   largePortion: z.number().min(0).default(0),
-  status: z.enum(["ACTIVE", "INACTIVE"]).default("ACTIVE"),
+  status: z.string(),
 });
 
 export const CreateBeneficiarySchema = BeneficiaryBaseSchema.extend({
   name: BeneficiaryBaseSchema.shape.name.nonempty("Nama sekolah wajib diisi."),
-  kitchenId: BeneficiaryBaseSchema.shape.kitchenId.nonempty("Kitchen ID wajib diisi."),
+  kitchenId: BeneficiaryBaseSchema.shape.kitchenId.optional(),
   users: z.array(
     z.string()
   ).optional(),
