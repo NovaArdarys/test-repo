@@ -59,7 +59,8 @@ export async function getKitchensList({
   swLat,
   swLng,
   neLat,
-  neLng
+  neLng,
+  status
 }: {
   page: number;
   limit: number;
@@ -69,6 +70,7 @@ export async function getKitchensList({
   neLng?: string;
   swLat?: string;
   swLng?: string;
+  status?: string;
 }) {
   const offset = (page - 1) * limit;
   const whereConditions: SQLWrapper[] = [];
@@ -109,6 +111,7 @@ export async function getKitchensList({
       ...whereConditions,
       eq(k.isDeleted, isDeleted),
       name ? ilike(k.name, `%${name.toLowerCase()}%`) : undefined,
+      status ? eq(k.status, status) : undefined,
     ),
     orderBy: (k, { desc }) => [desc(k.createdAt)],
     limit,

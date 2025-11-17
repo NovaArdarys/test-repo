@@ -13,7 +13,8 @@ const kitchenBaseSchema = z.object({
     (a) => parseFloat(z.string().parse(a)),
     z.number()
   ),
-
+  status: z.string(),
+  joinDate: z.string(),
   provinceId: z.string(),
   regencyId: z.string(),
   districtId: z.string(),
@@ -47,6 +48,8 @@ export const listKitchensQuerySchema = paginationSchema.extend({
   neLng: z.string().optional(),
   swLat: z.string().optional(),
   swLng: z.string().optional(),
+  status: z.string().optional(),
+  joinDate: z.string().optional(),
 });
 
 export type ListKitchensQuerySchemaType = z.infer<typeof listKitchensQuerySchema>;

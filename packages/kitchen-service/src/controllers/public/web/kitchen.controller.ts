@@ -29,6 +29,8 @@ export const listKitchensHandler = catchAsync(async (c: Context) => {
   const neLng = query.neLng;
   const swLat = query.swLat;
   const swLng = query.swLng;
+  const status = query.status;
+  const joinDate = query.joinDate;
 
   const data = await getKitchensList({
     page,
@@ -38,6 +40,7 @@ export const listKitchensHandler = catchAsync(async (c: Context) => {
     neLng,
     swLat,
     swLng,
+    status
   });
 
   return c.json({ data: data.data, meta: data.meta }, 200);

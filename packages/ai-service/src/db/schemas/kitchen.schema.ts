@@ -1,10 +1,12 @@
-import { pgTable, uuid, varchar, text, decimal, boolean, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
+import { pgTable, uuid, varchar, text, decimal, boolean, timestamp, uniqueIndex, date } from "drizzle-orm/pg-core";
 import { storage } from "./storage.schema";
 
 export const kitchens = pgTable('kitchens', {
   id: uuid('id').primaryKey().defaultRandom(),
   name: varchar('name', { length: 100 }).notNull().unique(),
   address: text('address'),
+  status: text('status'),
+  joinDate: date('join_date'),
   phoneNumber: varchar('phone_number', { length: 20 }),
   lon: decimal('lon', { precision: 10, scale: 6 }),
   lat: decimal('lat', { precision: 10, scale: 6 }),
