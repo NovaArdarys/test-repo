@@ -25,6 +25,7 @@ export const checkAccessToken = async (c: Context, next: Next) => {
     c.set('kitchenId', data?.kitchen?.kitchenIds || []);
     c.set('driverId', data?.driver?.driverIds || []);
     c.set('driverKitchenId', data?.driver?.kitchenId || []);
+    c.set('domain', data?.domain || "");
     c.set('userEmail', email);
 
     await next();

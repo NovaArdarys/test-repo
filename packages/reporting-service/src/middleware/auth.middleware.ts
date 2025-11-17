@@ -19,14 +19,13 @@ export const checkAccessToken = async (c: Context, next: Next) => {
       accessToken
     ) as tokenParams;
 
-    console.log(data, "====middleware=====");
-
     c.set('userId', id);
     c.set('roleId', roleId);
     c.set('beneficiaryId', data?.beneficiary?.beneficiaryIds || []);
     c.set('kitchenId', data?.kitchen?.kitchenIds || []);
     c.set('driverId', data?.driver?.driverIds || []);
     c.set('driverKitchenId', data?.driver?.kitchenId || []);
+    c.set('domain', data?.domain || "");
     c.set('userEmail', email);
 
     await next();

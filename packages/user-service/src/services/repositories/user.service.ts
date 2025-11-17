@@ -17,6 +17,7 @@ export async function getUser({ email }: { email: string; phone?: string; }) {
         email: true,
         password: true,
         createdAt: true,
+        isActive: true,
       },
       with: {
         userRoles: {
@@ -26,6 +27,7 @@ export async function getUser({ email }: { email: string; phone?: string; }) {
               columns: {
                 id: true,
                 name: true,
+                domain: true,
               },
             },
           },

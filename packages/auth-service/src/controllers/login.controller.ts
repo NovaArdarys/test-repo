@@ -20,12 +20,17 @@ export const loginHandler = catchAsync(async (c) => {
     throw new ApiError(HttpStatus.default.UNAUTHORIZED, { message: "Unauthorized" });
   }
 
+  if (!findUser.isActive) {
+    throw new ApiError(HttpStatus.default.UNAUTHORIZED, { message: "Unauthorized" });
+  }
+
   const verifiedPassword = await bcryptVerify(password, findUser.password);
   if (!verifiedPassword) {
     throw new ApiError(HttpStatus.default.UNAUTHORIZED, { message: "Unauthorized" });
   }
 
   const roleId = findUser.userRoles?.[0]?.role?.id;
+  const domain = findUser.userRoles?.[0]?.role?.domain;
   if (roleId) {
     const permissions = await getUserRolePermissonsClientService({ roleId });
 
@@ -42,7 +47,11 @@ export const loginHandler = catchAsync(async (c) => {
     }
   }
 
+  console.log(findUser.userRoles?.[0].role, "===== ok ======");
+
+
   let context = {
+    domain: domain ?? "",
     beneficiary: {},
     kitchen: {},
     driver: {},
