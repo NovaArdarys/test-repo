@@ -4,6 +4,7 @@ import { users, userDetails, userRoles, roles } from "@/db/schemas/user.schema";
 import { roleDomainEnum } from "@/db/schemas/enums/enums";
 import z from "zod";
 import { dailyReports, masterSteps, beneficiaryPortions, stepReports } from "@/db/schemas";
+import { isEmpty } from "lodash";
 
 const entityTypeValidator = z.enum(roleDomainEnum.enumValues);
 
@@ -55,7 +56,7 @@ export async function getStepReportsWithFilter({
 
   if (entity) conditions.push(eq(roles.domain, entity));
 
-  if (search) {
+  if (search && search != 'undefined') {
     const like = `%${search}%`;
     conditions.push(
       or(
@@ -86,7 +87,7 @@ export async function getStepReportsWithFilter({
     .from(stepReports)
     .leftJoin(masterSteps, eq(stepReports.stepId, masterSteps.id))
     .leftJoin(dailyReports, eq(stepReports.dailyReportId, dailyReports.id))
-    .leftJoin(users, eq(stepReports.createdBy, users.id))
+    .leftJoin(users, eq(stepReports.updatedBy, users.id))
     .leftJoin(userDetails, eq(users.id, userDetails.userId))
     .leftJoin(userRoles, eq(users.id, userRoles.userId))
     .leftJoin(roles, eq(userRoles.roleId, roles.id))
@@ -98,8 +99,10 @@ export async function getStepReportsWithFilter({
   const [{ count }] = await db
     .select({ count: sql<number>`count(*)` })
     .from(stepReports)
+    .leftJoin(masterSteps, eq(stepReports.stepId, masterSteps.id))
     .leftJoin(dailyReports, eq(stepReports.dailyReportId, dailyReports.id))
-    .leftJoin(users, eq(stepReports.createdBy, users.id))
+    .leftJoin(users, eq(stepReports.updatedBy, users.id))
+    .leftJoin(userDetails, eq(users.id, userDetails.userId))
     .leftJoin(userRoles, eq(users.id, userRoles.userId))
     .leftJoin(roles, eq(userRoles.roleId, roles.id))
     .where(filters);
@@ -123,8 +126,8 @@ export async function getStepReportsWithFilter({
           year: "numeric",
         }),
         stepName: r.stepName ?? "-",
-        name: r.name ?? "-",
-        roleName: r.roleName ?? "Tidak Diketahui",
+        name: !isEmpty(r?.name?.trim()) ? r.name : "-",
+        roleName: r.roleName ?? "-",
         phoneNumber: r.phoneNumber ?? "-",
         dailyReport: {
           id: r.dailyReportId || "",

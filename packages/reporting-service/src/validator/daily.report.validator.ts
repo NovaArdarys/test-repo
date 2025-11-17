@@ -79,7 +79,7 @@ export const stepReportQuerySchema = z.object({
     .regex(/^\d{4}-\d{2}-\d{2}$/, "endDate harus format YYYY-MM-DD")
     .optional(),
   search: z.string().optional(),
-  entity: z.enum(roleDomainEnum.enumValues),
+  entity: z.enum(roleDomainEnum.enumValues).optional(),
   page: z
     .string()
     .optional()
