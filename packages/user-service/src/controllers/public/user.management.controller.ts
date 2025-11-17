@@ -31,7 +31,7 @@ export const listUsersHandler = catchAsync(async (c) => {
   const query = c.req.query();
   const page = parseInt(query.page || '1');
   const limit = parseInt(query.limit || '10');
-  const isActive = query.is_active !== undefined ? query.is_active === 'true' : undefined;
+  const isActive = query.isActive;
   const name = query.name;
 
   const result = await UserService.getUsersList({

@@ -72,6 +72,8 @@ export async function getUsersList({
   name?: string;
   email?: string;
 }): Promise<APIPagination<UserRead>> {
+  console.log(isActive, "===== isActive =====");
+
   const { where, meta } = await buildPaginatedWhere({
     table: users,
     tableName: "users",
