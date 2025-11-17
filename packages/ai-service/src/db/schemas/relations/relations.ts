@@ -335,6 +335,11 @@ export const kitchensRelations = relations(kitchens, ({ many, one }) => ({
     references: [users.id],
     relationName: "updated_by",
   }),
+  createdBy: one(users, {
+    fields: [kitchens.createdBy],
+    references: [users.id],
+    relationName: "created_by",
+  }),
   deliveries: many(deliveries),
   menuPlanKitchen: many(menuPlans),
 }));

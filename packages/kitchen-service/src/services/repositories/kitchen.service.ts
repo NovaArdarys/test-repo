@@ -14,6 +14,11 @@ export type UpdateKitchen = Partial<Omit<NewKitchen, 'createdBy'>> & { updatedBy
 export async function getKitchenById(id: string): Promise<Kitchen | null> {
   const kitchen = await db.query.kitchens.findFirst({
     with: {
+      createdBy: {
+        with: {
+          userDetails: true
+        }
+      },
       deliveries: true,
       userKitchens: {
         where: (u, { eq, and }) => and(
