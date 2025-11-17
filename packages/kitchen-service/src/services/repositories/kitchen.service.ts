@@ -133,6 +133,10 @@ export async function createKitchen(data: NewKitchen): Promise<Kitchen> {
   const [newKitchen] = await db.insert(kitchens)
     .values({
       ...data,
+      provinceId: data.provinceId || "11111111-1111-1111-1111-111111111111",
+      districtId: data.districtId || "11111111-1111-1111-1111-111111111111",
+      regencyId: data.regencyId || "11111111-1111-1111-1111-111111111111",
+      villageId: data.villageId || "11111111-1111-1111-1111-111111111111",
       updatedBy: data.createdBy,
       updatedAt: new Date(),
     })
@@ -146,6 +150,10 @@ export async function updateKitchen(id: string, data: UpdateKitchen): Promise<Ki
   const [updatedKitchen] = await db.update(kitchens)
     .set({
       ...data,
+      provinceId: data.provinceId || "11111111-1111-1111-1111-111111111111",
+      districtId: data.districtId || "11111111-1111-1111-1111-111111111111",
+      regencyId: data.regencyId || "11111111-1111-1111-1111-111111111111",
+      villageId: data.villageId || "11111111-1111-1111-1111-111111111111",
       updatedAt: new Date(),
     })
     .where(eq(kitchens.id, id))
