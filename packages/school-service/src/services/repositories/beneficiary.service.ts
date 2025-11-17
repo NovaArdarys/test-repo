@@ -20,7 +20,8 @@ export async function getBeneficiaryList({
   swLat,
   swLng,
   neLat,
-  neLng
+  neLng,
+  status
 }: {
   page: number;
   limit: number;
@@ -31,6 +32,7 @@ export async function getBeneficiaryList({
   neLng?: string;
   swLat?: string;
   swLng?: string;
+  status?: string;
 }): Promise<APIPagination<Beneficiary>> {
   const offset = (page - 1) * limit;
 
@@ -44,6 +46,10 @@ export async function getBeneficiaryList({
 
   if (kitchenId) {
     whereConditions.push(eq(beneficiaries.kitchenId, kitchenId));
+  }
+
+  if (status) {
+    whereConditions.push(eq(beneficiaries.status, status));
   }
 
   if (neLat !== undefined && swLat !== undefined) {

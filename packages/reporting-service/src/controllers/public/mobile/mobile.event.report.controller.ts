@@ -49,13 +49,13 @@ export const listEventReportsHandler = catchAsync(async (c: Context) => {
 });
 
 export const createEventReportHandler = catchAsync(async (c: Context) => {
-  const body = await await c.get("validatedData").body as CreateEventReportSchemaType;
+  const body = await c.get("validatedData").body as CreateEventReportSchemaType;
   const { createdBy, domain, driverId, kitchenId, beneficiaryId } = getAuditFields(c);
 
   const newReport = await createEventReport({
     ...body,
     entityId: domain === "kitchen" ? !isEmpty(driverId) ? driverId?.[0] ?? null : kitchenId?.[0] ?? null : domain === "beneficiary" ? beneficiaryId?.[0] ?? null : null,
-    reportType: !isEmpty(driverId) ? "driver" : domain,
+    reportType: body.reportType ? body.reportType : !isEmpty(driverId) ? "driver" : domain,
     date: body.date,
     createdBy,
   });
@@ -80,13 +80,13 @@ export const getEventReportByIdHandler = catchAsync(async (c: Context) => {
 
 export const updateEventReportHandler = catchAsync(async (c: Context) => {
   const { id } = await c.get("validatedData").param;
-  const body = await c.req.parseBody() as unknown as UpdateEventReportSchemaType;
+  const body = await c.get("validatedData").body as unknown as UpdateEventReportSchemaType;
   const { updatedBy, domain, driverId, kitchenId, beneficiaryId } = getAuditFields(c);
 
   const updatedReport = await updateEventReport(id, {
     ...body,
     entityId: domain === "kitchen" ? !isEmpty(driverId) ? driverId?.[0] ?? null : kitchenId?.[0] ?? null : domain === "beneficiary" ? beneficiaryId?.[0] ?? null : null,
-    reportType: !isEmpty(driverId) ? "driver" : domain,
+    reportType: body.reportType ? body.reportType : !isEmpty(driverId) ? "driver" : domain,
     updatedBy,
   });
 
