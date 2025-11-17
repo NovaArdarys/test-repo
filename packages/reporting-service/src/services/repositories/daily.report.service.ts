@@ -683,21 +683,28 @@ export async function getDailyReportsList(params?: {
       },
 
       steps: sql`
-        COALESCE(
-          json_agg(
-            json_build_object(
-              'id', ${stepReports.id},
-              'isCompleted', ${stepReports.isCompleted},
-              'notes', ${stepReports.notes},
-              'stepKey', ${masterSteps.stepKey},
-              'stepName', ${masterSteps.stepName},
-              'stepOrder', ${masterSteps.stepOrder},
-              'imageURL', ${storage.fileUrl}
-            )
-          ) FILTER (WHERE ${stepReports.id} IS NOT NULL),
-          '[]'::json
+  COALESCE(
+    (
+      SELECT json_agg(
+        json_build_object(
+          'id', sr.id,
+          'isCompleted', sr.is_completed,
+          'notes', sr.notes,
+          'stepKey', ms.step_key,
+          'stepName', ms.step_name,
+          'stepOrder', ms.step_order,
+          'imageURL', st.file_url
         )
-      `.as("steps"),
+        ORDER BY ms.step_order
+      )
+      FROM step_reports sr
+      JOIN master_steps ms ON ms.id = sr.step_id
+      LEFT JOIN storages st ON st.id = sr.storage_id
+      WHERE sr.daily_report_id = ${dailyReports.id}
+    ),
+    '[]'::json
+  )
+`.as("steps"),
     })
     .from(dailyReports)
     .leftJoin(menuPlans, eq(dailyReports.menuPlanId, menuPlans.id))
