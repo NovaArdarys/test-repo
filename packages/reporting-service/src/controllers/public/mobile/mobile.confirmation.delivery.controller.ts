@@ -10,6 +10,7 @@ const getAuditFields = (c: Context) => ({
   createdBy: c.get('userId'),
   updatedBy: c.get('userId'),
   userId: c.get('userId'),
+  domain: c.get('domain'),
   kitchenId: c.get("kitchenId") as string[],
   driverId: c.get("driverId") as string[],
   beneficiaryId: c.get("beneficiaryId") as string[],
@@ -17,7 +18,6 @@ const getAuditFields = (c: Context) => ({
   updatedAt: new Date(),
   createdAt: new Date()
 });
-
 export const createEventReportDeliveryBeneficiaryHandler = catchAsync(async (c) => {
   const deliveryId = c.req.param("id");
   const body = await c.get("validatedData").body as unknown as z.infer<typeof CreateDeliveryEventReportSchema>;
