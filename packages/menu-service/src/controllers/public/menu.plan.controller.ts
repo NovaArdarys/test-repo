@@ -12,6 +12,7 @@ import {
 import { createMenuPlan, getDistributionByMenuPlanId, getFoodItemsByMenuPlanId, getMenuPlanById, getMenuPlansList, softDeleteMenuPlan, updateMenuPlan, updatePlanStatus } from "@/services/repositories/menu.plan.service";
 import { assignFoodToMenuPlan, unassignFoodFromMenuPlan } from "@/services/repositories/menu.food.service";
 import { assignPlanDistribution, unassignPlanDistribution } from "@/services/repositories/menu.plan.schools.kitchen.service";
+import { isEmpty } from "lodash";
 
 const getAuditFields = (c: Context) => ({
   createdBy: c.get('userId'),
@@ -59,20 +60,22 @@ export const listMenuPlansHandler = catchAsync(async (c: Context) => {
 });
 
 export const createMenuPlanHandler = catchAsync(async (c: Context) => {
-  const body = await c.req.parseBody() as unknown as CreateMenuPlanSchemaType;
+  const body = await await c.req.parseBody() as unknown as CreateMenuPlanSchemaType;
   const audit = getAuditFields(c);
 
   const foodIdArray = body.foodIds as unknown as string[] || (body as any)["foodIds[]"] || [];
   const dateArray = body.dates as unknown as string[] || (body as any)["dates[]"] || [];
 
+  console.log(isEmpty(body?.kitchenId), "======ok======", audit.kitchenId?.[0]);
+
   const newPlan = await createMenuPlan({
     ...body,
-    kitchenId: body?.kitchenId ? body?.kitchenId : audit.kitchenId?.[0] || null,
+    kitchenId: !isEmpty(body?.kitchenId) ? body?.kitchenId : audit.kitchenId?.[0] || null,
     createdBy: audit.createdBy,
     planStartDate: body?.planStartDate || new Date().toISOString().split("T")[0],
     planEndDate: body?.planEndDate || new Date().toISOString().split("T")[0],
     status: "ACTIVE"
-  }, body.kitchenId, foodIdArray, dateArray);
+  }, !isEmpty(body?.kitchenId) ? body?.kitchenId : audit.kitchenId?.[0], foodIdArray, dateArray);
 
   return c.json({ data: newPlan, message: "Plan menu created" }, 201);
 });
@@ -88,17 +91,17 @@ export const getMenuPlanByIdHandler = catchAsync(async (c: Context) => {
 
 export const updateMenuPlanHandler = catchAsync(async (c: Context) => {
   const { id } = c.req.param();
-  const body = await c.req.parseBody() as unknown as UpdateMenuPlanSchemaType;
+  const body = await await c.req.parseBody() as unknown as UpdateMenuPlanSchemaType;
   const audit = getAuditFields(c);
   const foodIdArray = body.foodIds as unknown as string[] || (body as any)["foodIds[]"] || [];
 
   const updatedPlan = await updateMenuPlan(id, {
     ...body,
-    kitchenId: body?.kitchenId ? body?.kitchenId : audit.kitchenId?.[0] || null,
+    kitchenId: !isEmpty(body?.kitchenId) ? body?.kitchenId : audit.kitchenId?.[0] || null,
     updatedBy: audit.updatedBy,
     planStartDate: body?.planStartDate,
     planEndDate: body?.planEndDate,
-  }, body.kitchenId, foodIdArray, audit.updatedBy);
+  }, !isEmpty(body?.kitchenId) ? body?.kitchenId : audit.kitchenId?.[0], foodIdArray, audit.updatedBy);
 
   return c.json({ data: updatedPlan, message: "Plan menu updated" }, 200);
 });

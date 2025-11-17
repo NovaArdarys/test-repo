@@ -45,7 +45,7 @@ app.get(
 app.post(
   '/',
   permission(),
-  validate(createMenuPlanSchema),
+  validate({ body: createMenuPlanSchema }),
   createMenuPlanHandler
 );
 
