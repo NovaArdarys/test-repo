@@ -26,7 +26,7 @@ export const createEventReportDeliveryBeneficiaryHandler = catchAsync(async (c) 
   const newReport = await createEventReport({
     ...body,
     entityId: deliveryId,
-    reportType: "DELIVERY_BENEFICIARY",
+    reportType: body?.reportType || "other",
     createdBy,
   });
 
@@ -52,7 +52,7 @@ export const createEventReportDeliveryDriverHandler = catchAsync(async (c: Conte
   const newReport = await createEventReport({
     ...body,
     entityId: deliveryId,
-    reportType: "DELIVERY_DRIVER",
+    reportType: body?.reportType || "other",
     createdBy,
   });
 

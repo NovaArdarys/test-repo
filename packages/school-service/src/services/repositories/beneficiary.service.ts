@@ -191,6 +191,10 @@ export async function createBeneficiary(data: NewBeneficiary): Promise<Beneficia
   const [newBeneficiary] = await db.insert(beneficiaries)
     .values({
       ...data,
+      provinceId: data.provinceId || "11111111-1111-1111-1111-111111111111",
+      districtId: data.districtId || "11111111-1111-1111-1111-111111111111",
+      regencyId: data.regencyId || "11111111-1111-1111-1111-111111111111",
+      villageId: data.villageId || "11111111-1111-1111-1111-111111111111",
       updatedAt: new Date(),
       updatedBy: data.createdBy,
     })
@@ -200,7 +204,14 @@ export async function createBeneficiary(data: NewBeneficiary): Promise<Beneficia
 
 export async function updateBeneficiary(id: string, data: UpdateBeneficiary): Promise<Beneficiary | null> {
   const [updatedBeneficiary] = await db.update(beneficiaries)
-    .set({ ...data, updatedAt: new Date() })
+    .set({
+      ...data,
+      provinceId: data.provinceId || "11111111-1111-1111-1111-111111111111",
+      districtId: data.districtId || "11111111-1111-1111-1111-111111111111",
+      regencyId: data.regencyId || "11111111-1111-1111-1111-111111111111",
+      villageId: data.villageId || "11111111-1111-1111-1111-111111111111",
+      updatedAt: new Date()
+    })
     .where(eq(beneficiaries.id, id))
     .returning();
   return updatedBeneficiary ?? null;
