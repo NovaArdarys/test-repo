@@ -17,7 +17,7 @@ import {
   createEventReportHandler,
   updateEventReportHandler,
   softDeleteEventReportHandler,
-} from "@/controllers/public/event.report.controller";
+} from "@/controllers/public/mobile/mobile.event.report.controller";
 import { createEventReportDeliveryBeneficiaryHandler, createEventReportDeliveryDriverHandler } from "@/controllers/public/mobile/mobile.confirmation.delivery.controller";
 import { CreateDeliveryEventReportSchema } from "@/validator/confirm.delivery.validation";
 
