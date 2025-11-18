@@ -3,7 +3,7 @@ import { and, between, eq, ilike, sql, gte, lte, or, desc } from "drizzle-orm";/
 import { users, userDetails, userRoles, roles } from "@/db/schemas/user.schema";
 import { roleDomainEnum } from "@/db/schemas/enums/enums";
 import z from "zod";
-import { dailyReports, masterSteps, beneficiaryPortions, stepReports } from "@/db/schemas";
+import { dailyReports, masterSteps, beneficiaryPortions, stepReports, beneficiaries, drivers, kitchens } from "@/db/schemas";
 import { isEmpty } from "lodash";
 
 const entityTypeValidator = z.enum(roleDomainEnum.enumValues);
@@ -180,57 +180,115 @@ export async function getStepReportById(stepId: string) {
 
   if (!row) return null;
 
-  let classroomSummary: {
-    totalClassroom: number;
-    totalStudent: number;
-    classrooms: {
-      id: string;
-      name: string;
-      date: string;
-      totalRecipient: number;
-      portionType: string | null;
-    }[];
-  } | null = null;
+  let entitySummary: any = null;
 
-  if (row.entityType === "school" || row.entityType === "beneficiary") {
-    const classrooms = await db
-      .select({
-        id: beneficiaryPortions.id,
-        name: beneficiaryPortions.name,
-        date: beneficiaryPortions.date,
-        totalRecipient: beneficiaryPortions.totalRecipient,
-        portionType: beneficiaryPortions.portionType,
-      })
-      .from(beneficiaryPortions)
+  switch (row.entityType) {
+    case "beneficiary":
+    case "kitchen":
+    case "driver":
+  }
+
+  if (row.entityType === "beneficiary" && row.entityId) {
+    const b = await db
+      .select()
+      .from(beneficiaries)
       .where(
         and(
-          row.entityId ? eq(beneficiaryPortions.beneficiaryId, row.entityId) : undefined,
-          eq(beneficiaryPortions.isDeleted, false)
+          eq(beneficiaries.id, row.entityId as any),
+          eq(beneficiaries.isDeleted, false)
         )
-      );
+      )
+      .limit(1);
 
-    const totalClassroom = classrooms.length;
-    const totalStudent = classrooms.reduce(
-      (acc, cur) => acc + (cur.totalRecipient ?? 0),
-      0
-    );
+    const beneficiary = b[0];
 
-    classroomSummary = {
-      totalClassroom,
-      totalStudent,
-      classrooms: classrooms.map((cls) => ({
-        id: cls.id,
-        name: cls.name,
-        date: new Date(cls.date).toLocaleDateString("id-ID", {
-          day: "2-digit",
-          month: "long",
-          year: "numeric",
-        }),
-        totalRecipient: cls.totalRecipient,
-        portionType: cls.portionType,
-      })),
+    entitySummary = {
+      id: beneficiary.id,
+      name: beneficiary.name,
+      address: beneficiary.address,
+      category: beneficiary.category,
+      phoneNumber: beneficiary.phoneNumber,
+      provinceId: beneficiary.provinceId,
+      regencyId: beneficiary.regencyId,
+      districtId: beneficiary.districtId,
+      villageId: beneficiary.villageId,
+      imageUrl: beneficiary.imageUrl,
+      joinedDate: beneficiary.joinedDate,
+      smallPortion: beneficiary.smallPortion,
+      largePortion: beneficiary.largePortion,
+      status: beneficiary.status,
     };
   }
+
+
+  if (row.entityType === "kitchen" && row.entityId) {
+    const k = await db
+      .select()
+      .from(kitchens)
+      .where(
+        and(
+          eq(kitchens.id, row.entityId as any),
+          eq(kitchens.isDeleted, false)
+        )
+      )
+      .limit(1);
+
+    const kitchen = k[0];
+
+    entitySummary = {
+      id: kitchen.id,
+      name: kitchen.name,
+      address: kitchen.address,
+      status: kitchen.status,
+      joinDate: kitchen.joinDate,
+      phoneNumber: kitchen.phoneNumber,
+      provinceId: kitchen.provinceId,
+      regencyId: kitchen.regencyId,
+      districtId: kitchen.districtId,
+      villageId: kitchen.villageId,
+      imageURL: kitchen.imageURL,
+    };
+  }
+
+
+  if (row.entityType === "driver" && row.entityId) {
+    const d = await db
+      .select({
+        id: drivers.id,
+        userId: drivers.userId,
+        kitchenId: drivers.kitchenId,
+        licenseNumber: drivers.licenseNumber,
+        isActive: drivers.isActive,
+        createdAt: drivers.createdAt,
+        updatedAt: drivers.updatedAt,
+      })
+      .from(drivers)
+      .where(
+        and(
+          eq(drivers.id, row.entityId as any),
+          eq(drivers.isDeleted, false)
+        )
+      )
+      .limit(1);
+
+    const driverData = d[0];
+
+    const user = await db.query.users.findFirst({
+      where: eq(users.id, driverData.userId),
+    });
+
+    entitySummary = {
+      id: driverData.id,
+      user: user ? { id: user.id, email: user.email } : null,
+      name: user?.email ?? "",
+      kitchenId: driverData.kitchenId,
+      licenseNumber: driverData.licenseNumber,
+      isActive: driverData.isActive,
+      createdAt: driverData.createdAt,
+      updatedAt: driverData.updatedAt,
+    };
+  }
+
 
   const result = {
     id: row.id,
@@ -265,7 +323,8 @@ export async function getStepReportById(stepId: string) {
         },
       ]
       : [],
-    classroomSummary,
+    entityType: row.entityType,
+    entitySummary: entitySummary,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };
