@@ -73,7 +73,7 @@ export async function getUsersList({
   isActive?: boolean;
   name?: string;
   email?: string;
-  isAppManager?: string;
+  isAppManager?: boolean;
   author?: string;
 }): Promise<APIPagination<UserRead>> {
 
