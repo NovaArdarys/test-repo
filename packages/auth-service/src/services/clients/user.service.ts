@@ -115,7 +115,7 @@ export const createUserServiceClient = (data: { domainId: string, isActive: bool
     "createUserServiceClient",
     "/private/user/create-user",
     "POST",
-    data
+    { ...data, password: "Password1", confirmationPassword: "Password1" }
   );
 };
 

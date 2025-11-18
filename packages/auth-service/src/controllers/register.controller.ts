@@ -20,6 +20,8 @@ export const registerHandler = catchAsync(async (c) => {
 
   const { email, password, address, dateOfBirth, fullName, phoneNumber, roleId, isActive, domainId }: RegisterSchemaType = await c.get("validatedData").body;
   const audit = getAuditFields(c);
+  console.log({ email, password, address, dateOfBirth, fullName, phoneNumber, roleId, isActive, domainId }, "====ok=====");
+
 
   const [firstName, lastName] = fullName?.split(" ") || ["", ""];
   const { password: _removedPassword, ...result } = await createUserServiceClient({
