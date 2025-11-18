@@ -50,15 +50,16 @@ export const listBeneficiaryHandler = catchAsync(async (c: Context) => {
     page,
     limit,
     name,
-    kitchenIds: uniq([
-      ...(isArray([kitchenId]) ? [kitchenId] : []),
-      ...(isArray(audit.kitchenId) ? audit.kitchenId : []),
-    ]),
     neLat,
     neLng,
     swLat,
     swLng,
-    status
+    status,
+    kitchenIds: uniq([
+      ...(isArray([kitchenId]) ? [kitchenId] : []),
+      ...(isArray(audit.kitchenId) ? audit.kitchenId : []),
+    ]),
+    isAppManager: audit.isAppManager
   });
 
   return c.json({ data: data.data, meta: data.meta }, 200);

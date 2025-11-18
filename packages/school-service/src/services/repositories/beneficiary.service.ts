@@ -36,7 +36,7 @@ export async function getBeneficiaryList({
   swLat?: string;
   swLng?: string;
   status?: string;
-  isAppManager?: string;
+  isAppManager?: boolean;
   author?: string;
 }): Promise<APIPagination<Beneficiary>> {
   const offset = (page - 1) * limit;

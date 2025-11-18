@@ -5,7 +5,7 @@ import { catchAsync } from "@/utils/catchAsync";
 import { assignUserToKitchen, isUserAssignedToKitchen, syncUserKitchenByMerge, unassignUserFromKitchen } from "@/services/repositories/user.kitchen.service";
 import { AssignUserToKitchenSchemaType, CreateKitchenSchemaType } from "@/validator/kitchen.validator";
 import { updateSchoolServiceClient } from "../../../services/clients/school.service";
-import { isEmpty } from "lodash";
+import { isArray, isEmpty, uniq } from "lodash";
 
 const getAuditFields = (c: Context) => ({
   createdBy: c.get('userId'),
@@ -35,6 +35,8 @@ export const listKitchensHandler = catchAsync(async (c: Context) => {
   const status = query.status;
   const joinDate = query.joinDate;
 
+  const audit = getAuditFields(c);
+
   const data = await getKitchensList({
     page,
     limit,
@@ -43,7 +45,11 @@ export const listKitchensHandler = catchAsync(async (c: Context) => {
     neLng,
     swLat,
     swLng,
-    status
+    status,
+    kitchenIds: uniq([
+      ...(isArray(audit.kitchenId) ? audit.kitchenId : []),
+    ]),
+    isAppManager: audit.isAppManager
   });
 
   return c.json({ data: data.data, meta: data.meta }, 200);

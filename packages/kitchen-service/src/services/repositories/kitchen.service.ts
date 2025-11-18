@@ -1,7 +1,8 @@
 import { db } from "@/db";
 import { kitchens, userDetails, userKitchens, users, } from "@/db/schemas";
 import { APIPagination } from "@/types/paginations.type";
-import { eq, InferSelectModel, InferInsertModel, SQLWrapper, sql, and, desc } from "drizzle-orm";
+import { eq, InferSelectModel, InferInsertModel, SQLWrapper, sql, and, desc, inArray } from "drizzle-orm";
+import { compact } from "lodash";
 
 export type Kitchen = InferSelectModel<typeof kitchens>;
 export type NewKitchen = Omit<
@@ -60,7 +61,10 @@ export async function getKitchensList({
   swLng,
   neLat,
   neLng,
-  status
+  status,
+  isAppManager,
+  author,
+  kitchenIds,
 }: {
   page: number;
   limit: number;
@@ -71,9 +75,16 @@ export async function getKitchensList({
   swLat?: string;
   swLng?: string;
   status?: string;
+  isAppManager?: boolean;
+  author?: string;
+  kitchenIds?: string[];
 }) {
   const offset = (page - 1) * limit;
   const whereConditions: SQLWrapper[] = [];
+
+  if (!isAppManager && kitchenIds) {
+    whereConditions.push(inArray(kitchens.id, compact(kitchenIds)));
+  }
 
   if (neLat !== undefined && swLat !== undefined) {
     whereConditions.push(
