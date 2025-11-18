@@ -15,8 +15,11 @@ const getAuditFields = (c: Context) => ({
   beneficiaryId: c.get("beneficiaryId") as string[],
   driverKitchenId: c.get("driverKitchenId") as string[],
   updatedAt: new Date(),
-  createdAt: new Date()
+  createdAt: new Date(),
+  isAppManager: c.get("isAppManager") as boolean,
 });
+
+
 export const storageHandler = catchAsync(async (c) => {
   const body = (await c.req.parseBody()) as unknown as uploadBodyType;
   const audit = getAuditFields(c);

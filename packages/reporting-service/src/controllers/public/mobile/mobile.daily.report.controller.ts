@@ -21,8 +21,11 @@ const getAuditFields = (c: Context) => ({
   beneficiaryId: c.get("beneficiaryId") as string[],
   driverKitchenId: c.get("driverKitchenId") as string[],
   updatedAt: new Date(),
-  createdAt: new Date()
+  createdAt: new Date(),
+  isAppManager: c.get("isAppManager") as boolean,
 });
+
+
 
 export const listDailyReportsHandler = catchAsync(async (c: Context) => {
   const query = c.req.query();

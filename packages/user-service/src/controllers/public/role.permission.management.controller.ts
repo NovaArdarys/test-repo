@@ -14,8 +14,11 @@ const getAuditFields = (c: Context) => ({
   beneficiaryId: c.get("beneficiaryId") as string[],
   driverKitchenId: c.get("driverKitchenId") as string[],
   updatedAt: new Date(),
-  createdAt: new Date()
+  createdAt: new Date(),
+  isAppManager: c.get("isAppManager") as boolean,
 });
+
+
 
 
 // --- role ---
