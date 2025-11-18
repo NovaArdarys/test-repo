@@ -73,8 +73,10 @@ export async function getMenuPlansList({
             //     : sql`${menuPlans.kitchenId} IS NOT NULL`,
         },
         extra: [
-            entityType === "kitchen" && isEmpty(kitchenIds)
-                ? sql`${menuPlans.kitchenId} IS NOT NULL`
+            !isEmpty(kitchenIds) && entityType === "kitchen"
+                ? sql`${menuPlans.kitchenId} = ANY(ARRAY[${sql.raw(
+                    kitchenIds.map((id) => `'${id}'`).join(",")
+                )}]::uuid[])`
                 : undefined,
             !isEmpty(schoolIds) && (entityType === "school" || entityType === "beneficiary")
                 ? sql`${menuPlans.id} IN (
