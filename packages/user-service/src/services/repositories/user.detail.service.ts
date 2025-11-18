@@ -65,7 +65,7 @@ export async function getUsersList({
   isActive,
   name,
   email,
-  domain,
+  isAppManager,
   author
 }: {
   page: number;
@@ -73,10 +73,9 @@ export async function getUsersList({
   isActive?: boolean;
   name?: string;
   email?: string;
-  domain?: string;
+  isAppManager?: string;
   author?: string;
 }): Promise<APIPagination<UserRead>> {
-  const isAppManager = domain === "app_manager";
 
   const { where, meta } = await buildPaginatedWhere({
     table: users,

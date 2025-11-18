@@ -43,7 +43,7 @@ export const listUsersHandler = catchAsync(async (c) => {
     isActive,
     name,
     email: name,
-    domain: audit.domain,
+    isAppManager: audit.isAppManager,
     author: audit.userId
   });
   return c.json({ data: result.data, meta: result.meta }, 200);
