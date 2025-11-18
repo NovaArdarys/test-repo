@@ -3,7 +3,7 @@ import { and, between, eq, ilike, sql, gte, lte, or, desc } from "drizzle-orm";/
 import { users, userDetails, userRoles, roles } from "@/db/schemas/user.schema";
 import { roleDomainEnum } from "@/db/schemas/enums/enums";
 import z from "zod";
-import { dailyReports, masterSteps, beneficiaryPortions, stepReports, beneficiaries, drivers, kitchens } from "@/db/schemas";
+import { dailyReports, masterSteps, beneficiaryPortions, stepReports, beneficiaries, drivers, kitchens, storage } from "@/db/schemas";
 import { isEmpty } from "lodash";
 
 const entityTypeValidator = z.enum(roleDomainEnum.enumValues);
@@ -167,9 +167,11 @@ export async function getStepReportById(stepId: string) {
       roleDomain: roles.domain,
       storageId: stepReports.storageId,
       imageURL: stepReports.imageURL,
+      metadata: storage.meta,
     })
     .from(stepReports)
     .leftJoin(masterSteps, eq(stepReports.stepId, masterSteps.id))
+    .leftJoin(storage, eq(stepReports.storageId, storage.id))
     .leftJoin(dailyReports, eq(stepReports.dailyReportId, dailyReports.id))
     .leftJoin(users, eq(stepReports.createdBy, users.id))
     .leftJoin(userDetails, eq(users.id, userDetails.userId))
@@ -320,6 +322,7 @@ export async function getStepReportById(stepId: string) {
         {
           id: row.storageId,
           imageURL: row.imageURL ?? null,
+          metadata: row.metadata ?? null,
         },
       ]
       : [],
