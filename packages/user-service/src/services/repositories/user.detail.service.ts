@@ -65,14 +65,18 @@ export async function getUsersList({
   isActive,
   name,
   email,
+  domain,
+  author
 }: {
   page: number;
   limit: number;
   isActive?: boolean;
   name?: string;
   email?: string;
+  domain?: string;
+  author?: string;
 }): Promise<APIPagination<UserRead>> {
-  console.log(isActive, "===== isActive =====");
+  const isAppManager = domain === "app_manager";
 
   const { where, meta } = await buildPaginatedWhere({
     table: users,
@@ -81,6 +85,7 @@ export async function getUsersList({
       isDeleted: false,
       isActive,
       email: email ? { ilike: `%${email}%` } : undefined,
+      createdBy: isAppManager ? undefined : author
     },
     extra: [
       name

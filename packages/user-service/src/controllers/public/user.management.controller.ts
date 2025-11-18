@@ -34,12 +34,16 @@ export const listUsersHandler = catchAsync(async (c) => {
   const isActive = query.isActive;
   const name = query.name;
 
+  const audit = getAuditFields(c);
+
   const result = await UserService.getUsersList({
     page,
     limit,
     isActive,
     name,
-    email: name
+    email: name,
+    domain: audit.domain,
+    author: audit.userId
   });
   return c.json({ data: result.data, meta: result.meta }, 200);
 });
