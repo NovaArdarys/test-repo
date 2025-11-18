@@ -1,6 +1,6 @@
 import { db } from "@/db";
-import { eventReports } from "@/db/schemas";
-import { eq, and, desc, sql, gte, lte } from "drizzle-orm";
+import { eventReports, storage } from "@/db/schemas";
+import { eq, and, desc, sql, gte, lte, getTableColumns, or, inArray } from "drizzle-orm";
 import type { InferInsertModel, InferSelectModel } from "drizzle-orm";
 
 export type EventReport = InferSelectModel<typeof eventReports>;
@@ -27,11 +27,32 @@ export async function createEventReport(data: NewEventReport): Promise<EventRepo
   return newReport;
 }
 
-export async function getEventReportById(id: string): Promise<EventReport | null> {
-  const report = await db.query.eventReports.findFirst({
-    where: (er, { eq }) => eq(er.id, id),
-  });
-  return report ?? null;
+export async function getEventReportById(id: string) {
+  const rows = await db
+    .select({
+      event: eventReports,
+      storage: storage,
+    })
+    .from(eventReports)
+    .leftJoin(
+      storage,
+      and(
+        eq(storage.entityId, eventReports.id),
+        inArray(storage.entityType, ["other"] as any)
+      )
+    )
+    .where(eq(eventReports.id, id));
+
+  if (rows.length === 0) return null;
+
+  const grouped = {
+    ...rows[0].event,
+    storages: rows
+      .filter((r) => r.storage?.id)
+      .map((r) => r.storage),
+  };
+
+  return grouped;
 }
 
 export async function getEventReports(options?: {
@@ -52,18 +73,47 @@ export async function getEventReports(options?: {
     options?.reportType ? eq(eventReports.reportType, options.reportType) : undefined
   );
 
-  const data = await db
-    .select()
+  const rows = await db
+    .select({
+      event: eventReports,
+      storage: storage,
+    })
     .from(eventReports)
+    .leftJoin(
+      storage,
+      and(
+        eq(storage.entityId, eventReports.id),
+        inArray(storage.entityType, ["other"] as any)
+      )
+    )
     .where(filters)
     .orderBy(desc(eventReports.createdAt))
     .limit(limit)
     .offset(offset);
 
+
   const [{ count }] = await db
     .select({ count: sql<number>`count(*)` })
     .from(eventReports)
     .where(filters);
+
+  const grouped: Record<string, any> = {};
+
+  rows.forEach((row) => {
+    const ev = row.event;
+    const key = ev.id;
+
+    if (!grouped[key]) {
+      grouped[key] = { ...ev, storages: [] };
+    }
+
+    if (row.storage?.id) {
+      grouped[key].storages.push(row.storage);
+    }
+  });
+
+  const result = Object.values(grouped);
+
 
   const meta: PaginationMeta = {
     page,
@@ -72,7 +122,7 @@ export async function getEventReports(options?: {
     totalPages: Math.ceil(Number(count) / limit),
   };
 
-  return { data, meta };
+  return { data: result, meta };
 }
 
 export async function updateEventReport(
