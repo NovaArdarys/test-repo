@@ -43,7 +43,10 @@ export async function createAutoDelivery(data: CreateAutoDeliveryInput) {
     if (!kitchen) throw new Error("Kitchen not found");
 
     const allDrivers = await tx.select().from(drivers).where(eq(drivers.kitchenId, data.kitchenId));
-    if (!allDrivers.length) throw new Error("No drivers available for kitchen");
+    const driversOrUnassigned = allDrivers.length
+      ? allDrivers
+      : [{ id: null, userId: data.createdBy }];
+    // if (!allDrivers.length) throw new Error("No drivers available for kitchen");
 
     const menuPlan = await tx.query.menuPlans.findFirst({
       where: (mp, { eq }) => eq(mp.id, data.menuPlanId),
@@ -80,20 +83,33 @@ export async function createAutoDelivery(data: CreateAutoDeliveryInput) {
       .sort((a, b) => a.distance - b.distance);
 
     // Distribusi ke driver
-    const assignments: Record<string, typeof sortedBeneficiaries> = {};
-    allDrivers.forEach((d) => (assignments[d.id] = []));
-    sortedBeneficiaries.forEach((b, i) => {
-      const driver = allDrivers[i % allDrivers.length];
-      assignments[driver.id].push(b);
-    });
+    // const assignments: Record<string, typeof sortedBeneficiaries> = {};
+    // allDrivers.forEach((d) => (assignments[d.id] = []));
+    // sortedBeneficiaries.forEach((b, i) => {
+    //   const driver = allDrivers[i % allDrivers.length];
+    //   assignments[driver.id].push(b);
+    // });
+
+    let assignments: Record<string, typeof sortedBeneficiaries> = {};
+
+    if (allDrivers.length === 0) {
+      assignments["NO_DRIVER"] = sortedBeneficiaries;
+    } else {
+      allDrivers.forEach((d) => (assignments[d.id] = []));
+      sortedBeneficiaries.forEach((b, i) => {
+        const driver = allDrivers[i % allDrivers.length];
+        assignments[driver.id].push(b);
+      });
+    }
 
     const stepsTemplate = await planEntity("driver");
     const deliveriesResult = [];
     const AVERAGE_SPEED_KMH = 30;
     const BUFFER_MINUTES = 10;
 
-    for (const driver of allDrivers) {
-      const assigned = assignments[driver.id];
+    for (const driver of driversOrUnassigned) {
+      const assigned =
+        driver.id === null ? assignments["NO_DRIVER"] : assignments[driver.id];
       if (!assigned.length) continue;
 
       for (const beneficiary of assigned) {
@@ -160,16 +176,20 @@ export async function createAutoDelivery(data: CreateAutoDeliveryInput) {
           }));
           await tx.insert(stepReports).values(stepReportsBatch);
 
-          const [newLocation] = await tx
-            .insert(driverLocations)
-            .values({
-              driverId: driver.id,
-              deliveryId: newDelivery.id,
-              lat: kitchen.lat?.toString() ?? "0",
-              lon: kitchen.lon?.toString() ?? "0",
-              createdBy: driver.userId,
-            })
-            .returning();
+          let newLocation = null;
+
+          if (driver.id !== null) {
+            [newLocation] = await tx
+              .insert(driverLocations)
+              .values({
+                driverId: driver.id,
+                deliveryId: newDelivery.id,
+                lat: kitchen.lat?.toString() ?? "0",
+                lon: kitchen.lon?.toString() ?? "0",
+                createdBy: driver.userId,
+              })
+              .returning();
+          }
 
           deliveriesResult.push({
             delivery: newDelivery,
