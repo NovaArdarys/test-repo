@@ -90,7 +90,7 @@ async function handleAssignToKitchen(data: z.infer<typeof baseUserKitchen>) {
 async function handleAssignProfileDriver(data: z.infer<typeof baseUserKitchen>) {
   const parsed = baseUserKitchen.parse(data);
 
-  const alreadyAssigned = await isUserAlreadyHaveDriverRole(parsed.userId, parsed.kitchenId);
+  const alreadyAssigned = await isUserAssignedToKitchen(parsed.userId, parsed.kitchenId);
   if (!alreadyAssigned) {
     await assignUserToKitchen({
       kitchenId: parsed.kitchenId,

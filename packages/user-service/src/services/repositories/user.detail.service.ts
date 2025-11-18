@@ -84,7 +84,6 @@ export async function getUsersList({
       isDeleted: false,
       isActive,
       email: email ? { ilike: `%${email}%` } : undefined,
-      createdBy: isAppManager ? undefined : author
     },
     extra: [
       name
@@ -94,6 +93,28 @@ export async function getUsersList({
             WHERE LOWER(first_name) ILIKE ${"%" + name.toLowerCase() + "%"}
             OR LOWER(last_name) ILIKE ${"%" + name.toLowerCase() + "%"}
           )`
+        : undefined,
+      !isAppManager
+        ? sql`(
+        ${users.createdBy} = ${author}
+        OR ${users.id} IN (
+          SELECT user_id
+          FROM user_kitchens
+          WHERE is_deleted = false
+        )
+        OR ${users.id} IN (
+          SELECT ub.user_id
+          FROM user_beneficiaries ub
+          JOIN beneficiaries b ON b.id = ub.beneficiary_id
+          WHERE ub.is_deleted = false
+            AND b.is_deleted = false
+        )
+        OR ${users.id} IN (
+          SELECT user_id
+          FROM drivers
+          WHERE is_deleted = false
+        )
+      )`
         : undefined,
     ],
     page,

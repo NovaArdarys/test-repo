@@ -156,6 +156,7 @@ export async function createKitchen(data: NewKitchen): Promise<Kitchen> {
       districtId: data.districtId || "11111111-1111-1111-1111-111111111111",
       regencyId: data.regencyId || "11111111-1111-1111-1111-111111111111",
       villageId: data.villageId || "11111111-1111-1111-1111-111111111111",
+      storageId: data?.storageId || null,
       updatedBy: data.createdBy,
       updatedAt: new Date(),
     })
@@ -173,6 +174,7 @@ export async function updateKitchen(id: string, data: UpdateKitchen): Promise<Ki
       districtId: data.districtId || "11111111-1111-1111-1111-111111111111",
       regencyId: data.regencyId || "11111111-1111-1111-1111-111111111111",
       villageId: data.villageId || "11111111-1111-1111-1111-111111111111",
+      storageId: data?.storageId || null,
       updatedAt: new Date(),
     })
     .where(eq(kitchens.id, id))

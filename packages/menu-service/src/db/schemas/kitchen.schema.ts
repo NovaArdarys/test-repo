@@ -14,7 +14,8 @@ export const kitchens = pgTable('kitchens', {
   regencyId: uuid('regency_id'),
   districtId: uuid('district_id'),
   villageId: uuid('village_id'),
-  storageId: uuid('storage_id').references(() => storage.id),
+  storageId: uuid('storage_id')
+    .references(() => storage.id, { onDelete: "set null" }),
   imageURL: text('image_url'),
   isDeleted: boolean('is_deleted').default(false).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),

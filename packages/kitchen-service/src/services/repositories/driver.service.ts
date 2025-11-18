@@ -107,6 +107,17 @@ export async function isUserAlreadyHaveDriverRole(userId: string, kitchenId: str
   return result.length > 0;
 }
 
+export async function isUserAssignedToKitchen(userId: string, kitchenId: string): Promise<boolean> {
+  const result = await db.select({ userId: drivers.userId })
+    .from(drivers)
+    .where(and(
+      eq(drivers.userId, userId),
+      eq(drivers.kitchenId, kitchenId),
+    ))
+    .limit(1);
+  return result.length > 0;
+}
+
 
 export async function createDriver(data: NewDriver): Promise<Driver> {
   const [newDriver] = await db.insert(drivers)
