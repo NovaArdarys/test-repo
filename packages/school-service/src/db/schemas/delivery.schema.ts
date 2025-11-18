@@ -4,7 +4,7 @@ import { deliveryBeneficiaryStatusEnum, deliveryStatusEnum } from "./enums/enums
 export const deliveries = pgTable('deliveries', {
   id: uuid('id').primaryKey().defaultRandom(),
   kitchenId: uuid('kitchen_id').notNull(),
-  driverId: uuid('driver_id').notNull(),
+  driverId: uuid('driver_id'),
   deliveryDate: date('delivery_date').defaultNow(),
   startTime: timestamp('start_time'),
   endTime: timestamp('end_time'),
@@ -21,12 +21,12 @@ export const deliveries = pgTable('deliveries', {
   receivedPortion: integer("received_portion").default(0).notNull(),
   takenTray: integer("taken_tray").default(0).notNull(),
 }, (table) => ({
-  uniqKitchenDriverDate: uniqueIndex('uniq_kitchen_driver_date').on(
-    table.kitchenId,
-    table.driverId,
-    table.deliveryDate,
-    table.portionType
-  ),
+  // uniqKitchenDriverDate: uniqueIndex('uniq_kitchen_driver_date').on(
+  //   table.kitchenId,
+  //   table.driverId,
+  //   table.deliveryDate,
+  //   table.portionType
+  // ),
 }));
 
 export const deliveryBeneficiaries = pgTable('delivery_beneficiaries', {

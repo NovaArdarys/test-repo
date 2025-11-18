@@ -71,6 +71,13 @@
       "when": 1763410054556,
       "tag": "0009_cold_rachel_grey",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1763491493214,
+      "tag": "0010_organic_cassandra_nova",
+      "breakpoints": true
     }
   ]
 }
