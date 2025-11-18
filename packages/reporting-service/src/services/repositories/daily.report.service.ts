@@ -406,41 +406,44 @@ export async function getDailyReportsList(params?: {
   const eventReportsField =
     view === "home"
       ? sql`
-      COALESCE((
-        SELECT jsonb_agg(
-          jsonb_build_object(
-            'id', er.id,
-            'name', er.name,
-            'reportType', er.report_type,
-            'date', er.date,
-            'location', er.location,
-            'description', er.description
-          )
+    COALESCE((
+      SELECT jsonb_agg(
+        jsonb_build_object(
+          'id', inner_er.id,
+          'name', inner_er.name,
+          'reportType', inner_er.report_type,
+          'date', inner_er.date,
+          'location', inner_er.location,
+          'description', inner_er.description
         )
-        FROM (
-          SELECT er.*
-          FROM event_reports er
-          WHERE er.is_deleted = false
-            ${entityType === "driver" && driversIds.length > 0
-          ? sql`AND er.report_type = 'driver'
-                     AND er.entity_id = ANY(${sql.raw(`ARRAY[${driversIds.map(id => `'${id}'`).join(",")}]::uuid[]`)})`
+      )
+      FROM (
+        SELECT er.*
+        FROM event_reports er
+        WHERE er.is_deleted = false
+          ${entityType === "driver" && driversIds.length > 0
+          ? sql`AND er.report_type IN ('driver', 'EVENT')
+                   AND er.entity_id = ANY(${sql.raw(`ARRAY[${driversIds.map(id => `'${id}'`).join(",")}]::uuid[]`)})`
           : sql``}
-            ${entityType === "kitchen" && kitchenIds.length > 0
-          ? sql`AND er.report_type = 'kitchen'
-                     AND er.entity_id = ANY(${sql.raw(`ARRAY[${kitchenIds.map(id => `'${id}'`).join(",")}]::uuid[]`)})`
+          ${entityType === "kitchen" && kitchenIds.length > 0
+          ? sql`AND er.report_type IN ('kitchen', 'EVENT')
+                   AND er.entity_id = ANY(${sql.raw(`ARRAY[${kitchenIds.map(id => `'${id}'`).join(",")}]::uuid[]`)})`
           : sql``}
-            ${(entityType === "school" || entityType === "beneficiary") && schoolIds.length > 0
-          ? sql`AND er.report_type = 'beneficiaries'
-                     AND er.entity_id = ANY(${sql.raw(`ARRAY[${schoolIds.map(id => `'${id}'`).join(",")}]::uuid[]`)})`
+          ${(entityType === "school" || entityType === "beneficiary") && schoolIds.length > 0
+          ? sql`AND er.report_type IN ('beneficiary', 'EVENT', 'beneficiaries')
+                   AND er.entity_id = ANY(${sql.raw(`ARRAY[${schoolIds.map(id => `'${id}'`).join(",")}]::uuid[]`)})`
           : sql``}
-            AND er.date >= ${endDate}
-            AND er.date <= ${computedEndDate}
-          ORDER BY er.date DESC
-          LIMIT 3
-        ) er
-      ), '[]'::jsonb)
-    `
+          AND er.date::date >= ${endDate}
+          AND er.date::date <= ${computedEndDate}
+        ORDER BY er.date DESC
+        LIMIT 3
+      ) inner_er
+    ), '[]'::jsonb)
+  `
       : sql`'[]'::jsonb`;
+
+
+  console.log(kitchenIds, endDate, computedEndDate, "=====computedEndDate======", entityType === "kitchen");
 
 
   const topSuppliersField =
@@ -811,6 +814,8 @@ export async function getDailyReportsList(params?: {
 
     return finalReport;
   });
+
+  console.log(widgets, "=====widgets=====");
 
   return {
     data: {
