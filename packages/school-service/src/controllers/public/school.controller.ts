@@ -13,7 +13,7 @@ import {
   syncUserBeneficiaryByMerge
 } from "@/services/repositories/beneficiary.service";
 import { CreateBeneficiarySchemaType, AssignUserToBeneficiarySchemaType } from "@/validator/beneficiary.validator";
-import { isEmpty } from "lodash";
+import { isArray, isEmpty, uniq } from "lodash";
 
 const getAuditFields = (c: Context) => ({
   createdBy: c.get('userId'),
@@ -43,11 +43,17 @@ export const listBeneficiaryHandler = catchAsync(async (c: Context) => {
   const swLng = query.swLng;
   const status = query.status;
 
+
+  const audit = getAuditFields(c);
+
   const data = await getBeneficiaryList({
     page,
     limit,
     name,
-    kitchenId,
+    kitchenIds: uniq([
+      ...(isArray([kitchenId]) ? [kitchenId] : []),
+      ...(isArray(audit.kitchenId) ? audit.kitchenId : []),
+    ]),
     neLat,
     neLng,
     swLat,

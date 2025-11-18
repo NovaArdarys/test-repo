@@ -2,6 +2,7 @@ import { db } from "@/db"; // Asumsi koneksi Drizzle di sini
 import { beneficiaries, userBeneficiaries } from "@/db/schemas"; // Asumsi skema Anda di sini
 import { APIPagination } from "@/types/paginations.type";
 import { eq, and, sql, desc, SQLWrapper, InferInsertModel, InferSelectModel, or, inArray } from "drizzle-orm";
+import { compact } from "lodash";
 
 export type Beneficiary = InferSelectModel<typeof beneficiaries>;
 export type NewBeneficiary = Omit<
@@ -15,37 +16,41 @@ export async function getBeneficiaryList({
   page,
   limit,
   name,
-  kitchenId,
+  kitchenIds,
   isDeleted = false,
   swLat,
   swLng,
   neLat,
   neLng,
-  status
+  status,
+  author,
+  isAppManager
 }: {
   page: number;
   limit: number;
   name?: string;
-  kitchenId?: string;
+  kitchenIds?: string[];
   isDeleted?: boolean;
   neLat?: string;
   neLng?: string;
   swLat?: string;
   swLng?: string;
   status?: string;
+  isAppManager?: string;
+  author?: string;
 }): Promise<APIPagination<Beneficiary>> {
   const offset = (page - 1) * limit;
 
   const whereConditions: SQLWrapper[] = [];
 
+  if (!isAppManager && kitchenIds) {
+    whereConditions.push(inArray(beneficiaries.kitchenId, compact(kitchenIds)));
+  }
+
   if (name) {
     whereConditions.push(
       sql`${beneficiaries.name} ILIKE ${"%" + name.toLowerCase() + "%"}`
     );
-  }
-
-  if (kitchenId) {
-    whereConditions.push(eq(beneficiaries.kitchenId, kitchenId));
   }
 
   if (status) {
