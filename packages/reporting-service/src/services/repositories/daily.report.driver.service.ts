@@ -43,8 +43,7 @@ export async function getDriverDeliveries(params: {
           FROM event_reports er
           WHERE er.is_deleted = false
             ${entityType === "driver" && driverId
-          ? sql`AND er.report_type = 'driver'
-                     AND er.entity_id = ANY(${sql.raw(`ARRAY[${[driverId].map(id => `'${id}'`).join(",")}]::uuid[]`)})`
+          ? sql`AND er.entity_id = ANY(${sql.raw(`ARRAY[${[driverId].map(id => `'${id}'`).join(",")}]::uuid[]`)})`
           : sql``}
             AND er.date >= ${endDate}
             AND er.date <= ${computedEndDate}
