@@ -859,7 +859,7 @@ export async function updateStepReport(
 ) {
   const [updated] = await db
     .update(stepReports)
-    .set(updates)
+    .set({ ...updates, isCompleted: true })
     .where(eq(stepReports.id, id))
     .returning();
   return updated;
