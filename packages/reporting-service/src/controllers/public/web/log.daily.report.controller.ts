@@ -4,10 +4,26 @@ import { stepReportQuerySchema } from "@/validator/daily.report.validator";
 import { getStepReportById, getStepReportsWithFilter } from "@/services/repositories/log.report.daily.service";
 import z from "zod";
 
+const getAuditFields = (c: Context) => ({
+  createdBy: c.get('userId'),
+  updatedBy: c.get('userId'),
+  userId: c.get('userId'),
+  domain: c.get('domain'),
+  kitchenId: c.get("kitchenId") as string[],
+  driverId: c.get("driverId") as string[],
+  beneficiaryId: c.get("beneficiaryId") as string[],
+  driverKitchenId: c.get("driverKitchenId") as string[],
+  updatedAt: new Date(),
+  createdAt: new Date(),
+  isAppManager: c.get("isAppManager") as boolean,
+});
+
+
 export const getStepReportsHandler = catchAsync(async (c: Context) => {
   const query = c.get("validatedData").query;
   const { startDate, endDate, search, entity, page, limit } = query as z.infer<typeof stepReportQuerySchema>;
 
+  const audit = getAuditFields(c);
   const results = await getStepReportsWithFilter({
     startDate,
     endDate,
@@ -15,6 +31,8 @@ export const getStepReportsHandler = catchAsync(async (c: Context) => {
     entity,
     page,
     limit,
+    kitchenIds: audit.kitchenId,
+    isAppManager: audit.isAppManager
   });
 
   return c.json({

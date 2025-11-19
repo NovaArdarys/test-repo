@@ -1,10 +1,10 @@
 import { db } from "@/db";
-import { and, between, eq, ilike, sql, gte, lte, or, desc } from "drizzle-orm";// pastikan import sesuai struktur project kamu
+import { and, between, eq, ilike, sql, gte, lte, or, desc, inArray } from "drizzle-orm";// pastikan import sesuai struktur project kamu
 import { users, userDetails, userRoles, roles } from "@/db/schemas/user.schema";
 import { roleDomainEnum } from "@/db/schemas/enums/enums";
 import z from "zod";
-import { dailyReports, masterSteps, beneficiaryPortions, stepReports, beneficiaries, drivers, kitchens, storage } from "@/db/schemas";
-import { isEmpty } from "lodash";
+import { dailyReports, masterSteps, beneficiaryPortions, stepReports, beneficiaries, drivers, kitchens, storage, menuPlans, menuPlanBeneficiaries, deliveryBeneficiaries, deliveries } from "@/db/schemas";
+import { castArray, isEmpty } from "lodash";
 
 const entityTypeValidator = z.enum(roleDomainEnum.enumValues);
 
@@ -15,6 +15,8 @@ export interface StepReportFilter {
   entity?: z.infer<typeof entityTypeValidator>;
   page?: number;
   limit?: number;
+  kitchenIds: string[];
+  isAppManager: boolean;
 }
 
 export interface StepReportResult {
@@ -32,6 +34,8 @@ export interface StepReportResult {
   };
 }
 
+
+
 export interface PaginationMeta {
   page: number;
   limit: number;
@@ -46,24 +50,34 @@ export async function getStepReportsWithFilter({
   entity,
   page = 1,
   limit = 20,
+  kitchenIds,
+  isAppManager
 }: StepReportFilter): Promise<{ data: StepReportResult[]; meta: PaginationMeta; }> {
   const offset = (page - 1) * limit;
   const conditions: any[] = [];
+  console.log(isAppManager, kitchenIds, "=====kitchenIds====");
 
   if (startDate && endDate) conditions.push(between(dailyReports.date, startDate, endDate));
   else if (startDate) conditions.push(gte(dailyReports.date, startDate));
   else if (endDate) conditions.push(lte(dailyReports.date, endDate));
 
-  if (search && search != 'undefined') {
-    const like = `%${search}%`;
+
+  const kitchenIdsNormalized = castArray(kitchenIds).filter(Boolean);
+
+  if (!isAppManager && kitchenIdsNormalized?.length) {
     conditions.push(
       or(
-        ilike(users.email, like),
-        ilike(userDetails.phoneNumber, like),
-        sql`CONCAT(${userDetails.firstName}, ' ', COALESCE(${userDetails.lastName}, '')) ILIKE ${like}`
+        inArray(menuPlans.kitchenId, kitchenIdsNormalized),
+        inArray(beneficiaries.kitchenId, kitchenIdsNormalized),
+        inArray(drivers.kitchenId, kitchenIdsNormalized),
+        and(
+          eq(dailyReports.entityType, "kitchen"),
+          inArray(dailyReports.entityId, kitchenIdsNormalized)
+        )
       )
     );
   }
+
 
   const filters = and(...conditions);
 
@@ -89,6 +103,12 @@ export async function getStepReportsWithFilter({
     .leftJoin(userDetails, eq(users.id, userDetails.userId))
     .leftJoin(userRoles, eq(users.id, userRoles.userId))
     .leftJoin(roles, eq(userRoles.roleId, roles.id))
+    .leftJoin(menuPlans, eq(dailyReports.menuPlanId, menuPlans.id))
+    .leftJoin(menuPlanBeneficiaries, eq(menuPlanBeneficiaries.menuPlanId, menuPlans.id))
+    .leftJoin(beneficiaries, eq(menuPlanBeneficiaries.beneficiaryId, beneficiaries.id))
+    .leftJoin(deliveryBeneficiaries, eq(dailyReports.entityId, deliveryBeneficiaries.id))
+    .leftJoin(deliveries, eq(deliveryBeneficiaries.deliveryId, deliveries.id))
+    .leftJoin(drivers, eq(deliveries.driverId, drivers.id))
     .where(filters)
     .orderBy(desc(dailyReports.date))
     .limit(limit)
@@ -103,6 +123,12 @@ export async function getStepReportsWithFilter({
     .leftJoin(userDetails, eq(users.id, userDetails.userId))
     .leftJoin(userRoles, eq(users.id, userRoles.userId))
     .leftJoin(roles, eq(userRoles.roleId, roles.id))
+    .leftJoin(menuPlans, eq(dailyReports.menuPlanId, menuPlans.id))
+    .leftJoin(menuPlanBeneficiaries, eq(menuPlanBeneficiaries.menuPlanId, menuPlans.id))
+    .leftJoin(beneficiaries, eq(menuPlanBeneficiaries.beneficiaryId, beneficiaries.id))
+    .leftJoin(deliveryBeneficiaries, eq(dailyReports.entityId, deliveryBeneficiaries.id))
+    .leftJoin(deliveries, eq(deliveryBeneficiaries.deliveryId, deliveries.id))
+    .leftJoin(drivers, eq(deliveries.driverId, drivers.id))
     .where(filters);
 
   const meta: PaginationMeta = {
