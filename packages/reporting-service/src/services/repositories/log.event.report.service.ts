@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { eq, sql, and, between, gte, lte, or, ilike, desc } from "drizzle-orm";
+import { eq, sql, and, between, gte, lte, or, ilike, desc, inArray } from "drizzle-orm";
 import { users, userDetails, userRoles, roles } from "@/db/schemas/user.schema";
 import { beneficiaries, beneficiaryPortions } from "@/db/schemas/school.schema";
 import { kitchens } from "@/db/schemas/kitchen.schema";
@@ -150,6 +150,7 @@ export interface EventReportFilter {
   search?: string;
   page?: number;
   limit?: number;
+  kitchenIds?: string[];
 }
 
 export interface PaginationMeta {
@@ -166,6 +167,7 @@ export async function getEventReportsWithFilter({
   search,
   page = 1,
   limit = 10,
+  kitchenIds = []
 }: EventReportFilter) {
   const offset = (page - 1) * limit;
   const conditions: any[] = [eq(eventReports.isDeleted, false)];
@@ -175,6 +177,23 @@ export async function getEventReportsWithFilter({
   else if (endDate) conditions.push(lte(eventReports.date, endDate));
 
   if (reportType) conditions.push(eq(eventReports.reportType, reportType));
+
+  if (kitchenIds.length > 0) {
+    conditions.push(
+      or(
+        and(
+          inArray(drivers.kitchenId, kitchenIds)
+        ),
+        and(
+          inArray(beneficiaries.kitchenId, kitchenIds)
+        ),
+        and(
+          inArray(eventReports.entityId, kitchenIds)
+        )
+      )
+    );
+  }
+
 
   if (search) {
     const like = `%${search}%`;
@@ -211,6 +230,16 @@ export async function getEventReportsWithFilter({
     .leftJoin(userDetails, eq(users.id, userDetails.userId))
     .leftJoin(userRoles, eq(users.id, userRoles.userId))
     .leftJoin(roles, eq(userRoles.roleId, roles.id))
+    .leftJoin(drivers, and(
+      eq(eventReports.entityId, drivers.id),
+    ))
+    .leftJoin(beneficiaries, and(
+      eq(eventReports.entityId, beneficiaries.id),
+    ))
+    .leftJoin(kitchens, and(
+      eq(eventReports.entityId, kitchens.id),
+    ))
+
     .where(and(...conditions))
     .orderBy(desc(eventReports.createdAt))
     .limit(limit)
@@ -219,6 +248,19 @@ export async function getEventReportsWithFilter({
   const [{ count }] = await db
     .select({ count: sql<number>`COUNT(*)` })
     .from(eventReports)
+    .leftJoin(drivers, and(
+      eq(eventReports.entityId, drivers.id),
+      eq(eventReports.reportType, "driver")
+    ))
+    .leftJoin(beneficiaries, and(
+      eq(eventReports.entityId, beneficiaries.id),
+      eq(eventReports.reportType, "beneficiary")
+    ))
+    .leftJoin(kitchens, and(
+      eq(eventReports.entityId, kitchens.id),
+      eq(eventReports.reportType, "kitchen")
+    ))
+
     .where(and(...conditions));
 
   const dataWithClassrooms = await Promise.all(

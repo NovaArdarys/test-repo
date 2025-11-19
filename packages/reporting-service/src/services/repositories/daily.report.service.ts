@@ -422,16 +422,13 @@ export async function getDailyReportsList(params?: {
         FROM event_reports er
         WHERE er.is_deleted = false
           ${entityType === "driver" && driversIds.length > 0
-          ? sql`AND er.report_type IN ('driver', 'EVENT')
-                   AND er.entity_id = ANY(${sql.raw(`ARRAY[${driversIds.map(id => `'${id}'`).join(",")}]::uuid[]`)})`
+          ? sql`AND er.entity_id = ANY(${sql.raw(`ARRAY[${driversIds.map(id => `'${id}'`).join(",")}]::uuid[]`)})`
           : sql``}
           ${entityType === "kitchen" && kitchenIds.length > 0
-          ? sql`AND er.report_type IN ('kitchen', 'EVENT')
-                   AND er.entity_id = ANY(${sql.raw(`ARRAY[${kitchenIds.map(id => `'${id}'`).join(",")}]::uuid[]`)})`
+          ? sql`AND er.entity_id = ANY(${sql.raw(`ARRAY[${kitchenIds.map(id => `'${id}'`).join(",")}]::uuid[]`)})`
           : sql``}
           ${(entityType === "school" || entityType === "beneficiary") && schoolIds.length > 0
-          ? sql`AND er.report_type IN ('beneficiary', 'EVENT', 'beneficiaries')
-                   AND er.entity_id = ANY(${sql.raw(`ARRAY[${schoolIds.map(id => `'${id}'`).join(",")}]::uuid[]`)})`
+          ? sql`AND er.entity_id = ANY(${sql.raw(`ARRAY[${schoolIds.map(id => `'${id}'`).join(",")}]::uuid[]`)})`
           : sql``}
           AND er.date::date >= ${endDate}
           AND er.date::date <= ${computedEndDate}
