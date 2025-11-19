@@ -54,8 +54,6 @@ export async function getStepReportsWithFilter({
   else if (startDate) conditions.push(gte(dailyReports.date, startDate));
   else if (endDate) conditions.push(lte(dailyReports.date, endDate));
 
-  if (entity) conditions.push(eq(roles.domain, entity));
-
   if (search && search != 'undefined') {
     const like = `%${search}%`;
     conditions.push(
