@@ -6,6 +6,7 @@ export const aiAnalysisLogs = pgTable(
   {
     id: uuid('id').primaryKey().defaultRandom(),
     entityId: uuid("entity_id"),
+    storageId: uuid("storage_id"),
     analysisType: analysisTypeEnum('analysis_type').notNull(),
     sourceImageUrl: text('source_image_url'),
     outputImageUrl: text('output_image_url'),
@@ -14,6 +15,7 @@ export const aiAnalysisLogs = pgTable(
     output: jsonb('output').notNull(),
     input: jsonb('input').notNull(),
     metadata: jsonb('metadata'),
+
     createdAt: timestamp('created_at', { withTimezone: false })
       .defaultNow()
       .notNull(),
@@ -21,5 +23,6 @@ export const aiAnalysisLogs = pgTable(
   (table) => ({
     analysisTypeIdx: index('idx_ai_analysis_type').on(table.analysisType),
     createdAtIdx: index('idx_ai_created_at').on(table.createdAt),
+    storageIdIdx: index("idx_ai_storage_id").on(table.storageId),
   })
 );

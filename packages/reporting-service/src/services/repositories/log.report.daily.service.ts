@@ -5,6 +5,7 @@ import { roleDomainEnum } from "@/db/schemas/enums/enums";
 import z from "zod";
 import { dailyReports, masterSteps, beneficiaryPortions, stepReports, beneficiaries, drivers, kitchens, storage, menuPlans, menuPlanBeneficiaries, deliveryBeneficiaries, deliveries } from "@/db/schemas";
 import { castArray, isEmpty } from "lodash";
+import { aiAnalysisLogs } from "@/db/schemas/ai.log.schema";
 
 const entityTypeValidator = z.enum(roleDomainEnum.enumValues);
 
@@ -214,6 +215,15 @@ export async function getStepReportById(stepId: string) {
     })
     .from(storage)
     .where(eq(storage.entityId, row.id));
+
+  const aiData = await db
+    .select({
+      id: aiAnalysisLogs.id,
+      input: aiAnalysisLogs.fileUrl,
+      output: aiAnalysisLogs.meta,
+    })
+    .from(aiAnalysisLogs)
+    .where(eq(aiAnalysisLogs.entityId, row.id));
 
   let entitySummary: any = null;
 

@@ -1,7 +1,7 @@
 import redis from '@/constants/redis';
 import { db } from '@/db';
-import { detectAI, getAITypeFromStepOrder, getStepReportDetail } from '@/services/clients/ai.client.service';
-import { insertAiLog } from '@/services/repositories/ai.service';
+import { detectAI, getAITypeFromStepOrder } from '@/services/clients/ai.client.service';
+import { insertAiLog, getStepReportDetail } from '@/services/repositories/ai.service';
 import { compressImageToBase64 } from '@/utils/imageCompress';
 import { StorageCommittedType } from '@/validator/storage.validator';
 import { Worker } from 'bullmq';

@@ -39,3 +39,48 @@ export async function insertAiLog(params: InsertAiLogParams) {
     createdAt: new Date()
   });
 }
+
+
+
+export async function getStepReportDetail(entityId?: string) {
+  if (!entityId) return null;
+
+  const result = await db.query.stepReports.findFirst({
+    where: (sr, { eq }) => eq(sr.id, entityId),
+    columns: {
+      id: true,
+      stepId: true,
+      dailyReportId: true,
+    },
+    with: {
+      dailyReport: {
+        with: {
+          menuPlan: {
+            with: {
+              menuFoodItem: {
+                with: {
+                  foodItem: {
+                    columns: {
+                      name: true,
+                      nameEn: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      step: {
+        columns: {
+          stepKey: true,
+          stepName: true,
+          stepOrder: true,
+          entityType: true
+        },
+      },
+    },
+  });
+
+  return result;
+}
