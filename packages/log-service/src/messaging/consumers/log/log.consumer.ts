@@ -33,10 +33,8 @@ async function handleLogEvent(msg: amqplib.ConsumeMessage | null) {
       content.userId !== 'anonymous'
     ) ? content.userId : '11111111-1111-1111-1111-111111111111';
 
-    console.log(`\n[EVENT IN] [${routingKey}] Log received.`, msg.content.toString());
-
     if (logType === 'token') {
-      await saveTokenLog({
+      const res = await saveTokenLog({
         tokenId: content.tokenId,
         userId: content.userId,
         eventType: `${logType}.${actionOrLevel}`,
@@ -46,14 +44,12 @@ async function handleLogEvent(msg: amqplib.ConsumeMessage | null) {
         ipAddress: content.ipAddress,
         userAgent: content.userAgent,
       } as TokenLogPayload);
-
+      console.log(res);
     } else if (logType === 'app') {
       const level = actionOrLevel.toUpperCase() as LogLevel;
 
       if (!['DEBUG', 'INFO', 'WARN', 'ERROR', 'FATAL'].includes(level)) {
-        console.warn(`[WARN] Invalid log level '${actionOrLevel}' for key ${routingKey}. Using INFO.`);
-
-        await saveAppLog({
+        const res = await saveAppLog({
           userId: validUserId,
           level: 'INFO' as LogLevel,
           message: content.message || 'Log message missing (Invalid Level)',
@@ -62,6 +58,7 @@ async function handleLogEvent(msg: amqplib.ConsumeMessage | null) {
           userAgent: content.userAgent || 'unknown/v1.0',
         } as AppLogPayload);
 
+        console.log(content, logType, level, res);
       } else {
 
         const ipAddressMapped = content.ipAddress || content.payload?.ipAddress || '0.0.0.0';
@@ -73,7 +70,7 @@ async function handleLogEvent(msg: amqplib.ConsumeMessage | null) {
           ...(content.userAgent && { oldUserAgent: content.userAgent }),
         };
 
-        await saveAppLog({
+        const res = await saveAppLog({
           userId: validUserId,
           level: level,
           message: content.message || 'Log message missing (Valid Level)',
@@ -81,6 +78,8 @@ async function handleLogEvent(msg: amqplib.ConsumeMessage | null) {
           ipAddress: ipAddressMapped,
           userAgent: userAgentMapped,
         } as AppLogPayload);
+
+        console.log(res, logType, level, res);
       }
 
     } else {

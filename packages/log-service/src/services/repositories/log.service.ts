@@ -59,12 +59,12 @@ export interface TokenLogListParams {
  * memungkinkan Log Consumer (RabbitMQ) untuk melakukan NACK.
  * @param data Data log dari event RabbitMQ.
  */
-export async function saveAppLog(data: AppLogPayload): Promise<void> {
+export async function saveAppLog(data: AppLogPayload): Promise<any> {
   try {
-    await db.insert(appLogs).values({
+    return await db.insert(appLogs).values({
       ...data,
       createdBy: data.userId
-    });
+    }).returning();
   } catch (error) {
     console.error("Failed to save app log to DB:", error);
     throw error;
