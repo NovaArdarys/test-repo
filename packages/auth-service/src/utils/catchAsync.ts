@@ -52,7 +52,7 @@ const logRequestActivity = async (
       device: metadata.device,
       queryParams: c.req.query(),
       params: c.req.param(),
-      body: await c.get("validatedData").body,
+      body: await c.get("validatedData")?.body || {},
       errorStack: errorStack,
       response: responseData,
     }
