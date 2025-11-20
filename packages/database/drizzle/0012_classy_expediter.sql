@@ -1,0 +1,1 @@
+ALTER TABLE "storages" ALTER COLUMN "entity_type" SET DATA TYPE text;

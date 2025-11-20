@@ -15,7 +15,7 @@ export const storage = pgTable(
     fileUrl: text("file_url").notNull(),
     mimeType: varchar("mime_type", { length: 100 }),
     size: varchar("size", { length: 50 }),
-    entityType: entityTypeEnum("entity_type").notNull(),
+    entityType: text("entity_type").notNull(),
     entityId: uuid("entity_id"),
     createdAt: timestamp("created_at").defaultNow(),
     createdBy: uuid("created_by"),
@@ -42,6 +42,9 @@ export const storage = pgTable(
     };
   }
 );
+
+
+
 
 
 
