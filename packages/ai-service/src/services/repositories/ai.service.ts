@@ -4,7 +4,6 @@ import { analysisTypeEnum, entityTypeEnum } from "@/db/schemas";
 import type { InferInsertModel } from "drizzle-orm";
 
 export type AnalysisType = (typeof analysisTypeEnum.enumValues)[number];
-export type EntityType = (typeof entityTypeEnum.enumValues)[number];
 
 export type AiAnalysisLogInsert = InferInsertModel<typeof aiAnalysisLogs>;
 
