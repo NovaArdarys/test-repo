@@ -212,18 +212,28 @@ export async function getStepReportById(stepId: string) {
       id: storage.id,
       imageURL: storage.fileUrl,
       metadata: storage.meta,
+
+      aiAnalysis: sql`
+      COALESCE(
+        json_agg(
+          json_build_object(
+            'analysisType', ${aiAnalysisLogs.analysisType},
+            'input', ${aiAnalysisLogs.input},
+            'output', ${aiAnalysisLogs.output},
+            'processingTime', ${aiAnalysisLogs.processingTime},
+            'threshold', ${aiAnalysisLogs.threshold}
+          )
+        ) FILTER (WHERE ${aiAnalysisLogs.id} IS NOT NULL),
+        '[]'::json
+      )
+    `.as("aiAnalysis"),
     })
     .from(storage)
-    .where(eq(storage.entityId, row.id));
+    .leftJoin(aiAnalysisLogs, eq(aiAnalysisLogs.storageId, storage.id))
+    .where(eq(storage.entityId, row.id))
+    .groupBy(storage.id);
 
-  const aiData = await db
-    .select({
-      id: aiAnalysisLogs.id,
-      input: aiAnalysisLogs.fileUrl,
-      output: aiAnalysisLogs.meta,
-    })
-    .from(aiAnalysisLogs)
-    .where(eq(aiAnalysisLogs.entityId, row.id));
+
 
   let entitySummary: any = null;
 
@@ -337,10 +347,38 @@ export async function getStepReportById(stepId: string) {
   const storages = [...storageData];
 
   if (row.storageId) {
+    const storageData = await db
+      .select({
+        id: storage.id,
+        imageURL: storage.fileUrl,
+        metadata: storage.meta,
+
+        aiAnalysis: sql`
+      COALESCE(
+        json_agg(
+          json_build_object(
+            'analysisType', ${aiAnalysisLogs.analysisType},
+            'input', ${aiAnalysisLogs.input},
+            'output', ${aiAnalysisLogs.output},
+            'processingTime', ${aiAnalysisLogs.processingTime},
+            'threshold', ${aiAnalysisLogs.threshold}
+          )
+        ) FILTER (WHERE ${aiAnalysisLogs.id} IS NOT NULL),
+        '[]'::json
+      )
+    `.as("aiAnalysis"),
+      })
+      .from(storage)
+      .leftJoin(aiAnalysisLogs, eq(aiAnalysisLogs.storageId, storage.id))
+      .where(eq(storage.entityId, row.id))
+      .groupBy(storage.id);
+
+
     storages.push({
       id: row.storageId,
       imageURL: row.imageURL ?? "",
       metadata: row.metadata ?? {},
+      aiAnalysis: storageData
     });
   }
 
