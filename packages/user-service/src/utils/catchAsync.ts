@@ -33,9 +33,12 @@ const logRequestActivity = async (
   c: Context,
   level: LogLevel,
   message: string,
-  errorStack: string | undefined = undefined
+  errorStack: string | undefined = undefined,
 ) => {
   const metadata = await getLogMetadata(c);
+
+  const responseData =
+    c.req.method !== "GET" ? c.get("responseData") : undefined;
 
   const payload = {
     userId: metadata.userId,
@@ -51,6 +54,7 @@ const logRequestActivity = async (
       params: c.req.param(),
       body: await c.get("validatedData").body,
       errorStack: errorStack,
+      response: responseData,
     }
   };
 
@@ -65,7 +69,17 @@ export function catchAsync<
     next: Next
   ): Promise<Awaited<ReturnType<Fn>>> => {
     const start = Date.now();
+    const originalJson = c.json.bind(c);
+    c.json = (data: any, status?: number) => {
+      c.set("responseData", data);
+      return originalJson(data, status);
+    };
 
+    const originalText = c.text.bind(c);
+    c.text = (data: string, status?: number) => {
+      c.set("responseData", data);
+      return originalText(data, status);
+    };
     try {
       const result = await fn(c, next);
       const duration = Date.now() - start;
