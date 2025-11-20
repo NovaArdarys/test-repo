@@ -20,9 +20,6 @@ const storageCommittedSchema = z.object({
 const STORAGE_QUEUE_NAME = "user_service_storage_queue";
 const STORAGE_ROUTING_KEY = "storage.upload.commit";
 
-const LOG_QUEUE_NAME = "user_service_log_queue";
-const LOG_ROUTING_KEY = "log.#";
-
 // ================= HANDLERS =================
 
 // Storage Upload Event
@@ -43,20 +40,8 @@ async function handleStorageEvent(data: z.infer<typeof storageCommittedSchema>) 
   }
 }
 
-// Log Event
-async function handleLogEvent(data: any) {
-  console.warn(`[LOG EVENT IN] [${data._meta?.routingKey ?? "log"}]`, data?._meta?.eventId);
-
-}
-
 export async function setupUserServiceConsumers(channel: Channel) {
-  // LOG
-  await channel.assertExchange(EXCHANGES.LOG, "topic", { durable: true });
-  const logQueue = await channel.assertQueue(LOG_QUEUE_NAME, { durable: true });
-  await channel.bindQueue(logQueue.queue, EXCHANGES.LOG, LOG_ROUTING_KEY);
-  channel.prefetch(10);
-  channel.consume(logQueue.queue, safeConsume(handleLogEvent, channel), { noAck: false });
-  console.log(`[*] User Service listening for LOG events in ${logQueue.queue}`);
+
 
   // STORAGE
   await channel.assertExchange(EXCHANGES.STORAGE, "topic", { durable: true });

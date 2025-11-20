@@ -61,12 +61,6 @@ async function handleStorageEvent(data: z.infer<typeof storageCommittedSchema>) 
   }
 }
 
-// Log Event
-async function handleLogEvent(data: any) {
-  console.warn(`[LOG EVENT IN] [${data._meta?.routingKey ?? "log"}]`, data?._meta?.eventId);
-
-}
-
 // Assign User to Kitchen
 async function handleAssignToKitchen(data: z.infer<typeof baseUserKitchen>) {
   const parsed = baseUserKitchen.parse(data);
@@ -104,13 +98,6 @@ async function handleAssignProfileDriver(data: z.infer<typeof baseUserKitchen>) 
 
 // ================= SETUP =================
 export async function setupKitchenServiceConsumers(channel: Channel) {
-  // Log
-  await channel.assertExchange(EXCHANGES.LOG, "topic", { durable: true });
-  const logQueue = await channel.assertQueue(LOG_QUEUE_NAME, { durable: true });
-  await channel.bindQueue(logQueue.queue, EXCHANGES.LOG, LOG_ROUTING_KEY);
-  channel.prefetch(10);
-  channel.consume(logQueue.queue, safeConsume(handleLogEvent, channel), { noAck: false });
-  console.log(`[*] Listening for LOG events on ${logQueue.queue}`);
 
   // Storage
   await channel.assertExchange(EXCHANGES.STORAGE, "topic", { durable: true });

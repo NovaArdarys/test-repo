@@ -35,21 +35,7 @@ async function handleStepCommit(data: z.infer<typeof stepCommittedSchema>) {
   }
 }
 
-// Handle Log Events
-async function handleLogEvent(data: any) {
-  console.warn(`[LOG EVENT IN] [${data._meta?.routingKey ?? "log"}]`, data?._meta?.eventId);
-
-}
-
-
 export async function setupDeliveryServiceConsumers(channel: Channel) {
-  // LOG Listener
-  await channel.assertExchange(EXCHANGES.LOG, "topic", { durable: true });
-  const logQueue = await channel.assertQueue(LOG_QUEUE_NAME, { durable: true });
-  await channel.bindQueue(logQueue.queue, EXCHANGES.LOG, LOG_ROUTING_KEY);
-  channel.prefetch(10);
-  channel.consume(logQueue.queue, safeConsume(handleLogEvent, channel), { noAck: false });
-  console.log(`[*] Delivery Service listening for LOG events in ${logQueue.queue}`);
 
   // STEP Listener (delivery.step.commit)
   await channel.assertExchange(EXCHANGES.REPORT, "topic", { durable: true });

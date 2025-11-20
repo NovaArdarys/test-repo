@@ -20,9 +20,6 @@ const storageCommittedSchema = z.object({
 const STORAGE_QUEUE_NAME = "report_service_storage_queue";
 const STORAGE_ROUTING_KEY = "storage.upload.commit";
 
-const LOG_QUEUE_NAME = "report_service_log_queue";
-const LOG_ROUTING_KEY = "log.#";
-
 // ================= HANDLERS =================
 
 // Storage Upload Event Handler
@@ -57,14 +54,6 @@ async function handleLogEvent(data: any) {
 }
 
 export async function setupReportServiceConsumers(channel: Channel) {
-  // LOG
-  await channel.assertExchange(EXCHANGES.LOG, "topic", { durable: true });
-  const logQueue = await channel.assertQueue(LOG_QUEUE_NAME, { durable: true });
-  await channel.bindQueue(logQueue.queue, EXCHANGES.LOG, LOG_ROUTING_KEY);
-  channel.prefetch(10);
-  channel.consume(logQueue.queue, safeConsume(handleLogEvent, channel), { noAck: false });
-  console.log(`[*] Report Service listening for LOG events in ${logQueue.queue}`);
-
   // STORAGE
   await channel.assertExchange(EXCHANGES.STORAGE, "topic", { durable: true });
   const storageQueue = await channel.assertQueue(STORAGE_QUEUE_NAME, { durable: true });
