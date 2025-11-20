@@ -14,7 +14,6 @@ const LOG_QUEUE_NAME = "delivery_service_log_queue";
 const LOG_ROUTING_KEY = "log.#";
 
 // ================= HANDLERS =================
-// Handle Step Commit (trigger delivery)
 async function handleStepCommit(data: z.infer<typeof stepCommittedSchema>) {
   const parsed = stepCommittedSchema.parse(data);
   console.log("🪅 [DELIVERY EVENT IN] Parsed:", parsed);
