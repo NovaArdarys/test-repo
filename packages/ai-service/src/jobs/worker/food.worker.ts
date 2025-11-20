@@ -1,6 +1,6 @@
 import redis from '@/constants/redis';
 import { db } from '@/db';
-import { detectAI, getAITypeFromStepOrder } from '@/services/clients/ai.client.service';
+import { detectAI, getAITypeFromStepOrder, getStepReportDetail } from '@/services/clients/ai.client.service';
 import { insertAiLog } from '@/services/repositories/ai.service';
 import { compressImageToBase64 } from '@/utils/imageCompress';
 import { StorageCommittedType } from '@/validator/storage.validator';
@@ -17,50 +17,14 @@ export const foodWorker = new Worker<StorageCommittedType>(
 
       if (job?.data?.entityId) {
 
-        const stepReportData = await db.query.stepReports.findFirst({
-          where: (sr, { eq }) => job?.data?.entityId ? eq(sr.id, job?.data?.entityId) : undefined,
-          columns: {
-            id: true,
-            stepId: true,
-            dailyReportId: true,
-          },
-          with: {
-            dailyReport: {
-              with: {
-                menuPlan: {
-                  with: {
-                    menuFoodItem: {
-                      with: {
-                        foodItem: {
-                          columns: {
-                            name: true,
-                            nameEn: true
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            },
-            step: {
-              columns: {
-                stepKey: true,
-                stepName: true,
-                stepOrder: true
-              }
-            }
-          }
-        });
+        const entityId = job?.data?.entityId;
+        const stepReport = await getStepReportDetail(entityId);
 
-        if (!stepReportData?.step) {
+        if (!stepReport?.step) {
           throw new Error("Step report not found or missing step data.");
         }
 
-        console.log(stepReportData.step.stepOrder, "===== 👣 steps =====", job.data.entityType);
-
-
-        const aiType = getAITypeFromStepOrder(stepReportData.step.stepOrder, job.data.entityType);
+        const aiType = getAITypeFromStepOrder(stepReport?.step?.stepOrder, job.data.entityType);
         if (!aiType) {
           return null;
         }
@@ -71,7 +35,7 @@ export const foodWorker = new Worker<StorageCommittedType>(
         const processingTime = (end - start) / 1000;
         const labels =
           aiType === "food"
-            ? stepReportData.dailyReport.menuPlan.menuFoodItem
+            ? stepReport?.dailyReport?.menuPlan?.menuFoodItem
               .map((item) => ({
                 id: item.foodItem?.name?.trim() || "",
                 en: item.foodItem?.nameEn?.trim() || item.foodItem?.name?.trim() || "",

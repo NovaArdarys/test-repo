@@ -5,7 +5,7 @@ import { logger } from 'hono/logger';
 import { timeout } from 'hono/timeout';
 import { jwt } from 'hono/jwt';
 import type { JwtVariables } from 'hono/jwt';
-import routes from './routes/public';
+import routes from './routes/public/web';
 import { errorHandler } from '@/middleware/error.middleware';
 import { join } from 'path';
 import { checkBroker, connectRabbitMQ } from './messaging/broker';

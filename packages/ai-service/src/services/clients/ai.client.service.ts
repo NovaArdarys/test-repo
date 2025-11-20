@@ -1,3 +1,4 @@
+import { db } from "@/db";
 import aiClient from "@/utils/api";
 import { EntityType } from "@/validator/storage.validator";
 
@@ -36,8 +37,10 @@ export function getAITypeFromStepOrder(stepOrder: number, entityType: EntityType
 
   if (entityType === "school" || entityType === "beneficiary") {
     switch (stepOrder) {
-      case 1:
-        return "people";
+      case 2:
+        return "food";
+      case 3:
+        return "food";
       default:
         return null;
     }
@@ -49,8 +52,6 @@ export async function detectAI<T extends AIAnalysisType>(
   data: T extends "food" ? DetectInput : BaseAIInput
 ): Promise<any> {
   try {
-    console.log(data, "========== payload ============", `/detect/${type}`);
-
     const res = await aiClient.post(`/detect/${type}`, data);
     return res.data;
   } catch (error: any) {
@@ -66,4 +67,48 @@ export async function detectAI<T extends AIAnalysisType>(
       throw new Error(`AI fetch setup error [${type}]: ${error.message}`);
     }
   }
+}
+
+
+export async function getStepReportDetail(entityId?: string) {
+  if (!entityId) return null;
+
+  const result = await db.query.stepReports.findFirst({
+    where: (sr, { eq }) => eq(sr.id, entityId),
+    columns: {
+      id: true,
+      stepId: true,
+      dailyReportId: true,
+    },
+    with: {
+      dailyReport: {
+        with: {
+          menuPlan: {
+            with: {
+              menuFoodItem: {
+                with: {
+                  foodItem: {
+                    columns: {
+                      name: true,
+                      nameEn: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      step: {
+        columns: {
+          stepKey: true,
+          stepName: true,
+          stepOrder: true,
+          entityType: true
+        },
+      },
+    },
+  });
+
+  return result;
 }
