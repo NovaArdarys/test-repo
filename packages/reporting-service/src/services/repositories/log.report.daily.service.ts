@@ -206,6 +206,15 @@ export async function getStepReportById(stepId: string) {
 
   if (!row) return null;
 
+  const storageData = await db
+    .select({
+      id: storage.id,
+      imageURL: storage.fileUrl,
+      metadata: storage.meta,
+    })
+    .from(storage)
+    .where(eq(storage.entityId, row.id));
+
   let entitySummary: any = null;
 
   switch (row.entityType) {
@@ -315,6 +324,16 @@ export async function getStepReportById(stepId: string) {
     };
   }
 
+  const storages = [...storageData];
+
+  if (row.storageId) {
+    storages.push({
+      id: row.storageId,
+      imageURL: row.imageURL ?? "",
+      metadata: row.metadata ?? {},
+    });
+  }
+
 
   const result = {
     id: row.id,
@@ -341,15 +360,7 @@ export async function getStepReportById(stepId: string) {
       roleName: row.roleName ?? "-",
       domain: row.roleDomain ?? "-",
     },
-    storages: row.storageId
-      ? [
-        {
-          id: row.storageId,
-          imageURL: row.imageURL ?? null,
-          metadata: row.metadata ?? null,
-        },
-      ]
-      : [],
+    storages: storages,
     entityType: row.entityType,
     entitySummary: entitySummary,
     createdAt: row.createdAt,
