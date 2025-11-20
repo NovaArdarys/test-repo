@@ -13,7 +13,6 @@ const LOG_QUEUE_NAME = "storage_service_log_queue";
 const LOG_ROUTING_KEY = "log.#";
 
 // ================= HANDLERS =================
-// Storage Listener from clinet
 async function handleClientStorageCommit(data: z.infer<typeof storageClientCommittedSchema>) {
   const parsed = storageClientCommittedSchema.parse(data);
 
@@ -33,7 +32,6 @@ async function handleLogEvent(data: any) {
 }
 
 export async function setupStorageConsumer(channel: Channel) {
-  // Log   await channel.assertExchange(EXCHANGES.LOG, "topic", { durable: true });
   const logQueue = await channel.assertQueue(LOG_QUEUE_NAME, { durable: true });
   await channel.bindQueue(logQueue.queue, EXCHANGES.LOG, LOG_ROUTING_KEY);
   channel.prefetch(10);
