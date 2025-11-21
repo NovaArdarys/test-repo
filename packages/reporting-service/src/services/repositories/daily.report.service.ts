@@ -288,12 +288,16 @@ export async function getDailyReportsList(params?: {
   menuPlanName?: string;
   view?: "home" | "calendar" | "delivery" | "report" | "profile";
 }) {
+  const today = new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
+
   const {
     entityType,
     entityId,
     status,
-    startDate,
-    endDate,
+
+    startDate = today,
+    endDate = today,
+
     kitchenIds = [],
     schoolIds = [],
     driversIds = [],
@@ -301,7 +305,6 @@ export async function getDailyReportsList(params?: {
     limit = 10,
     view
   } = params ?? {};
-
   let computedEndDate = endDate;
   if (view === "home" && endDate) {
     try {

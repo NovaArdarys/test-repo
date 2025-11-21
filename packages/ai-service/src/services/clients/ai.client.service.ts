@@ -20,7 +20,7 @@ export interface DetectInput extends BaseAIInput {
 
 
 export function getAITypeFromStepOrder(stepOrder: number, entityType: EntityType) {
-  if (entityType === "kitchen") {
+  if (entityType === "kitchen" || entityType === "kitchen_daily_report") {
     switch (stepOrder) {
       case 1:
         return "food";
@@ -35,7 +35,7 @@ export function getAITypeFromStepOrder(stepOrder: number, entityType: EntityType
     }
   }
 
-  if (entityType === "school" || entityType === "beneficiary") {
+  if (entityType === "school" || entityType === "beneficiary" || entityType === "beneficiary_daily_report") {
     switch (stepOrder) {
       case 2:
         return "food";
