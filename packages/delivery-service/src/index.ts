@@ -60,8 +60,8 @@ const app = new Hono<{ Variables: Variables; }>()
       return filePath;
     }
   }))
-  .get('/swagger/mobile', swaggerUI({ url: '/delivery/api/mobile/openapi.json' }))
-  .get('/swagger', swaggerUI({ url: '/delivery/api/openapi.json' }))
+  .get('/swagger/mobile', swaggerUI({ url: process.env.ENVIRONMENT === 'DEVELOPMENT' ? '/api/mobile/openapi.json' : '/delivery/api/mobile/openapi.json' }))
+  .get('/swagger', swaggerUI({ url: process.env.ENVIRONMENT === 'DEVELOPMENT' ? '/api/openapi.json' : '/delivery/api/openapi.json' }))
   .get('/api/health', async (c) => {
     const dbStatus = await checkDatabase();
     const rabbitStatus = await checkBroker();
