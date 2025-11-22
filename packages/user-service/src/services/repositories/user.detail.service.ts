@@ -77,6 +77,17 @@ export async function getUsersList({
   author?: string;
 }): Promise<APIPagination<UserRead>> {
 
+  console.log({
+    page,
+    limit,
+    isActive,
+    name,
+    email,
+    isAppManager,
+    author
+  }, "===== ok =====");
+
+
   const { where, meta } = await buildPaginatedWhere({
     table: users,
     tableName: "users",
@@ -95,26 +106,21 @@ export async function getUsersList({
           )`
         : undefined,
       !isAppManager
-        ? sql`(
-        ${users.createdBy} = ${author}
-        OR ${users.id} IN (
-          SELECT user_id
-          FROM user_kitchens
-          WHERE is_deleted = false
-        )
-        OR ${users.id} IN (
-          SELECT ub.user_id
-          FROM user_beneficiaries ub
-          JOIN beneficiaries b ON b.id = ub.beneficiary_id
-          WHERE ub.is_deleted = false
-            AND b.is_deleted = false
-        )
-        OR ${users.id} IN (
-          SELECT user_id
-          FROM drivers
-          WHERE is_deleted = false
-        )
-      )`
+        ? sql`
+          (
+            ${users.createdBy} = ${author}
+            AND (
+              ${users.id} IN (SELECT user_id FROM user_kitchens WHERE is_deleted = false)
+              OR ${users.id} IN (
+                SELECT ub.user_id
+                FROM user_beneficiaries ub
+                JOIN beneficiaries b ON b.id = ub.beneficiary_id
+                WHERE ub.is_deleted = false AND b.is_deleted = false
+              )
+              OR ${users.id} IN (SELECT user_id FROM drivers WHERE is_deleted = false)
+            )
+          )
+        `
         : undefined,
     ],
     page,
