@@ -150,6 +150,7 @@ export async function getDriverDeliveries(params: {
       deliveryBeneficiaryId: dailyReports.entityId,
       dailyReportId: dailyReports.id,
       stepId: stepReports.id,
+      createdAt: stepReports.updatedAt,
       isCompleted: stepReports.isCompleted,
       notes: stepReports.notes,
       stepKey: masterSteps.stepKey,

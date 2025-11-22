@@ -10,6 +10,7 @@ export const deliveries = pgTable('deliveries', {
   endTime: timestamp('end_time'),
   estimatedDeliveryTime: timestamp('estimated_delivery_time'),
   notes: text('notes'),
+  deliveryCode: text('delivery_code'),
   status: deliveryStatusEnum('status').notNull(),
   isDeleted: boolean('is_deleted').default(false).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),

@@ -11,6 +11,7 @@ import {
   beneficiaries,
   stepReports,
 } from '@/db/schemas';
+import { generateDeliveryCode } from '@/messaging/utils/generateDeliveryCode';
 import { format } from 'date-fns';
 import { eq, InferInsertModel } from 'drizzle-orm';
 
@@ -131,6 +132,7 @@ export async function createAutoDelivery(data: CreateAutoDeliveryInput) {
               driverId: driver.id,
               startTime: new Date(),
               estimatedDeliveryTime,
+              deliveryCode: generateDeliveryCode(data.kitchenId, beneficiary.beneficiaryId, portionType),
               notes: `Pengiriman ${menuPlan.name} - ${portionType}`,
               status: data.status || "PENDING",
               createdAt: new Date(),
