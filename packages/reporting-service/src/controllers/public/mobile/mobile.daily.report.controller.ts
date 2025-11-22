@@ -10,7 +10,7 @@ import {
 import { publishStepUpdate } from "@/messaging/publishers/reporting.publisher";
 import { every } from "lodash";
 import { getDriverDeliveries } from "@/services/repositories/daily.report.driver.service";
-import { getDailyReportsSummary } from "@/services/repositories/daily.report.sppg.service";
+import { getDailyReportsListSPPG } from "@/services/repositories/daily.report.sppg.service";
 
 const getAuditFields = (c: Context) => ({
   createdBy: c.get('userId'),
@@ -51,10 +51,19 @@ export const listDailyReportsHandler = catchAsync(async (c: Context) => {
   }
 
   if (entity === "sppg") {
-    const data = await getDailyReportsSummary({
+    const data = await getDailyReportsListSPPG({
+      entityType: "kitchen",
+      entityId: query.entityId,
+      status: query.status,
       startDate: query.startDate,
       endDate: query.endDate,
-      kitchenIds: audit.kitchenId
+      kitchenIds: audit.kitchenId,
+      schoolIds: audit.beneficiaryId,
+      driversIds: audit.driverId,
+      page,
+      limit,
+      menuPlanName: search,
+      view
     });
 
     return c.json(data);
