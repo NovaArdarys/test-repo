@@ -25,7 +25,7 @@ import {
   createStepReportHandler,
   updateStepReportHandler,
   deleteStepReportHandler,
-} from "@/controllers/public/daily.report.controller";
+} from "@/controllers/public/web/daily.report.controller";
 import { getStepReportByIdHandler, getStepReportsHandler } from "@/controllers/public/web/log.daily.report.controller";
 
 const app = new Hono();

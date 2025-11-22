@@ -18,7 +18,7 @@ import {
   createEventReportHandler,
   updateEventReportHandler,
   softDeleteEventReportHandler,
-} from "@/controllers/public/event.report.controller";
+} from "@/controllers/public/web/event.report.controller";
 import { getEventReportsHandler } from "@/controllers/public/web/log.event.report.controller";
 
 const app = new Hono();
