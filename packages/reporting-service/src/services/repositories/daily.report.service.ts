@@ -442,10 +442,6 @@ export async function getDailyReportsList(params?: {
   `
       : sql`'[]'::jsonb`;
 
-
-  console.log(kitchenIds, endDate, computedEndDate, "=====computedEndDate======", entityType === "kitchen");
-
-
   const topSuppliersField =
     view === "home"
       ? sql`
