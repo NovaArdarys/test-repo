@@ -44,7 +44,6 @@ async function handleLogEvent(msg: amqplib.ConsumeMessage | null) {
         ipAddress: content.ipAddress,
         userAgent: content.userAgent,
       } as TokenLogPayload);
-      console.log(res);
     } else if (logType === 'app') {
       const level = actionOrLevel.toUpperCase() as LogLevel;
 
@@ -57,8 +56,6 @@ async function handleLogEvent(msg: amqplib.ConsumeMessage | null) {
           ipAddress: content.ipAddress || '0.0.0.0',
           userAgent: content.userAgent || 'unknown/v1.0',
         } as AppLogPayload);
-
-        console.log(content, logType, level, res);
       } else {
 
         const ipAddressMapped = content.ipAddress || content.payload?.ipAddress || '0.0.0.0';
@@ -78,8 +75,6 @@ async function handleLogEvent(msg: amqplib.ConsumeMessage | null) {
           ipAddress: ipAddressMapped,
           userAgent: userAgentMapped,
         } as AppLogPayload);
-
-        console.log(res, logType, level, res);
       }
 
     } else {

@@ -10,6 +10,8 @@ export interface StorageUploadEvent {
 
 export async function publishStepUpdate(data: StorageUploadEvent) {
   try {
+    console.log(data, "=====data=====");
+
     await safePublish(EXCHANGES.REPORT, "report.step.commit", data);
     console.log(`Published ${data.entityType}`);
   } catch (err) {

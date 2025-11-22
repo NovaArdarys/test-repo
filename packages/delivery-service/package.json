@@ -4,12 +4,16 @@
     "dev": "bun run --hot src/index.ts"
   },
   "dependencies": {
+    "@hono/standard-validator": "^0.1.5",
+    "@hono/swagger-ui": "^0.5.2",
     "amqplib": "^0.10.9",
     "axios": "^1.12.2",
     "bullmq": "^5.63.0",
     "date-fns": "^4.1.0",
     "drizzle-kit": "^0.31.4",
+    "hashids": "^2.3.0",
     "hono": "^4.9.8",
+    "hono-openapi": "^1.1.1",
     "http-status": "^2.1.0",
     "ioredis": "^5.8.0",
     "jose": "^6.1.0",
@@ -19,10 +23,7 @@
     "ua-parser-js": "^2.0.6",
     "uuid": "^13.0.0",
     "zod": "^4.1.11",
-    "hono-openapi": "^1.1.1",
-    "@hono/swagger-ui": "^0.5.2",
-    "zod-to-json-schema": "^3.24.6",
-    "@hono/standard-validator": "^0.1.5"
+    "zod-to-json-schema": "^3.24.6"
   },
   "devDependencies": {
     "@types/bun": "latest",
