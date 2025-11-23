@@ -7,12 +7,9 @@ import {
   UpdateDeliveryStatusSchema,
 } from '@/validator/delivery.validator';
 
-import {
-  listDeliveriesHandler,
-  updateDeliveryStatusHandler,
-} from '@/controllers/public/delivery.controller';
 import { entityTypeEnum, idParamSchema } from '@/validator/globa.validator';
 import z from 'zod';
+import { listDeliveriesHandler, updateDeliveryStatusHandler } from '@/controllers/public/mobile/delivery.controller';
 
 const app = new Hono();
 app.use(checkAccessToken);
@@ -29,7 +26,7 @@ app.get(
 );
 
 app.put(
-  '/:id/status"',
+  '/:id/status',
   validate({ body: UpdateDeliveryStatusSchema, param: idParamSchema }),
   updateDeliveryStatusHandler
 );

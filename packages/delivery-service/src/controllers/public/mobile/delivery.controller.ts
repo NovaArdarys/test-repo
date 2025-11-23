@@ -4,9 +4,7 @@ import {
   ListDeliveriesQuerySchemaType
 } from "@/validator/delivery.validator";
 
-import {
-  getDeliveriesList
-} from "@/services/repositories/delivery.service";
+import { updateDeliveryStatus, getDeliveriesList } from "@/services/repositories/mobile/delivery.service";
 
 const getAuditFields = (c: Context) => ({
   createdBy: c.get('userId'),
@@ -46,4 +44,25 @@ export const listDeliveriesHandler = catchAsync(async (c: Context) => {
   });
 
   return c.json({ data: data.data, meta: data.meta }, 200);
+});
+
+export const updateDeliveryStatusHandler = catchAsync(async (c: Context) => {
+  const deliveryId = c.req.param("id");
+
+  const { status } = c.get("validatedData").body as unknown as {
+    status: "PENDING" | "IN_PROGRESS" | "DELIVERED" | "FAILED";
+  };
+
+  const { updatedBy } = getAuditFields(c);
+
+  const updatedDelivery = await updateDeliveryStatus({
+    deliveryId,
+    status,
+    updatedBy
+  });
+
+  return c.json(
+    { data: updatedDelivery, message: "Delivery status updated" },
+    200
+  );
 });
