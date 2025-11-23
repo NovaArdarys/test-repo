@@ -4,7 +4,9 @@ import {
   ListDeliveriesQuerySchemaType
 } from "@/validator/delivery.validator";
 
-import { updateDeliveryStatus, getDeliveriesList } from "@/services/repositories/mobile/delivery.service";
+import { updateDeliveryStatus, getDeliveriesListDriver } from "@/services/repositories/mobile/delivery.driver.service";
+import { getDeliveriesListKitchen } from "@/services/repositories/mobile/delivery.kitchen.service";
+import { getDeliveriesListBeneficiary } from "@/services/repositories/mobile/delivery.beneficery.service";
 
 const getAuditFields = (c: Context) => ({
   createdBy: c.get('userId'),
@@ -32,7 +34,41 @@ export const listDeliveriesHandler = catchAsync(async (c: Context) => {
   const startDate = query.startDate || null;
   const endDate = query.endDate || null;
 
-  const data = await getDeliveriesList({
+  console.log(param?.entity, "===== param?.entity ======");
+
+
+  if (param?.entity === "driver") {
+    const data = await getDeliveriesListDriver({
+      page,
+      limit,
+      kitchenIds: audit.kitchenId,
+      driverIds: audit.driverId,
+      schoolIds: audit.beneficiaryId,
+      startDate,
+      endDate,
+      entity: param?.entity
+    });
+
+    return c.json({ data: data.data, meta: data.meta }, 200);
+
+  }
+
+  if (param?.entity === "beneficiary") {
+    const data = await getDeliveriesListBeneficiary({
+      page,
+      limit,
+      kitchenIds: audit.kitchenId,
+      driverIds: audit.driverId,
+      schoolIds: audit.beneficiaryId,
+      startDate,
+      endDate,
+    });
+
+    return c.json({ data: data.data, meta: data.meta }, 200);
+
+  }
+
+  const data = await getDeliveriesListKitchen({
     page,
     limit,
     kitchenIds: audit.kitchenId,
@@ -40,8 +76,8 @@ export const listDeliveriesHandler = catchAsync(async (c: Context) => {
     schoolIds: audit.beneficiaryId,
     startDate,
     endDate,
-    entity: param?.entity
   });
+
 
   return c.json({ data: data.data, meta: data.meta }, 200);
 });

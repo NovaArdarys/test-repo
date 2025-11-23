@@ -16,7 +16,7 @@ export type NewDelivery = Omit<
 
 export type UpdateDelivery = Partial<Omit<NewDelivery, 'createdBy'>> & { updatedBy: string; };
 
-export async function getDeliveriesList({
+export async function getDeliveriesListDriver({
   page,
   limit,
   kitchenIds,
