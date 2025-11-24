@@ -48,11 +48,13 @@ const stepReportBaseSchema = z.object({
   dailyReportId: z.string("DailyReport ID harus format string."),
   stepId: z.string("Step ID harus format string."),
   notes: z.string().optional(),
+  imageURL: z.string().optional(),
   isCompleted: z.preprocess((a) => a === 'true', z.boolean()).default(false),
   storageId: z.string().optional()
 });
 export const updateStepReportSchema = stepReportBaseSchema.pick({
   storageId: true,
+  imageURL: true
 });
 
 export const createStepReportSchema = stepReportBaseSchema.extend({
