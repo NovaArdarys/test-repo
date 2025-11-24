@@ -14,7 +14,7 @@ import { addDays } from "date-fns";
 import { eq, desc, sql } from "drizzle-orm";
 import { orderBy } from "lodash";
 import type { InferInsertModel, InferSelectModel } from "drizzle-orm";
-import { getReportTypeDate } from "@/utils/ReportType";
+import { getReportTypeDate } from "@/utils/reportType";
 import { getBeneficiariesAndDriversByKitchenIds } from "./daily.reference.ids.service";
 
 export type DailyReport = InferSelectModel<typeof dailyReports>;
