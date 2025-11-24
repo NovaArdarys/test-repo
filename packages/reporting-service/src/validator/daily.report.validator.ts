@@ -51,13 +51,15 @@ const stepReportBaseSchema = z.object({
   isCompleted: z.preprocess((a) => a === 'true', z.boolean()).default(false),
   storageId: z.string().optional()
 });
+export const updateStepReportSchema = stepReportBaseSchema.pick({
+  storageId: true,
+});
 
 export const createStepReportSchema = stepReportBaseSchema.extend({
   dailyReportId: z.string("DailyReport wajib diisi."),
   stepId: z.string("Step wajib diisi."),
 });
 
-export const updateStepReportSchema = stepReportBaseSchema.partial();
 
 export const getStepReportListSchema = paginationSchema.extend({
   dailyReportId: z.string().optional(),

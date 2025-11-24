@@ -56,7 +56,8 @@ app.get(
 
 app.put(
   "/steps/:id",
-  validate({ param: idParamSchema, body: updateStepReportSchema }),
+  validate({ param: idParamSchema, }),
+  validate({ body: updateStepReportSchema, }),
   updateStepReportHandler
 );
 
