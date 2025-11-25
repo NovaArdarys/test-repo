@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { eventReports, storage } from "@/db/schemas";
+import { eventReports, storage, userDetails, users } from "@/db/schemas";
 import { eq, and, desc, sql, gte, lte, getTableColumns, or, inArray } from "drizzle-orm";
 import type { InferInsertModel, InferSelectModel } from "drizzle-orm";
 
@@ -32,6 +32,8 @@ export async function getEventReportById(id: string) {
     .select({
       event: eventReports,
       storage: storage,
+      user: users,
+      userDetail: userDetails,
     })
     .from(eventReports)
     .leftJoin(
@@ -41,12 +43,23 @@ export async function getEventReportById(id: string) {
         inArray(storage.entityType, ["other"] as any)
       )
     )
+    .leftJoin(users, eq(users.id, eventReports.createdBy))
+    .leftJoin(userDetails, eq(userDetails.userId, users.id))
     .where(eq(eventReports.id, id));
 
   if (rows.length === 0) return null;
 
+  const event = rows[0].event;
+
   const grouped = {
-    ...rows[0].event,
+    ...event,
+    createdByUser: rows[0].user
+      ? {
+        id: rows[0].user.id,
+        email: rows[0].user.email,
+        fullName: `${rows[0].userDetail?.firstName ?? null} ${rows[0].userDetail?.lastName ?? null}`,
+      }
+      : null,
     storages: rows
       .filter((r) => r.storage?.id)
       .map((r) => r.storage),
@@ -54,6 +67,7 @@ export async function getEventReportById(id: string) {
 
   return grouped;
 }
+
 
 export async function getEventReports(options?: {
   page?: number;
@@ -77,6 +91,8 @@ export async function getEventReports(options?: {
     .select({
       event: eventReports,
       storage: storage,
+      user: users,
+      userDetail: userDetails,
     })
     .from(eventReports)
     .leftJoin(
@@ -86,11 +102,12 @@ export async function getEventReports(options?: {
         inArray(storage.entityType, ["other"] as any)
       )
     )
+    .leftJoin(users, eq(users.id, eventReports.createdBy))
+    .leftJoin(userDetails, eq(userDetails.userId, users.id))
     .where(filters)
     .orderBy(desc(eventReports.createdAt))
     .limit(limit)
     .offset(offset);
-
 
   const [{ count }] = await db
     .select({ count: sql<number>`count(*)` })
@@ -104,7 +121,17 @@ export async function getEventReports(options?: {
     const key = ev.id;
 
     if (!grouped[key]) {
-      grouped[key] = { ...ev, storages: [] };
+      grouped[key] = {
+        ...ev,
+        createdByUser: row.user
+          ? {
+            id: row.user.id,
+            email: row.user.email,
+            fullName: `${row.userDetail?.firstName ?? null} ${row.userDetail?.lastName ?? null}`,
+          }
+          : null,
+        storages: [],
+      };
     }
 
     if (row.storage?.id) {
@@ -113,7 +140,6 @@ export async function getEventReports(options?: {
   });
 
   const result = Object.values(grouped);
-
 
   const meta: PaginationMeta = {
     page,
