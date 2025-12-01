@@ -56,7 +56,6 @@ export async function getStepReportsWithFilter({
 }: StepReportFilter): Promise<{ data: StepReportResult[]; meta: PaginationMeta; }> {
   const offset = (page - 1) * limit;
   const conditions: any[] = [];
-  console.log(isAppManager, kitchenIds, "=====kitchenIds====");
 
   if (startDate && endDate) conditions.push(between(dailyReports.date, startDate, endDate));
   else if (startDate) conditions.push(gte(dailyReports.date, startDate));
@@ -66,14 +65,15 @@ export async function getStepReportsWithFilter({
   const kitchenIdsNormalized = castArray(kitchenIds).filter(Boolean);
 
   if (!isAppManager && kitchenIdsNormalized?.length) {
+    console.log(isAppManager, kitchenIds, "=====kitchenIds====", entity);
+
     conditions.push(
-      or(
-        inArray(menuPlans.kitchenId, kitchenIdsNormalized),
-        inArray(beneficiaries.kitchenId, kitchenIdsNormalized),
-        inArray(drivers.kitchenId, kitchenIdsNormalized),
-        and(
-          eq(dailyReports.entityType, "kitchen"),
-          inArray(dailyReports.entityId, kitchenIdsNormalized)
+      and(entity ? eq(dailyReports.entityType, entity as any) : undefined,
+        or(
+          inArray(menuPlans.kitchenId, kitchenIdsNormalized),
+          inArray(beneficiaries.kitchenId, kitchenIdsNormalized),
+          inArray(drivers.kitchenId, kitchenIdsNormalized),
+
         )
       )
     );
