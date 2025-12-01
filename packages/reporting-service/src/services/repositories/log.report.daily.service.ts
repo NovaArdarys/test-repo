@@ -35,8 +35,6 @@ export interface StepReportResult {
   };
 }
 
-
-
 export interface PaginationMeta {
   page: number;
   limit: number;
@@ -73,12 +71,10 @@ export async function getStepReportsWithFilter({
           inArray(menuPlans.kitchenId, kitchenIdsNormalized),
           inArray(beneficiaries.kitchenId, kitchenIdsNormalized),
           inArray(drivers.kitchenId, kitchenIdsNormalized),
-
         )
       )
     );
   }
-
 
   const filters = and(...conditions);
 

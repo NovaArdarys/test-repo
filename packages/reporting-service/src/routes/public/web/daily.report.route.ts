@@ -26,7 +26,8 @@ import {
   updateStepReportHandler,
   deleteStepReportHandler,
 } from "@/controllers/public/web/daily.report.controller";
-import { getStepReportByIdHandler, getStepReportsHandler } from "@/controllers/public/web/log.daily.report.controller";
+import { getGroupedStepReportByItemHandler, getGroupStepReportsHandler, getStepReportByIdHandler, getStepReportsHandler } from "@/controllers/public/web/log.daily.report.controller";
+import { getGroupDailyReportDetailService } from "@/services/repositories/web/log.report.daily.grouped.service";
 
 const app = new Hono();
 
@@ -42,6 +43,16 @@ app.get(
   "/log/:id",
   validate({ param: idParamSchema }),
   getStepReportByIdHandler
+);
+app.get(
+  "/log-group",
+  validate({ query: stepReportQuerySchema }),
+  getGroupStepReportsHandler
+);
+app.get(
+  "/log-group/:id",
+  validate({ param: idParamSchema }),
+  getGroupedStepReportByItemHandler
 );
 app.get(
   "/",
