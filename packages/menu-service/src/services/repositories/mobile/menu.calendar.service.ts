@@ -1,7 +1,7 @@
 import { db } from "@/db";
 import { menuPlans } from "@/db/schemas";
 import { buildPaginatedWhere } from "@/utils/pagination";
-import { isEmpty } from "lodash";
+import { isArray, isEmpty } from "lodash";
 import { sql } from "drizzle-orm";
 import { parseISO, isWeekend } from "date-fns"; // 🧠 <== Tambahkan ini
 
@@ -24,6 +24,7 @@ export async function getMenuPlansCalendar({
   driversIds?: string[];
   entityType?: string;
 }) {
+
   const { where, meta } = await buildPaginatedWhere({
     table: menuPlans,
     tableName: "menu_plans",
@@ -50,7 +51,7 @@ export async function getMenuPlansCalendar({
           )`
         : undefined,
 
-      (entityType === "school" || entityType === "beneficiary") && !isEmpty(schoolIds)
+      (entityType === "school" || entityType === "beneficiary") && isArray(schoolIds)
         ? sql`${menuPlans.id} IN (
             SELECT mps.menu_plan_id
             FROM menu_plan_beneficiaries mps

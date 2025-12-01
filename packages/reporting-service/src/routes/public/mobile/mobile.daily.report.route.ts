@@ -4,12 +4,8 @@ import { checkAccessToken } from "@/middleware/auth.middleware";
 import z from "zod";
 
 import {
-  createDailyReportSchema,
-  updateDailyReportSchema,
   getDailyReportListSchema,
-  createStepReportSchema,
   updateStepReportSchema,
-  getStepReportListSchema,
 } from "@/validator/daily.report.validator";
 
 import { idParamSchema } from "@/validator/globa.validator";

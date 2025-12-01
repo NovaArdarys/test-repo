@@ -73,8 +73,8 @@ const app = new Hono<{ Variables: Variables; }>()
     });
   })
   .route("/api/events", eventMonitorRoute)
-  .route('/api', routes)
   .route('/api/mobile', routesMobile)
+  .route('/api', routes)
 
   .onError(errorHandler);
 

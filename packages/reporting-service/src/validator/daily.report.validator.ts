@@ -38,6 +38,7 @@ export const getDailyReportListSchema = paginationSchema.extend({
   startDate: z.string().optional(),
   endDate: z.string().optional(),
   search: z.string().optional(),
+  typeOfReport: z.string().optional(),
 });
 
 export type CreateDailyReportSchemaType = z.infer<typeof createDailyReportSchema>;

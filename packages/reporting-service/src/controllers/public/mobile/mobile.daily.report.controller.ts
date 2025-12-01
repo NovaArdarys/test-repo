@@ -34,6 +34,7 @@ export const listDailyReportsHandler = catchAsync(async (c: Context) => {
   const page = parseInt(query.page || '1');
   const limit = parseInt(query.limit || '10');
   const search = query.search || '';
+  const typeOfReport = query.typeOfReport || '';
 
   const { view, entity } = await c.get("validatedData").param;
 
@@ -63,7 +64,8 @@ export const listDailyReportsHandler = catchAsync(async (c: Context) => {
       page,
       limit,
       menuPlanName: search,
-      view
+      view,
+      typeOfReport: typeOfReport as any
     });
 
     return c.json(data);

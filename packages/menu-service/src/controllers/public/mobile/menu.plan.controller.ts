@@ -40,7 +40,7 @@ export const listMenuPlansHandler = catchAsync(async (c: Context) => {
     startDate,
     endDate,
     kitchenIds: audit.kitchenId,
-    schoolIds: audit.schoolId,
+    schoolIds: audit.beneficiaryId,
     entityType,
     menuPlanName: search || ''
   });
