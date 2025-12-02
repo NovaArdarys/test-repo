@@ -162,19 +162,43 @@ export async function getGroupDailyReportDetailService(dailyReportId: string) {
   const steps = await db
     .select({
       id: stepReports.id,
+      notes: stepReports.notes,
+      isCompleted: stepReports.isCompleted,
+      createdAt: stepReports.createdAt,
+      updatedAt: stepReports.updatedAt,
+
+      date: dailyReports.date,
       stepName: masterSteps.stepName,
       stepOrder: masterSteps.stepOrder,
       stepKey: masterSteps.stepKey,
-      notes: stepReports.notes,
-      isCompleted: stepReports.isCompleted,
+
+      entityId: dailyReports.entityId,
+      entityType: dailyReports.entityType,
+      status: dailyReports.status,
+      menuPlanId: dailyReports.menuPlanId,
+
+      reporter: sql`
+        json_build_object(
+          'id', ${users.id},
+          'name', CONCAT(${userDetails.firstName}, ' ', COALESCE(${userDetails.lastName}, '')),
+          'phoneNumber', ${userDetails.phoneNumber},
+          'roleName', ${roles.name},
+          'domain', ${roles.domain}
+        )
+      `.as("reporter"),
+
+      storageId: stepReports.storageId,
       imageURL: stepReports.imageURL,
-      storageId: stepReports.storageId
     })
     .from(stepReports)
     .leftJoin(masterSteps, eq(stepReports.stepId, masterSteps.id))
+    .leftJoin(dailyReports, eq(stepReports.dailyReportId, dailyReports.id))
+    .leftJoin(users, eq(stepReports.createdBy, users.id))
+    .leftJoin(userDetails, eq(users.id, userDetails.userId))
+    .leftJoin(userRoles, eq(users.id, userRoles.userId))
+    .leftJoin(roles, eq(userRoles.roleId, roles.id))
     .where(eq(stepReports.dailyReportId, dailyReportId))
     .orderBy(masterSteps.stepOrder);
-
 
   const storageRecords = await db
     .select({
@@ -182,7 +206,6 @@ export async function getGroupDailyReportDetailService(dailyReportId: string) {
       entityId: storage.entityId,
       imageURL: storage.fileUrl,
       metadata: storage.meta,
-
       aiAnalysis: sql`
         COALESCE(
           json_agg(
@@ -205,25 +228,23 @@ export async function getGroupDailyReportDetailService(dailyReportId: string) {
 
   const storageMap = new Map(storageRecords.map(s => [s.entityId, s]));
 
-
   const stepsWithStorage = steps.map(s => {
-    const storageItem = storageMap.get(s.id);
+    const st = storageMap.get(s.id);
 
     return {
       ...s,
-      storages: storageItem
+      storages: st
         ? [
           {
-            id: storageItem.id,
-            imageURL: storageItem.imageURL,
-            metadata: storageItem.metadata,
-            aiAnalysis: storageItem.aiAnalysis
-          }
+            id: st.id,
+            imageURL: st.imageURL,
+            metadata: st.metadata,
+            aiAnalysis: st.aiAnalysis,
+          },
         ]
-        : []
+        : [],
     };
   });
-
 
   const entitySummary =
     dr.entityType === "kitchen"
@@ -234,13 +255,13 @@ export async function getGroupDailyReportDetailService(dailyReportId: string) {
           ? { userId: dr.driverUserId, kitchenId: dr.driverKitchenId }
           : null;
 
-
   return {
     id: dr.id,
     date: new Date(dr.date).toLocaleDateString("id-ID"),
     entityType: dr.entityType,
     entitySummary,
-
-    steps: stepsWithStorage
+    status: dr.status,
+    menuPlanId: dr.menuPlanId,
+    steps: stepsWithStorage,
   };
 }
