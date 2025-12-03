@@ -5,30 +5,69 @@ import ApiError from "@/utils/ApiError";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 import { ErrorHandler } from "hono";
 
+const formatColumnLabel = (column: string) => {
+  switch (column) {
+    case "email":
+      return "Email";
+    case "username":
+      return "Username";
+    case "phone":
+    case "phone_number":
+      return "Nomor telepon";
+    default:
+      // kapitalisasi otomatis "user_id" => "User Id"
+      return column.replace(/_/g, " ")
+        .replace(/\b\w/g, (c) => c.toUpperCase());
+  }
+};
+
+const extractColumnFromDetail = (detail?: string) => {
+  if (!detail) return null;
+  const match = detail.match(/Key \((.+?)\)=/);
+  return match?.[1] ?? null;
+};
+
 const handleDatabaseError = (error: DatabaseError) => {
+  let column = extractColumnFromDetail(error.detail);
+  const readableColumn = column ? formatColumnLabel(column) : null;
+
   switch (error.code) {
-    case "23505":
+
+    case "23505": {
+      const message = readableColumn
+        ? `${readableColumn} sudah digunakan.`
+        : `Data sudah terdaftar.`;
+
       return new ApiError(400, {
-        message: `Duplicate value: ${error.detail ?? error.constraint}`,
+        message,
         isOperational: true,
       });
-    case "23503":
+    }
+
+    case "23503": {
+      const match = error.detail?.match(/Key \((.+?)\)=/);
+      const col = match ? formatColumnLabel(match[1]) : "Data referensi";
+
       return new ApiError(400, {
-        message: `Invalid reference: ${error.detail ?? "foreign key error"}`,
+        message: `${col} tidak valid atau tidak ditemukan.`,
         isOperational: true,
       });
+    }
+
     case "23502":
       return new ApiError(400, {
-        message: `Missing required field: ${error.column}`,
+        message: `Kolom '${formatColumnLabel(error.column || "")}' wajib diisi.`,
         isOperational: true,
       });
+
     default:
       return new ApiError(500, {
-        message: `Database error: ${error.message}`,
+        message: `Terjadi kesalahan pada database.`,
         isOperational: false,
       });
   }
 };
+
 
 export const errorConverter = (
   error: any
