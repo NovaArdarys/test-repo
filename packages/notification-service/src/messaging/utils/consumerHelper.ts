@@ -50,10 +50,13 @@ export function safeConsume<T extends Record<string, any>>(
       // ============================================================
       // 1. UNIQUE / DUPLICATE (Postgres + Drizzle)
       // ============================================================
+      const pgError = err.originalError || err.cause || err;
+
       if (
-        err?.code === "23505" ||
-        msgStr.includes("duplicate key") ||
-        msgStr.includes("unique constraint")
+        pgError?.code === "23505" ||
+        pgError?.detail?.includes("already exists") ||
+        pgError?.message?.toLowerCase().includes("duplicate key") ||
+        pgError?.constraint?.includes("unique")
       ) {
         console.log("[SAFE CONSUME] Duplicate/Conflict. STOP RETRY.");
         return channel.nack(msg, false, false);
