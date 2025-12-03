@@ -4,13 +4,17 @@ import * as AuthManagementService from '@/services/repositories/role.permission.
 import {
   type CreateUserInput,
   type UpdateUserInput,
-  type UpdateUserDetailInput
+  type UpdateUserDetailInput,
+  users
 } from "@/db/schemas";
 import { catchAsync } from '@/utils/catchAsync';
 import { registerSchemaType } from '@/validator/user.validator';
 import { getRoleById } from "@/services/repositories/role.permission.service";
 import { publishAssignProfileDriver, publishAssignUserToBeneficiary, publishAssignUserToKitchen } from '@/messaging/publishers/user.publisher';
 import { updateUserAll } from '@/services/repositories/user.service';
+import { buildPaginationAndSort } from '@/utils/buildGlobalQuery';
+import { paginationSchema } from '@/validator/global.validator';
+import { userSortMapper } from '@/services/mappers/user.order.mapper';
 
 const getAuditFields = (c: Context) => ({
   createdBy: c.get('userId'),
@@ -30,10 +34,14 @@ const getAuditFields = (c: Context) => ({
 // ----- user -----
 export const listUsersHandler = catchAsync(async (c) => {
   const query = c.req.query();
-  const page = parseInt(query.page || '1');
-  const limit = parseInt(query.limit || '10');
   const isActive = query.isActive;
   const name = query.name;
+
+  const { page, limit, orderBy } = buildPaginationAndSort(
+    query,
+    paginationSchema,
+    userSortMapper,
+  );
 
   const audit = getAuditFields(c);
 
@@ -44,7 +52,8 @@ export const listUsersHandler = catchAsync(async (c) => {
     name,
     email: name,
     isAppManager: audit.isAppManager,
-    author: audit.userId
+    author: audit.userId,
+    orderBy: orderBy
   });
   return c.json({ data: result.data, meta: result.meta }, 200);
 });

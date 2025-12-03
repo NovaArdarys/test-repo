@@ -21,7 +21,6 @@ import ApiError from "@/utils/ApiError";
 import * as HttpStatus from "http-status";
 import { buildNameSearchQuery, buildPaginatedWhere } from "@/utils/pagination";
 
-
 type UserRead = {
   id: string;
   email: string;
@@ -66,7 +65,8 @@ export async function getUsersList({
   name,
   email,
   isAppManager,
-  author
+  author,
+  orderBy = []
 }: {
   page: number;
   limit: number;
@@ -75,7 +75,10 @@ export async function getUsersList({
   email?: string;
   isAppManager?: boolean;
   author?: string;
+  orderBy?: any[];
 }): Promise<APIPagination<UserRead>> {
+
+  console.log("====sort====");
 
   const emailFilter =
     email ? sql`LOWER(${users.email}) ILIKE LOWER(${`%${email}%`})` : undefined;
@@ -95,6 +98,8 @@ export async function getUsersList({
   } else {
     emailOrName = emailFilter || nameFilter;
   }
+
+  console.log(orderBy, "=====orderby=====");
 
   const { where, meta } = await buildPaginatedWhere({
     table: users,
@@ -147,7 +152,7 @@ export async function getUsersList({
         },
       },
     },
-    orderBy: (table) => desc(table.createdAt),
+    orderBy: (table, helpers) => orderBy.map(fn => fn(table, helpers)),
     offset: (page - 1) * limit,
     limit,
   });
