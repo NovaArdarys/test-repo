@@ -56,7 +56,6 @@ export const createEventReportHandler = catchAsync(async (c: Context) => {
 
   const newReport = await createEventReport({
     ...body,
-    entityId: domain === "kitchen" ? !isEmpty(driverId) ? driverId?.[0] ?? null : kitchenId?.[0] ?? null : domain === "beneficiary" ? beneficiaryId?.[0] ?? null : null,
     date: body.date,
     createdBy,
   });
