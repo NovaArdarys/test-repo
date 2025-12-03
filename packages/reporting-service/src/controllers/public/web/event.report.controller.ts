@@ -14,6 +14,7 @@ import {
   GetEventReportListSchemaType,
 } from "@/validator/event.report.validator";
 import { publishEventReportCommit } from "@/messaging/publishers/reporting.publisher";
+import { isEmpty } from "lodash";
 
 const getAuditFields = (c: Context) => ({
   createdBy: c.get('userId'),
@@ -52,10 +53,11 @@ export const listEventReportsHandler = catchAsync(async (c: Context) => {
 
 export const createEventReportHandler = catchAsync(async (c: Context) => {
   const body = await c.req.parseBody() as unknown as CreateEventReportSchemaType;
-  const { createdBy } = getAuditFields(c);
+  const { createdBy, domain, driverId, kitchenId, beneficiaryId } = getAuditFields(c);
 
   const newReport = await createEventReport({
     ...body,
+    entityId: domain === "kitchen" ? !isEmpty(driverId) ? driverId?.[0] ?? null : kitchenId?.[0] ?? null : domain === "beneficiary" ? beneficiaryId?.[0] ?? null : null,
     date: body.date,
     createdBy,
   });
