@@ -19,7 +19,7 @@ import { db } from "@/db";
 import { APIPagination, } from "@/types/paginations.type";
 import ApiError from "@/utils/ApiError";
 import * as HttpStatus from "http-status";
-import { buildPaginatedWhere } from "@/utils/pagination";
+import { buildNameSearchQuery, buildPaginatedWhere } from "@/utils/pagination";
 
 
 type UserRead = {
@@ -77,16 +77,24 @@ export async function getUsersList({
   author?: string;
 }): Promise<APIPagination<UserRead>> {
 
-  console.log({
-    page,
-    limit,
-    isActive,
-    name,
-    email,
-    isAppManager,
-    author
-  }, "===== ok =====");
+  const emailFilter =
+    email ? sql`LOWER(${users.email}) ILIKE LOWER(${`%${email}%`})` : undefined;
 
+  const nameFilter =
+    name
+      ? sql`${users.id} IN (
+        SELECT user_id FROM user_details
+        WHERE ${buildNameSearchQuery(name)}
+      )`
+      : undefined;
+
+  let emailOrName: SQL | undefined;
+
+  if (emailFilter && nameFilter) {
+    emailOrName = sql`(${emailFilter} OR ${nameFilter})`;
+  } else {
+    emailOrName = emailFilter || nameFilter;
+  }
 
   const { where, meta } = await buildPaginatedWhere({
     table: users,
@@ -94,17 +102,9 @@ export async function getUsersList({
     base: {
       isDeleted: false,
       isActive,
-      email: email ? { ilike: `%${email}%` } : undefined,
     },
     extra: [
-      name
-        ? sql`${users.id} IN (
-            SELECT user_id
-            FROM user_details
-            WHERE LOWER(first_name) ILIKE ${"%" + name.toLowerCase() + "%"}
-            OR LOWER(last_name) ILIKE ${"%" + name.toLowerCase() + "%"}
-          )`
-        : undefined,
+      emailOrName,
       !isAppManager
         ? sql`
           (

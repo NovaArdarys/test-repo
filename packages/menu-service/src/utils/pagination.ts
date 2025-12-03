@@ -135,3 +135,21 @@ export async function buildPaginatedWhere<T extends Record<string, any>>({
     },
   };
 }
+
+export const buildNameSearchQuery = (name: string) => {
+  const parts = name
+    .toLowerCase()
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+
+  const conditions = parts.map(p => {
+    const pattern = `%${p}%`;
+    return sql`(
+      LOWER(first_name) ILIKE ${pattern}
+      OR LOWER(last_name) ILIKE ${pattern}
+    )`;
+  });
+
+  return sql.join(conditions, sql` AND `);
+};
