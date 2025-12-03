@@ -433,9 +433,7 @@ export async function getDailyReportsList(params?: {
           ${(entityType === "school" || entityType === "beneficiary") && schoolIds.length > 0
           ? sql`AND er.entity_id = ANY(${sql.raw(`ARRAY[${schoolIds.map(id => `'${id}'`).join(",")}]::uuid[]`)})`
           : sql``}
-          AND er.date::date >= ${endDate}
-          AND er.date::date <= ${computedEndDate}
-        ORDER BY er.date DESC
+        ORDER BY er.created_at DESC
         LIMIT 3
       ) inner_er
     ), '[]'::jsonb)
@@ -811,8 +809,6 @@ export async function getDailyReportsList(params?: {
 
     return finalReport;
   });
-
-  console.log(widgets, "=====widgets=====");
 
   return {
     data: {
