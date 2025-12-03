@@ -1,6 +1,7 @@
 import { Client } from "minio";
 import { randomUUID } from "crypto";
 import { Readable } from "stream";
+import ApiError from "./ApiError";
 
 export const minioClient = new Client({
   endPoint: process.env.MINIO_ENDPOINT_SERVER || "minio",
@@ -50,41 +51,55 @@ export async function uploadToMinio(
   bucketName?: string,
   makePublic = true
 ): Promise<MinioUploadResult> {
-  if (!file) throw new Error("File is required");
+  try {
+    if (!file) {
+      throw new ApiError(400, { message: "MinIO upload failed: File not found" });
+    }
 
-  const bucket = bucketName || process.env.MINIO_BUCKET || "uploads";
-  const tmpId = randomUUID();
-  const fileName = `${tmpId}-${file instanceof File ? file.name : file.name}`;
+    const bucket = bucketName || process.env.MINIO_BUCKET || "uploads";
+    const tmpId = randomUUID();
+    const fileName = `${tmpId}-${file.name}`;
 
-  let nodeStream: Readable;
-  let contentType = "application/octet-stream";
+    let nodeStream: Readable;
+    let contentType = "application/octet-stream";
 
-  if (isBrowserFile(file)) {
-    const arrayBuffer = await file.arrayBuffer();
-    nodeStream = Readable.from(Buffer.from(arrayBuffer));
-    contentType = file.type || contentType;
-  } else {
-    nodeStream = Readable.from(file.buffer);
-    if (file.type) contentType = file.type;
+    if (isBrowserFile(file)) {
+      const arrayBuffer = await file.arrayBuffer();
+      nodeStream = Readable.from(Buffer.from(arrayBuffer));
+      contentType = file.type || contentType;
+    } else {
+      nodeStream = Readable.from(file.buffer);
+      contentType = file.type || contentType;
+    }
+
+    await ensureBucket(bucket, makePublic);
+
+    await minioClient.putObject(bucket, fileName, nodeStream, undefined, {
+      "Content-Type": contentType,
+    });
+
+    const endpoint = process.env.MINIO_ENDPOINT || "127.0.0.1";
+    const port = process.env.MINIO_PORT || "9000";
+    const protocol = process.env.MINIO_USE_SSL === "true" ? "https" : "http";
+    const url = `${protocol}://${endpoint}:${port}/${bucket}/${fileName}`;
+
+    return {
+      tmpId,
+      fileName,
+      path: `${bucket}/${fileName}`,
+      fileUrl: url,
+      bucket,
+    };
+  } catch (error: any) {
+    console.error("MinIO Upload Error:", error);
+
+    const originalMessage = error?.message || error?.code || "Unknown error";
+
+    throw new ApiError(
+      500,
+      { message: `MinIO upload failed: ${originalMessage}` },
+    );
   }
-
-  await ensureBucket(bucket, makePublic);
-
-  await minioClient.putObject(bucket, fileName, nodeStream, undefined, {
-    "Content-Type": contentType,
-  });
-  const endpoint = process.env.MINIO_ENDPOINT || '128.199.77.145' || "127.0.0.1";
-  const port = process.env.MINIO_PORT || "9000";
-  const protocol = process.env.MINIO_USE_SSL === "true" ? "https" : "http";
-  const url = `${protocol}://${endpoint}:${port}/${bucket}/${fileName}`;
-
-  return {
-    tmpId,
-    fileName,
-    path: `${bucket}/${fileName}`,
-    fileUrl: url,
-    bucket,
-  };
 }
 
 /**

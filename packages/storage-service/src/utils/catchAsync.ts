@@ -108,7 +108,7 @@ export function catchAsync<
 
       await logRequestActivity(
         c,
-        logStatusCode >= 500 ? "ERROR" : "WARN",
+        logStatusCode >= 400 ? "ERROR" : "WARN",
         `${logStatusCode} | ${logMessage}`,
         stack
       );
