@@ -64,6 +64,7 @@ export async function getUsersList({
   isActive,
   name,
   email,
+  role,
   isAppManager,
   author,
   orderBy = []
@@ -72,6 +73,7 @@ export async function getUsersList({
   limit: number;
   isActive?: boolean;
   name?: string;
+  role?: string;
   email?: string;
   isAppManager?: boolean;
   author?: string;
@@ -90,6 +92,15 @@ export async function getUsersList({
         WHERE ${buildNameSearchQuery(name)}
       )`
       : undefined;
+
+  const roleFilter = role
+    ? sql`${users.id} IN (
+      SELECT ur.user_id
+      FROM user_roles ur
+      JOIN roles r ON r.id = ur.role_id
+      WHERE r.id = ${role}
+    )`
+    : undefined;
 
   let emailOrName: SQL | undefined;
 
@@ -110,6 +121,7 @@ export async function getUsersList({
     },
     extra: [
       emailOrName,
+      roleFilter,
       !isAppManager
         ? sql`
           (

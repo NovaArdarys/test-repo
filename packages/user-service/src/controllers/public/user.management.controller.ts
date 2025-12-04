@@ -36,6 +36,7 @@ export const listUsersHandler = catchAsync(async (c) => {
   const query = c.req.query();
   const isActive = query.isActive;
   const name = query.name;
+  const role = query.role;
 
   const { page, limit, orderBy } = buildPaginationAndSort(
     query,
@@ -49,6 +50,7 @@ export const listUsersHandler = catchAsync(async (c) => {
     page,
     limit,
     isActive,
+    role,
     name,
     email: name,
     isAppManager: audit.isAppManager,
