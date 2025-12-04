@@ -24,10 +24,10 @@ export const analyzeData = catchAsync(async (c: Context) => {
       return c.json({ error: "Step report not found or missing step data" }, 404);
     }
 
-    console.log(stepReport.step.entityType, "====a====");
 
     aiType = getAITypeFromStepOrder(stepReport.step.stepOrder, entityType);
 
+    console.log(stepReport.step.entityType, "====a====", aiType, stepReport.dailyReport?.menuPlan?.menuFoodItem);
     if (!aiType) {
       return c.json({ message: "AI type not applicable for this step" }, 200);
     }

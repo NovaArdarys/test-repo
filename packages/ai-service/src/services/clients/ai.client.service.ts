@@ -29,7 +29,7 @@ export function getAITypeFromStepOrder(stepOrder: number, entityType: EntityType
       case 3:
         return "food";
       case 4:
-        return "mealbox";
+        return "food";
       default:
         return null;
     }
@@ -55,6 +55,8 @@ export async function detectAI<T extends AIAnalysisType>(
     const res = await aiClient.post(`/detect/${type}`, data);
     return res.data;
   } catch (error: any) {
+    console.log(error.response, "=====error.response=====");
+
     if (error.response) {
       throw new Error(
         `AI fetch failed [${type}]: ${error.response.status} - ${JSON.stringify(
