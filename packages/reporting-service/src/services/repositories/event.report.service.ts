@@ -53,7 +53,7 @@ export async function getEventReportById(id: string) {
 
   const grouped = {
     ...event,
-    createdByUser: rows[0].user
+    creator: rows[0].user
       ? {
         id: rows[0].user.id,
         email: rows[0].user.email,
@@ -123,7 +123,7 @@ export async function getEventReports(options?: {
     if (!grouped[key]) {
       grouped[key] = {
         ...ev,
-        createdByUser: row.user
+        creator: row.user
           ? {
             id: row.user.id,
             email: row.user.email,
