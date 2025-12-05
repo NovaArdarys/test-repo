@@ -26,12 +26,14 @@ app.get(
 
 app.post(
   '/:id/locations',
+  validate({ param: idParamSchema, }),
   validate({ body: RecordLocationSchema }),
   createSingleLocationHandler
 );
 
 app.post(
-  '/id/locations/bulk',
+  '/:id/locations/bulk',
+  validate({ param: idParamSchema, }),
   validate({ body: BulkRecordLocationSchema }),
   createBulkLocationHandler
 );
