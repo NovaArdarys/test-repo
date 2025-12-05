@@ -21,8 +21,15 @@ export const createBulkLocationHandler = catchAsync(async (c: Context) => {
   const body = await c.get("validatedData")?.body as BulkRecordLocationSchemaType;
 
   const { createdBy, updatedAt, updatedBy, createdAt } = getAuditFields(c);
+  const { id: deliveryId } = c.req.param();
 
-  const result = await createBulkDriverLocationsService(body, { createdBy, updatedAt, updatedBy, createdAt });
+  const newData = body.map((item) => {
+    return {
+      ...item, deliveryId: deliveryId,
+    };
+  });
+
+  const result = await createBulkDriverLocationsService(newData, { createdBy, updatedAt, updatedBy, createdAt });
 
   return c.json({ data: result, message: "Bulk location recorded" }, 201);
 });
@@ -30,9 +37,11 @@ export const createBulkLocationHandler = catchAsync(async (c: Context) => {
 export const createSingleLocationHandler = catchAsync(async (c: Context) => {
   const body = await c.req.parseBody() as unknown as RecordLocationSchemaType;
   const { createdBy } = getAuditFields(c);
+  const { id: deliveryId } = c.req.param();
 
   const newLocation = await createDriverLocationService({
     ...body,
+    deliveryId: deliveryId,
     createdBy,
   });
 

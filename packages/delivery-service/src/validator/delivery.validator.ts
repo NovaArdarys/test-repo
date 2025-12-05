@@ -49,7 +49,6 @@ export const UpdateDeliveryBeneficiaryStatusSchema = z.object({
 });
 
 export const RecordLocationSchema = z.object({
-  deliveryId: z.string(),
   lon: z.string(),
   lat: z.string(),
 });
