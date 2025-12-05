@@ -49,12 +49,13 @@ export const UpdateDeliveryBeneficiaryStatusSchema = z.object({
 });
 
 export const RecordLocationSchema = z.object({
-  driverId: z.string(),
   deliveryId: z.string(),
   lon: z.string(),
   lat: z.string(),
 });
+export const BulkRecordLocationSchema = z.array(RecordLocationSchema);
 export type RecordLocationSchemaType = z.infer<typeof RecordLocationSchema>;
 export type UpdateDeliveryStatusSchemaType = z.infer<typeof UpdateDeliveryStatusSchema>;
 export type ListDeliveriesQuerySchemaType = z.infer<typeof ListDeliveriesQuerySchema>;
 export type UpdateDeliverySchemaType = z.infer<typeof UpdateDeliverySchema>;
+export type BulkRecordLocationSchemaType = z.infer<typeof BulkRecordLocationSchema>;

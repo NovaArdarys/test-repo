@@ -19,6 +19,13 @@ function convertToJsonSchema(schema: any): any {
     };
   }
 
+  if (schema?.def?.type === "array") {
+    return {
+      type: "array",
+      items: convertZodField(schema._def.element),
+    };
+  }
+
   try {
     const res = zodToJsonSchema(schema, { $refStrategy: "none" });
     if (res.definitions?.Schema) return res.definitions.Schema;
@@ -57,11 +64,17 @@ function convertZodField(field: any): any {
       return { type: "number" };
     case "boolean":
       return { type: "boolean" };
-    case "array":
+    case "array": {
+      const inner =
+        field._def?.element ||   // Zod v4
+        field.def?.element ||    // fallback
+        {};
+
       return {
         type: "array",
-        items: convertZodField(def.innerType || {}),
+        items: convertZodField(inner),
       };
+    }
     case "object":
       return convertToJsonSchema(field);
     case "optional":

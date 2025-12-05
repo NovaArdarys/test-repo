@@ -1,9 +1,11 @@
 import { Hono } from 'hono';
 import deliveries from './delivery.route';
+import locations from './location.route';
 import { generateOpenAPIDoc } from '@/utils/autoRoute';
 
 const app = new Hono();
 app.route('/deliveries', deliveries);
+app.route('/locations', locations);
 
 app.get("/openapi.json", async (c) => {
   const handler = await generateOpenAPIDoc(app, {

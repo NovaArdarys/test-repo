@@ -10,9 +10,18 @@ import {
 import { entityTypeEnum, idParamSchema } from '@/validator/globa.validator';
 import z from 'zod';
 import { listDeliveriesHandler, updateDeliveryStatusHandler } from '@/controllers/public/mobile/delivery.controller';
+import { listLocationsByDeliveryHandler } from '@/controllers/public/mobile/driver.location.controller';
 
 const app = new Hono();
 app.use(checkAccessToken);
+
+
+app.get(
+  '/:id/locations',
+  validate({ param: idParamSchema }),
+  listLocationsByDeliveryHandler
+);
+
 
 app.get(
   '/:entity',

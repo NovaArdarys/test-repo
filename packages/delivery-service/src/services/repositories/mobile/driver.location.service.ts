@@ -9,7 +9,15 @@ export type NewDriverLocation = Omit<
   'id' | 'isDeleted' | 'recordedAt' | 'createdBy' | 'driverId'
 > & { createdBy?: string; };
 
-export async function recordDriverLocation(data: NewDriverLocation): Promise<DriverLocation> {
+
+export type AuditFields = {
+  createdBy: string;
+  updatedBy: string;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export async function createDriverLocationService(data: NewDriverLocation): Promise<DriverLocation> {
   const [newLocation] = await db.insert(driverLocations)
     .values({
       ...data,
@@ -43,10 +51,21 @@ export async function getDriverLocationHistoryByDeliveryId(deliveryId: string): 
   return history;
 }
 
-export async function softDeleteLocationsByDeliveryId(deliveryId: string, updatedBy: string): Promise<void> {
-  await db.update(driverLocations)
-    .set({
-      isDeleted: true,
-    })
-    .where(eq(driverLocations.deliveryId, deliveryId));
+export async function createBulkDriverLocationsService(
+  data: NewDriverLocation[],
+  auditFields: AuditFields
+): Promise<DriverLocation[]> {
+  if (data.length === 0) return [];
+
+  const inserted = await db.insert(driverLocations)
+    .values(
+      data.map((d) => ({
+        ...d,
+        driverId: auditFields.createdBy,
+        createdBy: auditFields.createdBy,
+      }))
+    )
+    .returning();
+
+  return inserted;
 }
