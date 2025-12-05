@@ -13,7 +13,20 @@ import {
 } from '@/db/schemas';
 import { generateDeliveryCode } from '@/messaging/utils/generateDeliveryCode';
 import { format } from 'date-fns';
-import { eq, InferInsertModel } from 'drizzle-orm';
+import { eq, InferInsertModel, InferSelectModel } from 'drizzle-orm';
+
+export interface BeneficiaryWithPortion {
+  beneficiaryId: string;
+  menuPlanId: string;
+  lat: number | string | null;
+  lon: number | string | null;
+  smallPortion: number | null;
+  largePortion: number | null;
+  smallDeliveryTime: Date | null;
+  largeDeliveryTime: Date | null;
+}
+
+export type Kitchen = InferSelectModel<typeof kitchens>;
 
 interface CreateAutoDeliveryInput {
   kitchenId: string;
@@ -38,7 +51,149 @@ function distance(lat1: number, lon1: number, lat2: number, lon2: number) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
+async function getStepTemplate(entityType: string) {
+  return db.query.masterSteps.findMany({
+    where: eq(masterSteps.entityType, entityType as any)
+  });
+}
+
+function estimateDeliveryTime(distanceKm: number, speedKmh = 30, bufferMin = 10) {
+  const minutes = Math.round((distanceKm / speedKmh) * 60 + bufferMin);
+  return new Date(Date.now() + minutes * 60000);
+}
+
+interface DeliveryUnit {
+  beneficiaryId: string;
+  menuPlanId: string;
+  type: "SMALL" | "LARGE";
+  portion: number;
+  distance: number;
+  deliveryTime: Date | null;
+}
+
+function expandBeneficiariesToUnits(beneficiaries: BeneficiaryWithPortion[], kitchen: Kitchen) {
+  const units: DeliveryUnit[] = [];
+
+  beneficiaries.forEach(b => {
+    const distanceKm = distance(
+      Number(kitchen.lat ?? 0),
+      Number(kitchen.lon ?? 0),
+      Number(b.lat ?? 0),
+      Number(b.lon ?? 0),
+    );
+
+    for (let i = 0; i < (b.smallPortion ?? 0); i++) {
+      units.push({
+        type: "SMALL",
+        portion: 1,
+        beneficiaryId: b.beneficiaryId,
+        menuPlanId: b.menuPlanId,
+        distance: distanceKm,
+        deliveryTime: b.smallDeliveryTime ?? null
+      });
+    }
+
+    for (let i = 0; i < (b.largePortion ?? 0); i++) {
+      units.push({
+        type: "LARGE",
+        portion: 1,
+        beneficiaryId: b.beneficiaryId,
+        menuPlanId: b.menuPlanId,
+        distance: distanceKm,
+        deliveryTime: b.largeDeliveryTime ?? null
+      });
+    }
+  });
+
+  return units.sort((a, b) => {
+    if (a.type !== b.type) return a.type === "SMALL" ? -1 : 1;
+    return a.distance - b.distance;
+  });
+}
+
+function distributeUnitsToDrivers(units: DeliveryUnit[], drivers: any[]) {
+  const assignment: Record<string, DeliveryUnit[]> = {};
+
+  drivers.forEach(d => {
+    assignment[d.id] = [];
+  });
+
+  units.forEach(unit => {
+    const availableDriver = drivers.find(d => assignment[d.id].length < d.portionCapacity);
+
+    if (!availableDriver) {
+      throw new Error("Tidak ada driver yang cukup kapasitasnya");
+    }
+
+    assignment[availableDriver.id].push(unit);
+  });
+
+  return assignment;
+}
+
 export async function createAutoDelivery(data: CreateAutoDeliveryInput) {
+  return await db.transaction(async tx => {
+    const [kitchen] = await tx.select().from(kitchens).where(eq(kitchens.id, data.kitchenId));
+    if (!kitchen) throw new Error("Kitchen not found");
+
+    const driversData = await tx.select().from(drivers).where(eq(drivers.kitchenId, data.kitchenId));
+
+    const beneficiariesData = await tx
+      .select({
+        beneficiaryId: menuPlanBeneficiaries.beneficiaryId,
+        menuPlanId: menuPlanBeneficiaries.menuPlanId,
+        lat: beneficiaries.lat,
+        lon: beneficiaries.lon,
+        name: beneficiaries.name,
+        smallPortion: beneficiaries.smallPortion,
+        largePortion: beneficiaries.largePortion,
+        smallDeliveryTime: beneficiaries.smallDeliveryTime,
+        largeDeliveryTime: beneficiaries.largeDeliveryTime
+      })
+      .from(menuPlanBeneficiaries)
+      .innerJoin(beneficiaries, eq(menuPlanBeneficiaries.beneficiaryId, beneficiaries.id))
+      .where(eq(menuPlanBeneficiaries.menuPlanId, data.menuPlanId));
+
+    const units = expandBeneficiariesToUnits(beneficiariesData, kitchen);
+
+    const assignments = distributeUnitsToDrivers(units, driversData);
+
+    const stepsTemplate = await getStepTemplate("driver");
+    const result = [];
+
+    for (const driver of driversData) {
+      const assignedUnits = assignments[driver.id];
+
+      for (const unit of assignedUnits) {
+        const estTime = estimateDeliveryTime(unit.distance);
+
+        const [delivery] = await tx.insert(deliveries)
+          .values({
+            kitchenId: data.kitchenId,
+            driverId: driver.id,
+            startTime: new Date(),
+            endTime: null,
+            estimatedDeliveryTime: estTime,
+            notes: `${unit.type} portion`,
+            status: "PENDING",
+            createdAt: new Date(),
+            createdBy: data.createdBy,
+            updatedAt: new Date(),
+            updatedBy: data.createdBy,
+          })
+          .returning();
+
+        result.push(delivery);
+      }
+    }
+
+    return result;
+  });
+}
+
+
+
+export async function createAutoDeliveryV1(data: CreateAutoDeliveryInput) {
   return await db.transaction(async (tx) => {
     const [kitchen] = await tx.select().from(kitchens).where(eq(kitchens.id, data.kitchenId));
     if (!kitchen) throw new Error("Kitchen not found");

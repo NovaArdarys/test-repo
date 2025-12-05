@@ -13,6 +13,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { storage } from "./storage.schema";
 import { foodItems, menuPlans } from "./food.schema";
+import { sql } from "drizzle-orm";
 
 export const beneficiaries = pgTable("beneficiaries", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -36,6 +37,12 @@ export const beneficiaries = pgTable("beneficiaries", {
   joinedDate: timestamp("joined_date").defaultNow(),
   smallPortion: integer("small_portion").default(0),
   largePortion: integer("large_portion").default(0),
+  smallDeliveryTime: timestamp("small_delivery_time").default(
+    sql`now()::date + time '07:00'`
+  ),
+  largeDeliveryTime: timestamp("large_delivery_time").default(
+    sql`now()::date + time '09:00'`
+  ),
   status: varchar("status", { length: 20 }).default("ACTIVE"),
 
   createdAt: timestamp("created_at").defaultNow().notNull(),

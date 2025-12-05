@@ -1,4 +1,5 @@
 import { boolean, decimal, pgTable, timestamp, uuid, varchar } from "drizzle-orm/pg-core";
+import { integer } from "drizzle-orm/pg-core/columns/integer";
 
 export const drivers = pgTable('drivers', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -10,6 +11,7 @@ export const drivers = pgTable('drivers', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
   createdBy: uuid('created_by').notNull(),
   updatedAt: timestamp('updated_at').notNull(),
+  portionCapacity: integer("portion_capacity").default(0),
   updatedBy: uuid('updated_by'),
 });
 
