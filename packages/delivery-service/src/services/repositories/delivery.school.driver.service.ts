@@ -10,6 +10,7 @@ import {
   menuPlanBeneficiaries,
   beneficiaries,
   stepReports,
+  menuPlans,
 } from '@/db/schemas';
 import { generateDeliveryCode } from '@/messaging/utils/generateDeliveryCode';
 import { format } from 'date-fns';
@@ -22,8 +23,8 @@ export interface BeneficiaryWithPortion {
   lon: number | string | null;
   smallPortion: number | null;
   largePortion: number | null;
-  smallDeliveryTime: Date | null;
-  largeDeliveryTime: Date | null;
+  smallDeliveryTime: string | null;
+  largeDeliveryTime: string | null;
 }
 
 export type Kitchen = InferSelectModel<typeof kitchens>;
@@ -34,6 +35,14 @@ interface CreateAutoDeliveryInput {
   createdBy: string;
   status?: 'PENDING' | 'IN_PROGRESS' | 'DELIVERED' | 'FAILED';
 }
+
+function combineDateAndTime(date: Date, time: string) {
+  const [h, m, s] = time.split(":");
+  const d = new Date(date);
+  d.setHours(Number(h), Number(m), Number(s ?? 0), 0);
+  return d;
+}
+
 
 async function planEntity(entityType: string) {
   return db.query.masterSteps.findMany({ where: eq(masterSteps.entityType, entityType as any) });
@@ -71,7 +80,7 @@ interface DeliveryUnit {
   deliveryTime: Date | null;
 }
 
-function expandBeneficiariesToUnits(beneficiaries: BeneficiaryWithPortion[], kitchen: Kitchen) {
+function expandBeneficiariesToUnits(beneficiaries: BeneficiaryWithPortion[], kitchen: Kitchen, date: string) {
   const units: DeliveryUnit[] = [];
 
   beneficiaries.forEach(b => {
@@ -89,7 +98,7 @@ function expandBeneficiariesToUnits(beneficiaries: BeneficiaryWithPortion[], kit
         beneficiaryId: b.beneficiaryId,
         menuPlanId: b.menuPlanId,
         distance: distanceKm,
-        deliveryTime: b.smallDeliveryTime ?? null
+        deliveryTime: combineDateAndTime(new Date(date), b.smallDeliveryTime || "07:00") ?? null
       });
     }
 
@@ -100,7 +109,7 @@ function expandBeneficiariesToUnits(beneficiaries: BeneficiaryWithPortion[], kit
         beneficiaryId: b.beneficiaryId,
         menuPlanId: b.menuPlanId,
         distance: distanceKm,
-        deliveryTime: b.largeDeliveryTime ?? null
+        deliveryTime: combineDateAndTime(new Date(date), b.smallDeliveryTime || "09:00") ?? null
       });
     }
   });
@@ -134,6 +143,7 @@ function distributeUnitsToDrivers(units: DeliveryUnit[], drivers: any[]) {
 export async function createAutoDelivery(data: CreateAutoDeliveryInput) {
   return await db.transaction(async tx => {
     const [kitchen] = await tx.select().from(kitchens).where(eq(kitchens.id, data.kitchenId));
+    const [menuPlan] = await tx.select().from(menuPlans).where(eq(menuPlans.id, data.menuPlanId));
     if (!kitchen) throw new Error("Kitchen not found");
 
     const driversData = await tx.select().from(drivers).where(eq(drivers.kitchenId, data.kitchenId));
@@ -154,7 +164,7 @@ export async function createAutoDelivery(data: CreateAutoDeliveryInput) {
       .innerJoin(beneficiaries, eq(menuPlanBeneficiaries.beneficiaryId, beneficiaries.id))
       .where(eq(menuPlanBeneficiaries.menuPlanId, data.menuPlanId));
 
-    const units = expandBeneficiariesToUnits(beneficiariesData, kitchen);
+    const units = expandBeneficiariesToUnits(beneficiariesData, kitchen, menuPlan.planStartDate);
 
     const assignments = distributeUnitsToDrivers(units, driversData);
 
@@ -183,6 +193,14 @@ export async function createAutoDelivery(data: CreateAutoDeliveryInput) {
           })
           .returning();
 
+        const stepReportsBatch = stepsTemplate.map((step) => ({
+          dailyReportId: delivery.id,
+          stepId: step.id,
+          isCompleted: false,
+          createdBy: driver.userId,
+        }));
+        await tx.insert(stepReports).values(stepReportsBatch);
+
         result.push(delivery);
       }
     }
@@ -202,11 +220,11 @@ export async function createAutoDeliveryV1(data: CreateAutoDeliveryInput) {
     const driversOrUnassigned = allDrivers.length
       ? allDrivers
       : [{ id: null, userId: data.createdBy }];
-    // if (!allDrivers.length) throw new Error("No drivers available for kitchen");
 
     const menuPlan = await tx.query.menuPlans.findFirst({
       where: (mp, { eq }) => eq(mp.id, data.menuPlanId),
     });
+
     if (!menuPlan) throw new Error("Menu plan not found");
 
     const planBeneficiaries = await tx
