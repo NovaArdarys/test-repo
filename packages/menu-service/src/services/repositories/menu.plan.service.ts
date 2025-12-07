@@ -5,6 +5,10 @@ import { FoodItem } from "./food.item.service";
 import { isEmpty } from "lodash";
 import { buildPaginatedWhere } from "@/utils/pagination";
 
+type ExpandedStep = {
+    stepId: string;
+    subDomain: string | null;
+};
 export type MenuPlanBeneficiaries = InferSelectModel<typeof menuPlanBeneficiaries>;
 export type MenuPlan = InferSelectModel<typeof menuPlans>;
 export type NewMenuPlan = Omit<
@@ -399,12 +403,27 @@ export async function createMenuPlan(
             allDailyReports.push(dailyKitchen);
 
             const kitchenSteps = await planEntity("kitchen");
-            await trx.insert(stepReports).values(
-                kitchenSteps.map((step) => ({
-                    dailyReportId: dailyKitchen.id,
+
+            const expandedKitchenSteps: ExpandedStep[] = kitchenSteps.map(step => {
+                const list = Array.isArray(step.subDomains) ? step.subDomains : [];
+
+                if (list.length === 0) {
+                    return [{ stepId: step.id, subDomain: null }];
+                }
+
+                return list.map(sub => ({
                     stepId: step.id,
+                    subDomain: sub,
+                }));
+            }).flat();
+
+            await trx.insert(stepReports).values(
+                expandedKitchenSteps.map((item) => ({
+                    dailyReportId: dailyKitchen.id,
+                    stepId: item.stepId,
                     isCompleted: false,
                     createdBy: newPlan.createdBy,
+                    notes: item.subDomain,
                 }))
             );
 
@@ -468,14 +487,27 @@ export async function createMenuPlan(
 
                 allDailyReports.push(...beneficiaryDailyReports);
 
-                const steps = await planEntity("beneficiary");
+                const beneficiarySteps = await planEntity("beneficiary");
+                const expandedBeneficiarySteps: ExpandedStep[] = beneficiarySteps.map(step => {
+                    const list = Array.isArray(step.subDomains) ? step.subDomains : [];
+
+                    if (list.length === 0) {
+                        return [{ stepId: step.id, subDomain: null }];
+                    }
+
+                    return list.map(sub => ({
+                        stepId: step.id,
+                        subDomain: sub,
+                    }));
+                }).flat();
                 for (const report of beneficiaryDailyReports) {
                     await trx.insert(stepReports).values(
-                        steps.map((step) => ({
+                        expandedBeneficiarySteps.map((step) => ({
                             dailyReportId: report.id,
-                            stepId: step.id,
+                            stepId: step.stepId,
                             isCompleted: false,
                             createdBy: newPlan.createdBy,
+                            notes: step.subDomain,
                         }))
                     );
                 }

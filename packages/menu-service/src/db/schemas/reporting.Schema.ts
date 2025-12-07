@@ -54,6 +54,7 @@ export const stepReports = pgTable("step_reports", {
     .notNull()
     .references(() => masterSteps.id, { onDelete: "cascade" }),
   notes: text("notes"),
+  subDomains: text('sub_domains'),
   isCompleted: boolean("is_completed").default(false),
   storageId: uuid('storage_id').references(() => storage.id),
   imageURL: text('image_url'),

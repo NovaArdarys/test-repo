@@ -1,0 +1,1 @@
+ALTER TABLE "step_reports" ADD COLUMN "sub_domains" text;

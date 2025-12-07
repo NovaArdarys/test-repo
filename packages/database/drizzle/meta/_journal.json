@@ -148,6 +148,13 @@
       "when": 1765144623079,
       "tag": "0020_little_squirrel_girl",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1765149152842,
+      "tag": "0021_classy_doctor_spectrum",
+      "breakpoints": true
     }
   ]
 }
