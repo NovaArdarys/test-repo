@@ -9,4 +9,5 @@ export const masterSteps = pgTable("master_steps", {
   stepName: varchar("step_name", { length: 100 }).notNull(),
   stepOrder: integer("step_order").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
+  subDomain: varchar('sub_domain', { length: 100 }),
 });

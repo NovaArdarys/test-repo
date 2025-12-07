@@ -1,0 +1,1 @@
+ALTER TABLE "master_steps" ADD COLUMN "sub_domain" varchar(100);
