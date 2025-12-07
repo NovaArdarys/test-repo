@@ -28,7 +28,7 @@ export async function getUser({ email }: { email: string; phone?: string; }) {
                 id: true,
                 name: true,
                 domain: true,
-                subDomain: true
+                subDomains: true
               },
             },
           },
