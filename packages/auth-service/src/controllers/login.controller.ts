@@ -31,6 +31,7 @@ export const loginHandler = catchAsync(async (c) => {
 
   const roleId = findUser.userRoles?.[0]?.role?.id;
   const domain = findUser.userRoles?.[0]?.role?.domain;
+  const subDomain = findUser.userRoles?.[0]?.role?.subDomain;
   if (roleId) {
     const permissions = await getUserRolePermissonsClientService({ roleId });
 
@@ -52,6 +53,7 @@ export const loginHandler = catchAsync(async (c) => {
 
   let context = {
     domain: domain ?? "",
+    subDomain: subDomain ?? "",
     beneficiary: {},
     kitchen: {},
     driver: {},

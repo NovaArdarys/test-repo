@@ -26,6 +26,7 @@ export const checkAccessToken = async (c: Context, next: Next) => {
     c.set('driverId', data?.driver?.driverIds || []);
     c.set('driverKitchenId', data?.driver?.kitchenId || []);
     c.set('domain', data?.domain || "");
+    c.set('subDomain', data?.subDomain || "");
     c.set('userEmail', email);
     c.set('isAppManager', data?.domain === "app_manager");
 
