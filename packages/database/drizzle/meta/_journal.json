@@ -155,6 +155,13 @@
       "when": 1765149152842,
       "tag": "0021_classy_doctor_spectrum",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1765151035442,
+      "tag": "0022_sudden_vanisher",
+      "breakpoints": true
     }
   ]
 }

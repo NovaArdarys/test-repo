@@ -299,7 +299,7 @@ async function validateEntity(entityType: string, entityId: string) {
 }
 
 async function planEntity(entityType: string) {
-    return db.query.masterSteps.findMany({ where: eq(masterSteps.entityType, entityType as any) });
+    return db.query.masterSteps.findMany({ where: and(eq(masterSteps.entityType, entityType as any), eq(masterSteps.isDeleted, false)) });
 }
 
 
