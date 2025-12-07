@@ -423,7 +423,7 @@ export async function createMenuPlan(
                     stepId: item.stepId,
                     isCompleted: false,
                     createdBy: newPlan.createdBy,
-                    notes: item.subDomain,
+                    subDomain: item.subDomain,
                 }))
             );
 
@@ -507,7 +507,7 @@ export async function createMenuPlan(
                             stepId: step.stepId,
                             isCompleted: false,
                             createdBy: newPlan.createdBy,
-                            notes: step.subDomain,
+                            subDomain: step.subDomain,
                         }))
                     );
                 }
