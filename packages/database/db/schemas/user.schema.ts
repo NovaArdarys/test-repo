@@ -64,7 +64,7 @@ export const roles = pgTable('roles', {
   description: text('description'),
   isDeleted: boolean('is_deleted').default(false).notNull(),
   domain: roleDomainEnum('domain').default('other').notNull(),
-  subDomain: varchar('sub_domain', { length: 100 }),
+  subDomains: varchar('sub_domains').array().default([]),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   createdBy: uuid('created_by').notNull(),
   updatedAt: timestamp('updated_at').notNull(),
