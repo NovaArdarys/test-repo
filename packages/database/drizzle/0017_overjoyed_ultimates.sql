@@ -1,0 +1,1 @@
+ALTER TABLE "roles" ADD COLUMN "sub_domain" varchar(100);
