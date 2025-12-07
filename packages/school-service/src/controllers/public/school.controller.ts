@@ -20,6 +20,7 @@ const getAuditFields = (c: Context) => ({
   updatedBy: c.get('userId'),
   userId: c.get('userId'),
   domain: c.get('domain'),
+  subDomain: c.get('subDomain'),
   kitchenId: c.get("kitchenId") as string[],
   driverId: c.get("driverId") as string[],
   beneficiaryId: c.get("beneficiaryId") as string[],
