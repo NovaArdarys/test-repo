@@ -31,6 +31,7 @@ import { districts, provinces, regencies, villages } from "../master.schema";
 import { dailyReports, eventReports, stepReports } from "../reporting.Schema";
 import { masterSteps } from "../stepPlan.schema";
 import { storage } from "../storage.schema";
+import { notifications } from "../notification.schema";
 
 /**
  * Users relations
@@ -604,19 +605,4 @@ export const deliveryBeneficiariesRelations = relations(deliveryBeneficiaries, (
   beneficiary: one(beneficiaries, { fields: [deliveryBeneficiaries.beneficiaryId], references: [beneficiaries.id] }),
   menuPlan: one(menuPlans, { fields: [deliveryBeneficiaries.menuPlanId], references: [menuPlans.id] }),
   createdBy: one(users, { fields: [deliveryBeneficiaries.createdBy], references: [users.id], relationName: "created_by" }),
-}));
-
-
-export const notificationsRelations = relations(notifications, ({ one }) => ({
-  actor: one(users, {
-    fields: [notifications.userActorId],
-    references: [users.id],
-    relationName: "notification_actor",
-  }),
-
-  receiver: one(users, {
-    fields: [notifications.userReceivedId],
-    references: [users.id],
-    relationName: "notification_receiver",
-  }),
 }));

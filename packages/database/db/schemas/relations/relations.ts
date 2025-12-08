@@ -31,6 +31,7 @@ import { districts, provinces, regencies, villages } from "../master.schema";
 import { dailyReports, eventReports, stepReports } from "../reporting.Schema";
 import { masterSteps } from "../stepPlan.schema";
 import { storage } from "../storage.schema";
+import { notifications } from "../notification.schema";
 
 /**
  * Users relations
