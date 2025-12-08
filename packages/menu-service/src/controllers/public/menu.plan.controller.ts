@@ -14,6 +14,7 @@ import { assignFoodToMenuPlan, unassignFoodFromMenuPlan } from "@/services/repos
 import { assignPlanDistribution, unassignPlanDistribution } from "@/services/repositories/menu.plan.schools.kitchen.service";
 import { isEmpty } from "lodash";
 import { menuPlanQueue } from "@/jobs/queue/menuplan.queue";
+import { getPriorityByDate } from "@/utils/jobPriority";
 
 const getAuditFields = (c: Context) => ({
   createdBy: c.get('userId'),
@@ -83,6 +84,8 @@ export const createMenuPlanHandler = catchAsync(async (c: Context) => {
   // }, !isEmpty(body?.kitchenId) ? body?.kitchenId : audit.kitchenId?.[0], foodIdArray, dateArray);
 
   for (const date of dateArray) {
+    console.log(date, "====date====");
+
     await menuPlanQueue.add(
       "menuplan-create",
       {
@@ -100,7 +103,7 @@ export const createMenuPlanHandler = catchAsync(async (c: Context) => {
         dates: date
       },
       {
-        priority: new Date(date).getTime(),
+        priority: getPriorityByDate(date),
         removeOnComplete: true
       }
     );
@@ -142,7 +145,7 @@ export const updateMenuPlanHandler = catchAsync(async (c: Context) => {
       dates: body.planStartDate || new Date().toISOString().split("T")[0],
     },
     {
-      priority: new Date(body.planStartDate || "").getTime(),
+      priority: getPriorityByDate(body.planStartDate || new Date().toISOString().split("T")[0]),
       removeOnComplete: true,
     }
   );

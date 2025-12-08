@@ -1,6 +1,6 @@
 // jobs/worker/menuplan.worker.ts
 import { Worker } from "bullmq";
-import redis from "@/constants/redis";
+import { redisBull } from "@/constants/redis";
 import { MENU_PLAN_QUEUE } from "../queue/menuplan.queue";
 import { menuPlanJobSchema } from "@/jobs/types/menuplan.type";
 import { createMenuPlan, updateMenuPlan } from "@/services/repositories/menu.plan.service";
@@ -11,6 +11,10 @@ export const menuPlanWorker = new Worker(
     console.log("▶️ MenuPlan Worker processing:", job.name, job.data);
 
     const input = menuPlanJobSchema.parse(job.data);
+
+    console.log(input.kitchenId,
+      input.foodItemsIds,
+      [input.dates], "=====menuplan=====");
 
     switch (input.type) {
       case "create":
@@ -37,7 +41,7 @@ export const menuPlanWorker = new Worker(
     }
   },
   {
-    connection: redis,
+    connection: redisBull,
     concurrency: 1,
     lockDuration: 300000,
     autorun: true,
