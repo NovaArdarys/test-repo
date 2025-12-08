@@ -102,7 +102,8 @@ export const createMenuPlanHandler = catchAsync(async (c: Context) => {
       },
       {
         priority: getPriorityByDate(date),
-        removeOnComplete: true
+        removeOnComplete: true,
+        attempts: 3
       }
     );
   }
@@ -145,6 +146,7 @@ export const updateMenuPlanHandler = catchAsync(async (c: Context) => {
     {
       priority: getPriorityByDate(body.planStartDate || new Date().toISOString().split("T")[0]),
       removeOnComplete: true,
+      attempts: 3
     }
   );
 

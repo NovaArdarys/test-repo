@@ -1,10 +1,21 @@
-import { NonRetryableError } from "bullmq";
+// jobs/worker/menuplan.worker.ts
+import { Worker } from "bullmq";
+import { redisBull } from "@/constants/redis";
+import { MENU_PLAN_QUEUE } from "../queue/menuplan.queue";
+import { menuPlanJobSchema } from "@/jobs/types/menuplan.type";
+import { createMenuPlan, updateMenuPlan } from "@/services/repositories/menu.plan.service";
 
 export const menuPlanWorker = new Worker(
   MENU_PLAN_QUEUE,
   async (job) => {
     try {
+      console.log("▶️ MenuPlan Worker processing:", job.name, job.data);
+
       const input = menuPlanJobSchema.parse(job.data);
+
+      console.log(input.kitchenId,
+        input.foodItemsIds,
+        [input.dates], "=====menuplan=====");
 
       switch (input.type) {
         case "create":
@@ -25,15 +36,16 @@ export const menuPlanWorker = new Worker(
             input.updatedBy
           );
           break;
-      }
-    } catch (err: any) {
-      console.error("❌ Worker error:", err);
 
-      if (err?.code === "23505" || err?.message?.includes("duplicate key")) {
-        throw new NonRetryableError("DB_CONFLICT");
+        default:
+          console.warn("⚠ Unknown menu plan job type:", input.type);
+      }
+    } catch (error: any) {
+      if (error?.code === "23505" || error?.message?.includes("duplicate key")) {
+        return { skipped: true };
       }
 
-      throw err;
+      throw error;
     }
   },
   {
@@ -43,3 +55,11 @@ export const menuPlanWorker = new Worker(
     autorun: true,
   }
 );
+
+menuPlanWorker.on("completed", (job) => {
+  console.log(`✔ MenuPlan Job Completed: ${job.id}`);
+});
+
+menuPlanWorker.on("failed", (job, err) => {
+  console.error(`❌ MenuPlan Job Failed: ${job?.id}`, err);
+});
