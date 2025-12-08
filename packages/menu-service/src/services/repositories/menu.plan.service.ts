@@ -45,20 +45,6 @@ export async function getMenuPlansList({
     menuPlanName?: string;
 }) {
 
-    console.log({
-        page,
-        limit,
-        villageId,
-        status,
-        isDeleted,
-        startDate,
-        endDate,
-        kitchenIds,
-        schoolIds,
-        entityType,
-        menuPlanName
-    }, "====okasaskapskapsk=====");
-
     const cleanVillageId = villageId && villageId.trim() !== "" ? villageId : undefined;
 
 
@@ -95,9 +81,6 @@ export async function getMenuPlansList({
         page,
         limit,
     });
-
-    console.log(where?.getSQL(), "==== sql ======");
-
 
     const data = await db.query.menuPlans.findMany({
         where: () => where,

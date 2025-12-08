@@ -47,8 +47,6 @@ export const listMenuPlansHandler = catchAsync(async (c: Context) => {
 
   const audit = getAuditFields(c);
 
-  console.log(audit, "===== audit =====");
-
   const data = await getMenuPlansList({
     page,
     limit,
