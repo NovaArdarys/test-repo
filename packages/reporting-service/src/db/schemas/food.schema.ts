@@ -1,5 +1,5 @@
 import { foodTypeEnum, planStatusEnum } from "./enums/enums";
-import { boolean, date, pgTable, text, timestamp, uuid, varchar } from "drizzle-orm/pg-core";
+import { boolean, date, pgTable, text, timestamp, unique, uuid, varchar } from "drizzle-orm/pg-core";
 import { kitchens } from "./kitchen.schema";
 
 export const foodItems = pgTable('food_items', {
@@ -39,6 +39,11 @@ export const menuPlans = pgTable('menu_plans', {
   createdBy: uuid('created_by').notNull(),
   updatedAt: timestamp('updated_at').notNull(),
   updatedBy: uuid('updated_by'),
+}, (table) => {
+  return {
+    kitchenDateUnique: unique('kitchen_date_unique')
+      .on(table.kitchenId, table.planStartDate),
+  };
 });
 
 export const menuPlanBeneficiaries = pgTable('menu_plan_beneficiaries', {

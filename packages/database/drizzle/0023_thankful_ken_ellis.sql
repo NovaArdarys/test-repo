@@ -1,0 +1,1 @@
+ALTER TABLE "menu_plans" ADD CONSTRAINT "kitchen_date_unique" UNIQUE("kitchen_id","plan_start_date");
