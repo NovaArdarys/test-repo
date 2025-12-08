@@ -52,6 +52,7 @@ export const analysisTypeEnum = pgEnum('analysis_type', [
   'cleanliness',        // cek kebersihan dapur
   'mealbox_count',      // hitung jumlah kotak makan
   'food_detection',     // deteksi makanan berdasarkan label
+  'apd_check'
 ]);
 
 export const roleDomainEnum = pgEnum('role_domain', [

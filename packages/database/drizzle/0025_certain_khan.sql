@@ -1,0 +1,1 @@
+ALTER TYPE "public"."analysis_type" ADD VALUE 'apd_check';

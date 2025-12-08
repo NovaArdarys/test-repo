@@ -1,5 +1,5 @@
 import { pgTable, serial, text, varchar, timestamp, integer, boolean } from "drizzle-orm/pg-core";
-import { entityTypeEnum, stepKeyEnum } from "./enums/enums";
+import { analysisTypeEnum, entityTypeEnum, stepKeyEnum } from "./enums/enums";
 import { uuid } from "drizzle-orm/pg-core";
 
 export const masterSteps = pgTable("master_steps", {
@@ -10,5 +10,6 @@ export const masterSteps = pgTable("master_steps", {
   stepOrder: integer("step_order").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
   subDomains: text('sub_domains').array().default([]),
+  analysisType: analysisTypeEnum("analysis_type"),
   isDeleted: boolean("is_deleted").notNull().default(false),
 });
