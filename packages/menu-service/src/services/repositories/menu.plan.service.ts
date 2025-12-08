@@ -326,7 +326,6 @@ export async function createMenuPlan(
     if (!kitchenId) throw new Error("kitchenId is required");
 
     return db.transaction(async (trx) => {
-        // Ambil sekolah berdasarkan kitchen
         const beneficiariesByKitchen = await trx
             .select()
             .from(beneficiaries)

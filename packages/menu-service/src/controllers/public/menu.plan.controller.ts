@@ -13,6 +13,7 @@ import { createMenuPlan, getDistributionByMenuPlanId, getFoodItemsByMenuPlanId, 
 import { assignFoodToMenuPlan, unassignFoodFromMenuPlan } from "@/services/repositories/menu.food.service";
 import { assignPlanDistribution, unassignPlanDistribution } from "@/services/repositories/menu.plan.schools.kitchen.service";
 import { isEmpty } from "lodash";
+import { menuPlanQueue } from "@/jobs/queue/menuplan.queue";
 
 const getAuditFields = (c: Context) => ({
   createdBy: c.get('userId'),
@@ -72,16 +73,40 @@ export const createMenuPlanHandler = catchAsync(async (c: Context) => {
 
   console.log(isEmpty(body?.kitchenId), "======ok======", audit.kitchenId?.[0]);
 
-  const newPlan = await createMenuPlan({
-    ...body,
-    kitchenId: !isEmpty(body?.kitchenId) ? body?.kitchenId : audit.kitchenId?.[0] || null,
-    createdBy: audit.createdBy,
-    planStartDate: body?.planStartDate || new Date().toISOString().split("T")[0],
-    planEndDate: body?.planEndDate || new Date().toISOString().split("T")[0],
-    status: "ACTIVE"
-  }, !isEmpty(body?.kitchenId) ? body?.kitchenId : audit.kitchenId?.[0], foodIdArray, dateArray);
+  // const newPlan = await createMenuPlan({
+  //   ...body,
+  //   kitchenId: !isEmpty(body?.kitchenId) ? body?.kitchenId : audit.kitchenId?.[0] || null,
+  //   createdBy: audit.createdBy,
+  //   planStartDate: body?.planStartDate || new Date().toISOString().split("T")[0],
+  //   planEndDate: body?.planEndDate || new Date().toISOString().split("T")[0],
+  //   status: "ACTIVE"
+  // }, !isEmpty(body?.kitchenId) ? body?.kitchenId : audit.kitchenId?.[0], foodIdArray, dateArray);
 
-  return c.json({ data: newPlan, message: "Plan menu created" }, 201);
+  for (const date of dateArray) {
+    await menuPlanQueue.add(
+      "menuplan-create",
+      {
+        type: "create",
+        data: {
+          ...body,
+          kitchenId: !isEmpty(body?.kitchenId) ? body?.kitchenId : audit.kitchenId?.[0] || null,
+          createdBy: audit.createdBy,
+          planStartDate: body?.planStartDate || new Date().toISOString().split("T")[0],
+          planEndDate: body?.planEndDate || new Date().toISOString().split("T")[0],
+          status: "ACTIVE"
+        },
+        kitchenId: !isEmpty(body?.kitchenId) ? body?.kitchenId : audit.kitchenId?.[0],
+        foodItemsIds: foodIdArray,
+        dates: date
+      },
+      {
+        priority: new Date(date).getTime(),
+        removeOnComplete: true
+      }
+    );
+  }
+
+  return c.json({ data: body, message: "Plan menu created" }, 201);
 });
 
 export const getMenuPlanByIdHandler = catchAsync(async (c: Context) => {
@@ -99,15 +124,31 @@ export const updateMenuPlanHandler = catchAsync(async (c: Context) => {
   const audit = getAuditFields(c);
   const foodIdArray = body.foodIds as unknown as string[] || (body as any)["foodIds[]"] || [];
 
-  const updatedPlan = await updateMenuPlan(id, {
-    ...body,
-    kitchenId: !isEmpty(body?.kitchenId) ? body?.kitchenId : audit.kitchenId?.[0] || null,
-    updatedBy: audit.updatedBy,
-    planStartDate: body?.planStartDate,
-    planEndDate: body?.planEndDate,
-  }, !isEmpty(body?.kitchenId) ? body?.kitchenId : audit.kitchenId?.[0], foodIdArray, audit.updatedBy);
+  await menuPlanQueue.add(
+    "menuplan-update",
+    {
+      type: "update",
+      menuPlanId: id,
+      data: {
+        ...body,
+        kitchenId: !isEmpty(body?.kitchenId) ? body?.kitchenId : audit.kitchenId?.[0] || null,
+        updatedBy: audit.updatedBy,
+        planStartDate: body.planStartDate,
+        planEndDate: body.planEndDate,
+      },
+      kitchenId: !isEmpty(body?.kitchenId) ? body?.kitchenId : audit.kitchenId?.[0],
+      foodItemsIds: foodIdArray,
+      updatedBy: audit.updatedBy,
+      dates: body.planStartDate || new Date().toISOString().split("T")[0],
+    },
+    {
+      priority: new Date(body.planStartDate || "").getTime(),
+      removeOnComplete: true,
+    }
+  );
 
-  return c.json({ data: updatedPlan, message: "Plan menu updated" }, 200);
+
+  return c.json({ data: body, message: "Plan menu updated" }, 200);
 });
 
 export const deleteMenuPlanHandler = catchAsync(async (c: Context) => {
