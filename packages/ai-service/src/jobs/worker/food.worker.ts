@@ -1,6 +1,6 @@
 import redis from '@/constants/redis';
 import { db } from '@/db';
-import { detectAI, getAITypeFromStepOrder } from '@/services/clients/ai.client.service';
+import { AIAnalysisType, detectAI, getAITypeFromStepOrder } from '@/services/clients/ai.client.service';
 import { insertAiLog, getStepReportDetail } from '@/services/repositories/ai.service';
 import { compressImageToBase64 } from '@/utils/imageCompress';
 import { StorageCommittedType } from '@/validator/storage.validator';
@@ -24,7 +24,12 @@ export const foodWorker = new Worker<StorageCommittedType>(
           throw new Error("Step report not found or missing step data.");
         }
 
-        const aiType = getAITypeFromStepOrder(stepReport?.step?.stepOrder, job.data.entityType);
+        const aiType = getAITypeFromStepOrder(
+          stepReport.step.stepOrder,
+          job.data.entityType,
+          stepReport.step.analysisType ?? undefined
+        );
+
         if (!aiType) {
           return null;
         }
@@ -133,26 +138,32 @@ export const foodWorker = new Worker<StorageCommittedType>(
 
 
     } catch (err: any) {
-      try {
-        await insertAiLog({
-          entityId: job?.data?.entityId || null,
-          analysisType: "mealbox_count",
-          sourceImageUrl: job.data.url,
-          outputImageUrl: null,
-          processingTime: "0",
-          threshold: null,
-          output: { error: err?.message || 'AI failed' },
-          input: job.data,
-          metadata: { jobId: job.id, queue: 'food-detect-queue', status: 'failed' },
-        });
-      } catch (dbErr) {
-        console.error(`⚠️ [Worker] Failed to insert error log:`, dbErr);
-      }
+      // try {
+      //   await insertAiLog({
+      //     entityId: job?.data?.entityId || null,
+      //     analysisType: "mealbox_count",
+      //     sourceImageUrl: job.data.url,
+      //     outputImageUrl: null,
+      //     processingTime: "0",
+      //     threshold: null,
+      //     output: { error: err?.message || 'AI failed' },
+      //     input: job.data,
+      //     metadata: { jobId: job.id, queue: 'food-detect-queue', status: 'failed' },
+      //   });
+      // } catch (dbErr) {
+      //   console.error(`⚠️ [Worker] Failed to insert error log:`, dbErr);
+      // }
 
       throw err;
     }
   },
-  { connection: redis }
+  {
+    connection: redis,
+    lockDuration: 120000,   // ← DI SINI
+    concurrency: 2,         // ← DI SINI
+    maxStalledCount: 5,
+    stalledInterval: 30000,
+  }
 );
 
 foodWorker.on('completed', (job) => {

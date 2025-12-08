@@ -16,10 +16,13 @@ async function handleStorageEvent(data: z.infer<typeof storageCommittedSchema>) 
   const parsed = storageCommittedSchema.parse(data);
 
   await foodQueue.add("detection", parsed, {
-    attempts: 3,
-    backoff: { type: "exponential", delay: 3000 },
     removeOnComplete: true,
     removeOnFail: false,
+    attempts: 1000000,
+    backoff: {
+      type: "exponential",
+      delay: 5000,
+    },
   });
 
   console.log(`[AI WORKER] ✅ Job queued for detection [${parsed.storageId}]`);

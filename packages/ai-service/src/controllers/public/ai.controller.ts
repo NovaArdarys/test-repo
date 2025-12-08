@@ -1,10 +1,67 @@
-import { detectAI, getAITypeFromStepOrder } from "@/services/clients/ai.client.service";
+import { AIAnalysisType, detectAI, getAITypeFromStepOrder } from "@/services/clients/ai.client.service";
 import { getStepReportDetail, insertAiLog } from "@/services/repositories/ai.service";
 import { compressImageToBase64 } from "@/utils/imageCompress";
 import { catchAsync } from "@/utils/catchAsync";
 import { Context } from "hono";
+import { foodQueue } from "@/jobs/queue/food.queue";
 
 export const analyzeData = catchAsync(async (c: Context) => {
+  const body = await c.req.json();
+
+  const { entityId, entityType, url, storageId } = body;
+
+  const start = performance.now();
+  let labels: any[] = [];
+  let aiType: any = null;
+
+  if (!url) {
+    return c.json({ error: "image url required" }, 400);
+  }
+
+  if (entityId) {
+    const stepReport = await getStepReportDetail(entityId);
+
+    if (!stepReport?.step) {
+      return c.json({ error: "Step report not found or missing step data" }, 404);
+    }
+
+    aiType = getAITypeFromStepOrder(
+      stepReport.step.stepOrder,
+      entityType,
+      stepReport.step.analysisType ?? undefined
+    );
+
+
+    await foodQueue.add("detection", {
+      entityType: stepReport.step.entityType,
+      storageId: storageId,
+      url: url
+    }, {
+      removeOnComplete: true,
+      removeOnFail: false,
+      attempts: 1000000,
+      backoff: {
+        type: "exponential",
+        delay: 5000,
+      },
+    });
+
+
+    const end = performance.now();
+    const processingTime = (end - start) / 1000;
+    return c.json({
+      success: true,
+      aiType,
+      processingTime,
+      labels,
+    });
+  }
+  return c.json({
+    success: false,
+  });
+});
+
+export const analyzeDataOld = catchAsync(async (c: Context) => {
   const body = await c.req.json();
 
   const { entityId, entityType, url } = body;
@@ -24,10 +81,14 @@ export const analyzeData = catchAsync(async (c: Context) => {
       return c.json({ error: "Step report not found or missing step data" }, 404);
     }
 
+    console.log(stepReport.step, "=====step=====");
 
-    aiType = getAITypeFromStepOrder(stepReport.step.stepOrder, entityType);
+    aiType = getAITypeFromStepOrder(
+      stepReport.step.stepOrder,
+      entityType,
+      stepReport.step.analysisType ?? undefined
+    );
 
-    console.log(stepReport.step.entityType, "====a====", aiType, stepReport.dailyReport?.menuPlan?.menuFoodItem);
     if (!aiType) {
       return c.json({ message: "AI type not applicable for this step" }, 200);
     }

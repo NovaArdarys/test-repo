@@ -8,7 +8,10 @@ export type AIAnalysisType =
   | "mealbox"
   | "people-counting"
   | "liveness"
-  | "people";
+  | "people"
+  | "apd"
+  | null
+  ;
 
 export interface BaseAIInput {
   image: string;
@@ -19,30 +22,46 @@ export interface DetectInput extends BaseAIInput {
 }
 
 
-export function getAITypeFromStepOrder(stepOrder: number, entityType: EntityType) {
-  if (entityType === "kitchen" || entityType === "kitchen_daily_report") {
-    switch (stepOrder) {
-      case 1:
-        return "food";
-      case 2:
+export function getAITypeFromStepOrder(stepOrder: number, entityType: EntityType, analysisType?: string) {
+  if (analysisType) {
+    switch (analysisType) {
+      case "apd_check":
+        return "apd";
+      case "cleanliness":
         return "cleanliness";
-      case 3:
+      case "food_detection":
         return "food";
-      case 4:
-        return "food";
+      case "mealbox":
+        return "mealbox";
       default:
         return null;
-    }
-  }
 
-  if (entityType === "school" || entityType === "beneficiary" || entityType === "beneficiary_daily_report") {
-    switch (stepOrder) {
-      case 2:
-        return "food";
-      case 3:
-        return "food";
-      default:
-        return null;
+    }
+  } else {
+    if (entityType === "kitchen" || entityType === "kitchen_daily_report") {
+      switch (stepOrder) {
+        case 1:
+          return "food";
+        case 2:
+          return "cleanliness";
+        case 3:
+          return "food";
+        case 4:
+          return "food";
+        default:
+          return null;
+      }
+    }
+
+    if (entityType === "school" || entityType === "beneficiary" || entityType === "beneficiary_daily_report") {
+      switch (stepOrder) {
+        case 2:
+          return "food";
+        case 3:
+          return "food";
+        default:
+          return null;
+      }
     }
   }
 }
@@ -55,7 +74,6 @@ export async function detectAI<T extends AIAnalysisType>(
     const res = await aiClient.post(`/detect/${type}`, data);
     return res.data;
   } catch (error: any) {
-    console.log(error.response, "=====error.response=====");
 
     if (error.response) {
       throw new Error(

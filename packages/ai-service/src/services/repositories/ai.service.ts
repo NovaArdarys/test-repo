@@ -40,8 +40,6 @@ export async function insertAiLog(params: InsertAiLogParams) {
   });
 }
 
-
-
 export async function getStepReportDetail(entityId?: string) {
   if (!entityId) return null;
 
@@ -51,6 +49,7 @@ export async function getStepReportDetail(entityId?: string) {
       id: true,
       stepId: true,
       dailyReportId: true,
+      subDomain: true,
     },
     with: {
       dailyReport: {
@@ -76,7 +75,9 @@ export async function getStepReportDetail(entityId?: string) {
           stepKey: true,
           stepName: true,
           stepOrder: true,
-          entityType: true
+          entityType: true,
+          subDomains: true,
+          analysisType: true
         },
       },
     },
