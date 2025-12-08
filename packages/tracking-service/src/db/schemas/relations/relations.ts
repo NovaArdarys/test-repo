@@ -606,3 +606,17 @@ export const deliveryBeneficiariesRelations = relations(deliveryBeneficiaries, (
   createdBy: one(users, { fields: [deliveryBeneficiaries.createdBy], references: [users.id], relationName: "created_by" }),
 }));
 
+
+export const notificationsRelations = relations(notifications, ({ one }) => ({
+  actor: one(users, {
+    fields: [notifications.userActorId],
+    references: [users.id],
+    relationName: "notification_actor",
+  }),
+
+  receiver: one(users, {
+    fields: [notifications.userReceivedId],
+    references: [users.id],
+    relationName: "notification_receiver",
+  }),
+}));
