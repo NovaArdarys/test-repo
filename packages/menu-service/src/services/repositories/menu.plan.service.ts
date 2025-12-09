@@ -400,6 +400,9 @@ export async function createMenuPlan(
                 }));
             }).flat();
 
+            console.log(expandedKitchenSteps, "=====expandedKitchenSteps=====", kitchenSteps);
+
+
             await trx.insert(stepReports).values(
                 expandedKitchenSteps.map((item) => ({
                     dailyReportId: dailyKitchen.id,

@@ -84,7 +84,8 @@ export const listDailyReportsHandler = catchAsync(async (c: Context) => {
     page,
     limit,
     menuPlanName: search,
-    view
+    view,
+    subDomains: audit.subDomain
   });
   return c.json(data);
 });

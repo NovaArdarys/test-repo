@@ -287,6 +287,7 @@ export async function getDailyReportsList(params?: {
   limit: number; // default 10
   menuPlanName?: string;
   view?: "home" | "calendar" | "delivery" | "report" | "profile";
+  subDomains?: string[];
 }) {
   const today = new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
 
@@ -301,6 +302,7 @@ export async function getDailyReportsList(params?: {
     kitchenIds = [],
     schoolIds = [],
     driversIds = [],
+    subDomains = [],
     page = 1,
     limit = 10,
     view
@@ -508,9 +510,12 @@ export async function getDailyReportsList(params?: {
       : sql`'[]'::jsonb`;
 
 
-  const stepTomorrowField =
-    view === "home" && entityType === "kitchen" && kitchenIds.length > 0 && endDate
-      ? sql`
+  const filterSubDomain =
+    subDomains.length > 0
+      ? sql`sr.sub_domains = ANY(${sql.raw(`ARRAY[${subDomains.map(d => `'${d}'`).join(",")}]::text[]`)})`
+      : sql`sr.sub_domains IS NULL`;
+
+  const stepTomorrowField = sql`
       COALESCE((
         SELECT jsonb_agg(
           jsonb_build_object(
@@ -528,16 +533,15 @@ export async function getDailyReportsList(params?: {
           INNER JOIN daily_reports dr ON dr.id = sr.daily_report_id
           INNER JOIN menu_plans mp ON mp.id = dr.menu_plan_id
           WHERE dr.entity_id = ANY(${sql.raw(
-        `ARRAY[${kitchenIds.map((id) => `'${id}'`).join(",")}]::uuid[]`
-      )})
+    `ARRAY[${kitchenIds.map((id) => `'${id}'`).join(",")}]::uuid[]`
+  )})
             AND dr.entity_type = 'kitchen'
             AND dr.date = ${addDays(new Date(endDate), 1).toISOString().split("T")[0]}
+            AND ${filterSubDomain}
         ) sr
         INNER JOIN master_steps ms ON ms.id = sr.step_id
       ), '[]'::jsonb)
-    `
-      : sql`'[]'::jsonb`;
-
+    `;
 
   const { where, meta } = await buildPaginatedWhere({
     table: dailyReports,
@@ -698,7 +702,7 @@ export async function getDailyReportsList(params?: {
       FROM step_reports sr
       JOIN master_steps ms ON ms.id = sr.step_id
       LEFT JOIN storages st ON st.id = sr.storage_id
-      WHERE sr.daily_report_id = ${dailyReports.id}
+      WHERE sr.daily_report_id = ${dailyReports.id} AND ${filterSubDomain}
     ),
     '[]'::json
   )

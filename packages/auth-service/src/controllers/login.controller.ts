@@ -116,6 +116,7 @@ export const loginHandler = catchAsync(async (c) => {
     data: {
       email: findUser.email,
       subDomain,
+      domain,
       roleName: findUser.userRoles?.[0]?.role?.name,
       authorization: {
         token: accessToken,
