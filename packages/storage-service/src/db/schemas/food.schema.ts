@@ -1,6 +1,7 @@
 import { foodTypeEnum, planStatusEnum } from "./enums/enums";
-import { boolean, date, pgTable, text, timestamp, unique, uuid, varchar } from "drizzle-orm/pg-core";
+import { boolean, date, jsonb, pgTable, text, timestamp, unique, uuid, varchar } from "drizzle-orm/pg-core";
 import { kitchens } from "./kitchen.schema";
+import { sql } from "drizzle-orm";
 
 export const foodItems = pgTable('food_items', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -15,6 +16,10 @@ export const foodItems = pgTable('food_items', {
   createdBy: uuid('created_by').notNull(),
   updatedAt: timestamp('updated_at').notNull(),
   updatedBy: uuid('updated_by'),
+  ingredients: jsonb('ingredients')
+    .$type<{ name: string; nameEn: string; }[] | null>()
+    .default(sql`'[]'::jsonb`)
+    .notNull(),
 });
 
 export const menuFoodItem = pgTable('menu_food_item', {
