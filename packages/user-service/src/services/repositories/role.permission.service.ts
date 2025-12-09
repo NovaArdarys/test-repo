@@ -16,7 +16,8 @@ import {
   sql,
   inArray,
   notInArray,
-  exists
+  exists,
+  asc
 } from "drizzle-orm";
 import { db } from "@/db";
 import { APIPagination } from "@/types/paginations.type"; // Import tipe yang Anda definisikan
@@ -61,7 +62,7 @@ export async function getRolesList({ page, limit }: {
     .where(whereCondition)
     .limit(limit)
     .offset(offset)
-    .orderBy(desc(roles.createdAt));
+    .orderBy(asc(roles.name));
 
   const countPromise = db
     .select({ count: sql<number>`count(*)` })

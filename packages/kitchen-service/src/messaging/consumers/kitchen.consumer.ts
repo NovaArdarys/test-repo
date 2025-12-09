@@ -69,7 +69,7 @@ async function handleAssignToKitchen(data: z.infer<typeof baseUserKitchen>) {
 
     const alreadyAssigned = await isUserAssignedToKitchen(parsed?.userId, parsed?.kitchenId);
     if (!alreadyAssigned) {
-      await createDriver({
+      await assignUserToKitchen({
         kitchenId: parsed.kitchenId,
         userId: parsed.userId,
         createdBy: parsed.createdBy || "11111111-1111-1111-1111-111111111111",
