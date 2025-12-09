@@ -171,7 +171,7 @@ export async function getGroupDailyReportDetailService(dailyReportId: string) {
       stepName: masterSteps.stepName,
       stepOrder: masterSteps.stepOrder,
       stepKey: masterSteps.stepKey,
-
+      stepSubDomain: stepReports.subDomain,
       entityId: dailyReports.entityId,
       entityType: dailyReports.entityType,
       status: dailyReports.status,
