@@ -1,0 +1,1 @@
+ALTER TABLE "ai_analysis_logs" ADD CONSTRAINT "uq_ai_entity_analysis" UNIQUE("entity_id","analysis_type","storage_id");

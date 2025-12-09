@@ -1,8 +1,8 @@
 import { Queue } from 'bullmq';
 import redis from '@/constants/redis';
-import { DetectFoodInput } from '@/validator/food.validator';
-import { StorageCommittedType } from '@/validator/storage.validator';
+import { stepCommittedSchema } from "@/validator/step.validator";
+import z from 'zod';
 
-export const foodQueue = new Queue<StorageCommittedType>('food-detect-queue', {
+export const foodQueue = new Queue<z.infer<typeof stepCommittedSchema>>('food-detect-queue', {
   connection: redis
 });

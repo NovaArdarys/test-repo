@@ -106,7 +106,10 @@ export const updateStepReportHandler = catchAsync(async (c: Context) => {
 
   if (report) {
     const allCompleted = every(report.steps, 'isCompleted');
+    console.log(allCompleted, "=====allCompleted=====");
+
     await publishStepUpdate({
+      id,
       menuPlanId: report.menuPlan.id,
       allStepCompleted: allCompleted,
       entityId: report.entityId,

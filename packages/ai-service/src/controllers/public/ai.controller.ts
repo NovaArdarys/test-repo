@@ -4,6 +4,7 @@ import { compressImageToBase64 } from "@/utils/imageCompress";
 import { catchAsync } from "@/utils/catchAsync";
 import { Context } from "hono";
 import { foodQueue } from "@/jobs/queue/food.queue";
+import { getStorageByEntityIds, getStorageById } from "@/services/repositories/storage.service";
 
 export const analyzeData = catchAsync(async (c: Context) => {
   const body = await c.req.json();
@@ -33,6 +34,7 @@ export const analyzeData = catchAsync(async (c: Context) => {
 
 
     await foodQueue.add("detection", {
+      entityId: entityId,
       entityType: stepReport.step.entityType,
       storageId: storageId,
       url: url
@@ -64,24 +66,28 @@ export const analyzeData = catchAsync(async (c: Context) => {
 export const analyzeDataOld = catchAsync(async (c: Context) => {
   const body = await c.req.json();
 
-  const { entityId, entityType, url } = body;
+  const { entityId, entityType, url, storageId } = body;
 
   const start = performance.now();
   let labels: any[] = [];
   let aiType: any = null;
-
+  let stepStorages: any[] = [];
   if (!url) {
     return c.json({ error: "image url required" }, 400);
   }
 
   if (entityId) {
     const stepReport = await getStepReportDetail(entityId);
+    stepStorages = await getStorageByEntityIds([entityId]);
+
+    if (stepReport?.storageId) {
+      const storageById = await getStorageById(stepReport.storageId);
+      stepStorages.push(storageById);
+    }
 
     if (!stepReport?.step) {
       return c.json({ error: "Step report not found or missing step data" }, 404);
     }
-
-    console.log(stepReport.step, "=====step=====");
 
     aiType = getAITypeFromStepOrder(
       stepReport.step.stepOrder,
@@ -104,6 +110,7 @@ export const analyzeDataOld = catchAsync(async (c: Context) => {
           )
           .filter((l) => l.id && l.en)
         : [];
+    console.log(labels, "=====labels=====", stepStorages);
 
     if (aiType === "food" && labels.length === 0) {
       return c.json({ error: "No valid food labels found for AI request" }, 400);
@@ -130,6 +137,7 @@ export const analyzeDataOld = catchAsync(async (c: Context) => {
 
   await insertAiLog({
     entityId: entityId ?? null,
+    storageId: storageId ?? stepStorages?.[0]?.id,
     analysisType:
       aiType === "food"
         ? "food_detection"

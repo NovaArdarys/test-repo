@@ -66,10 +66,18 @@ async function getStepTemplate(entityType: string) {
   });
 }
 
-function estimateDeliveryTime(distanceKm: number, speedKmh = 30, bufferMin = 10) {
-  const minutes = Math.round((distanceKm / speedKmh) * 60 + bufferMin);
-  return new Date(Date.now() + minutes * 60000);
+function estimateDeliveryTime(
+  distanceKm: number,
+  speedKmh = 30,
+  bufferMin = 10,
+  date: Date = new Date()
+) {
+  const d = new Date(date);
+  const extraMinutes = Math.round((distanceKm / speedKmh) * 60 + bufferMin);
+  d.setMinutes(d.getMinutes() + extraMinutes);
+  return d;
 }
+
 
 interface DeliveryUnit {
   beneficiaryId: string;
@@ -91,27 +99,25 @@ function expandBeneficiariesToUnits(beneficiaries: BeneficiaryWithPortion[], kit
       Number(b.lon ?? 0),
     );
 
-    for (let i = 0; i < (b.smallPortion ?? 0); i++) {
-      units.push({
-        type: "SMALL",
-        portion: 1,
-        beneficiaryId: b.beneficiaryId,
-        menuPlanId: b.menuPlanId,
-        distance: distanceKm,
-        deliveryTime: combineDateAndTime(new Date(date), b.smallDeliveryTime || "07:00") ?? null
-      });
-    }
 
-    for (let i = 0; i < (b.largePortion ?? 0); i++) {
-      units.push({
-        type: "LARGE",
-        portion: 1,
-        beneficiaryId: b.beneficiaryId,
-        menuPlanId: b.menuPlanId,
-        distance: distanceKm,
-        deliveryTime: combineDateAndTime(new Date(date), b.smallDeliveryTime || "09:00") ?? null
-      });
-    }
+    units.push({
+      type: "SMALL",
+      portion: b?.smallPortion || 0,
+      beneficiaryId: b.beneficiaryId,
+      menuPlanId: b.menuPlanId,
+      distance: distanceKm,
+      deliveryTime: combineDateAndTime(new Date(date), b.smallDeliveryTime || "07:00") ?? null
+    });
+
+    units.push({
+      type: "LARGE",
+      portion: b?.largePortion || 0,
+      beneficiaryId: b.beneficiaryId,
+      menuPlanId: b.menuPlanId,
+      distance: distanceKm,
+      deliveryTime: combineDateAndTime(new Date(date), b.smallDeliveryTime || "09:00") ?? null
+    });
+
   });
 
   return units.sort((a, b) => {
@@ -171,17 +177,19 @@ export async function createAutoDelivery(data: CreateAutoDeliveryInput) {
     const stepsTemplate = await getStepTemplate("driver");
     const result = [];
 
+    console.log(units, "=====units=====");
+
     for (const driver of driversData) {
       const assignedUnits = assignments[driver.id];
 
       for (const unit of assignedUnits) {
-        const estTime = estimateDeliveryTime(unit.distance);
+        const estTime = estimateDeliveryTime(unit.distance, 30, 10, unit.deliveryTime || new Date());
 
         const [delivery] = await tx.insert(deliveries)
           .values({
             kitchenId: data.kitchenId,
             driverId: driver.id,
-            startTime: new Date(),
+            startTime: unit.deliveryTime || new Date(),
             endTime: null,
             estimatedDeliveryTime: estTime,
             notes: `${unit.type} portion`,
@@ -190,18 +198,81 @@ export async function createAutoDelivery(data: CreateAutoDeliveryInput) {
             createdBy: data.createdBy,
             updatedAt: new Date(),
             updatedBy: data.createdBy,
+            portionType: unit.type
+          })
+          .returning();
+        const dailyReportMap: Record<string, Record<string, string>> = {};
+
+        const [insertedBeneficiary] = await tx
+          .insert(deliveryBeneficiaries)
+          .values({
+            deliveryId: delivery.id,
+            beneficiaryId: unit.beneficiaryId,
+            menuPlanId: unit.menuPlanId,
+            createdBy: data.createdBy,
           })
           .returning();
 
+        if (!dailyReportMap[driver.id]) {
+          dailyReportMap[driver.id] = {};
+        }
+
+        if (!dailyReportMap[driver.id][unit.type]) {
+          const [dailyReport] = await tx.insert(dailyReports)
+            .values({
+              date: format(new Date(), "yyyy-MM-dd"),
+              entityId: insertedBeneficiary.id,
+              entityType: "driver",
+              menuPlanId: unit.menuPlanId,
+              portionType: unit.type, // SMALL / LARGE
+              status: "PENDING",
+              createdAt: new Date(),
+              createdBy: driver.userId,
+            })
+            .onConflictDoUpdate({
+              target: [
+                dailyReports.entityType,
+                dailyReports.entityId,
+                dailyReports.menuPlanId,
+                dailyReports.date,
+                dailyReports.portionType,
+              ],
+              set: {
+                updatedAt: new Date(),
+                updatedBy: driver.userId,
+              },
+            })
+            .returning({ id: dailyReports.id });
+
+          dailyReportMap[driver.id][unit.type] = dailyReport.id;
+        }
+        const dailyReportId = dailyReportMap[driver.id][unit.type];
+
         const stepReportsBatch = stepsTemplate.map((step) => ({
-          dailyReportId: delivery.id,
+          dailyReportId,
           stepId: step.id,
           isCompleted: false,
           createdBy: driver.userId,
         }));
+
+
         await tx.insert(stepReports).values(stepReportsBatch);
 
         result.push(delivery);
+
+        if (driver.id !== null) {
+          const [newLocation] = await tx
+            .insert(driverLocations)
+            .values({
+              driverId: driver.id,
+              deliveryId: delivery.id,
+              lat: kitchen.lat?.toString() ?? "0",
+              lon: kitchen.lon?.toString() ?? "0",
+              createdBy: driver.userId,
+            })
+            .returning();
+        }
+
       }
     }
 

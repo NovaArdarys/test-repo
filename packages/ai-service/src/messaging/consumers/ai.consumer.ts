@@ -2,18 +2,16 @@ import { z } from "zod";
 import { Channel } from "amqplib";
 import { EXCHANGES } from "../events/exchanges";
 import { foodQueue } from "@/jobs/queue/food.queue";
-import { storageCommittedSchema } from "@/validator/storage.validator";
 import { safeConsume } from "../utils/consumerHelper";
+import { stepCommittedSchema } from "@/validator/step.validator";
 
 // ===== QUEUES =====
-const STORAGE_QUEUE_NAME = "ai_service_storage_queue";
-const STORAGE_ROUTING_KEY = "storage.upload.commit";
+const AI_QUEUE_NAME = "ai_service_queue";
+const REPORT_ROUTING_KEY = "report.step.commit";
 
 // ================= HANDLERS =================
-
-// Handle Storage Upload Event → enqueue ke Bull Queue
-async function handleStorageEvent(data: z.infer<typeof storageCommittedSchema>) {
-  const parsed = storageCommittedSchema.parse(data);
+async function handleStepEvent(data: z.infer<typeof stepCommittedSchema>) {
+  const parsed = stepCommittedSchema.parse(data);
 
   await foodQueue.add("detection", parsed, {
     removeOnComplete: true,
@@ -25,17 +23,17 @@ async function handleStorageEvent(data: z.infer<typeof storageCommittedSchema>) 
     },
   });
 
-  console.log(`[AI WORKER] ✅ Job queued for detection [${parsed.storageId}]`);
+  console.log(`[AI WORKER] ✅ Job queued for detection`);
 }
 
 
 // ================= SETUP =================
 export async function setupAiServiceConsumers(channel: Channel) {
   // STORAGE Listener (storage.upload.commit)
-  await channel.assertExchange(EXCHANGES.STORAGE, "topic", { durable: true });
-  const storageQueue = await channel.assertQueue(STORAGE_QUEUE_NAME, { durable: true });
-  await channel.bindQueue(storageQueue.queue, EXCHANGES.STORAGE, STORAGE_ROUTING_KEY);
+  await channel.assertExchange(EXCHANGES.REPORT, "topic", { durable: true });
+  const reportQueue = await channel.assertQueue(AI_QUEUE_NAME, { durable: true });
+  await channel.bindQueue(reportQueue.queue, EXCHANGES.REPORT, REPORT_ROUTING_KEY);
   channel.prefetch(10);
-  channel.consume(storageQueue.queue, safeConsume(handleStorageEvent, channel), { noAck: false });
-  console.log(`[*] AI Service listening for STORAGE events in ${storageQueue.queue}`);
+  channel.consume(reportQueue.queue, safeConsume(handleStepEvent, channel), { noAck: false });
+  console.log(`[*] AI Service listening for REPORT events in ${reportQueue.queue}`);
 }

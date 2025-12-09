@@ -18,6 +18,7 @@ export async function insertAiLog(params: InsertAiLogParams) {
     entityId,
     analysisType,
     sourceImageUrl,
+    storageId,
     outputImageUrl,
     processingTime,
     threshold,
@@ -35,10 +36,11 @@ export async function insertAiLog(params: InsertAiLogParams) {
     threshold: threshold ?? null,
     output,
     input,
+    storageId,
     metadata: metadata ?? {},
     createdAt: new Date()
   }).onConflictDoUpdate({
-    target: [aiAnalysisLogs.entityId],
+    target: [aiAnalysisLogs.entityId, aiAnalysisLogs.analysisType, aiAnalysisLogs.storageId],
     set: {
       sourceImageUrl: sourceImageUrl ?? null,
       outputImageUrl: outputImageUrl ?? null,
@@ -46,6 +48,7 @@ export async function insertAiLog(params: InsertAiLogParams) {
       threshold: threshold ?? null,
       output,
       input,
+      storageId,
       metadata: metadata ?? {},
     },
   });
@@ -61,6 +64,8 @@ export async function getStepReportDetail(entityId?: string) {
       stepId: true,
       dailyReportId: true,
       subDomain: true,
+      imageURL: true,
+      storageId: true
     },
     with: {
       dailyReport: {
