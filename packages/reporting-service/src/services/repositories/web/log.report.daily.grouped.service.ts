@@ -6,6 +6,7 @@ import z from "zod";
 import { dailyReports, masterSteps, beneficiaryPortions, stepReports, beneficiaries, drivers, kitchens, storage, menuPlans, menuPlanBeneficiaries, deliveryBeneficiaries, deliveries } from "@/db/schemas";
 import { castArray, isEmpty } from "lodash";
 import { aiAnalysisLogs } from "@/db/schemas/ai.log.schema";
+import { getStorageByEntityIds, getStorageById } from "./storage.service";
 
 const entityTypeValidator = z.enum(roleDomainEnum.enumValues);
 
@@ -53,8 +54,6 @@ export async function getGroupDailyReportService({
 }: StepReportFilter) {
   const offset = (page - 1) * limit;
   const conditions: any[] = [];
-
-  console.log(kitchenIds, "=====kitchenIds====");
 
   if (startDate && endDate) conditions.push(between(dailyReports.date, startDate, endDate));
   if (startDate && !endDate) conditions.push(gte(dailyReports.date, startDate));
@@ -200,51 +199,44 @@ export async function getGroupDailyReportDetailService(dailyReportId: string) {
     .where(eq(stepReports.dailyReportId, dailyReportId))
     .orderBy(masterSteps.stepOrder);
 
-  const storageRecords = await db
-    .select({
-      id: storage.id,
-      entityId: storage.entityId,
-      imageURL: storage.fileUrl,
-      metadata: storage.meta,
-      aiAnalysis: sql`
-        COALESCE(
-          json_agg(
-            json_build_object(
-              'analysisType', ${aiAnalysisLogs.analysisType},
-              'input', ${aiAnalysisLogs.input},
-              'output', ${aiAnalysisLogs.output},
-              'processingTime', ${aiAnalysisLogs.processingTime},
-              'threshold', ${aiAnalysisLogs.threshold}
-            )
-          ) FILTER (WHERE ${aiAnalysisLogs.id} IS NOT NULL),
-          '[]'::json
-        )
-      `.as("aiAnalysis"),
-    })
-    .from(storage)
-    .leftJoin(aiAnalysisLogs, eq(aiAnalysisLogs.storageId, storage.id))
-    .where(inArray(storage.entityId, steps.map(s => s.id)))
-    .groupBy(storage.id);
+  const storageRecords = await getStorageByEntityIds(steps.map(s => s.id));
 
   const storageMap = new Map(storageRecords.map(s => [s.entityId, s]));
 
-  const stepsWithStorage = steps.map(s => {
-    const st = storageMap.get(s.id);
+  const stepsWithStorage = await Promise.all(
+    steps.map(async (s) => {
+      const storages: any[] = [];
 
-    return {
-      ...s,
-      storages: st
-        ? [
-          {
-            id: st.id,
-            imageURL: st.imageURL,
-            metadata: st.metadata,
-            aiAnalysis: st.aiAnalysis,
-          },
-        ]
-        : [],
-    };
-  });
+      const st = storageMap.get(s.id);
+      if (st) {
+        storages.push({
+          id: st.id,
+          imageURL: st.imageURL,
+          metadata: st.metadata,
+          aiAnalysis: st.aiAnalysis,
+        });
+      }
+
+      if (s.storageId) {
+        const storageById = await getStorageById(s.storageId);
+
+        if (storageById) {
+          storages.push({
+            id: storageById.id,
+            imageURL: storageById.imageURL,
+            metadata: storageById.metadata,
+            aiAnalysis: storageById.aiAnalysis,
+          });
+        }
+      }
+
+      return {
+        ...s,
+        storages,
+      };
+    })
+  );
+
 
   const entitySummary =
     dr.entityType === "kitchen"

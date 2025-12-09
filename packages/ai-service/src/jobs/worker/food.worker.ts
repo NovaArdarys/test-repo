@@ -11,6 +11,7 @@ export const foodWorker = new Worker<StorageCommittedType>(
   'food-detect-queue',
   async (job) => {
     console.log(`🍳 [Worker] Processing job ${job.id} - ${JSON.stringify(job.data)}`);
+
     const start = performance.now();
 
     try {
@@ -52,7 +53,8 @@ export const foodWorker = new Worker<StorageCommittedType>(
 
 
         if (aiType === "food" && (!labels || labels.length === 0)) {
-          throw new Error("No valid food labels found for AI request.");
+          console.log(labels, "=====labels=====");
+          throw new Error("No valid food labels found for AI request.",);
         }
 
         const result = await detectAI(aiType, {

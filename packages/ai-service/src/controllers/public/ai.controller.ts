@@ -95,12 +95,14 @@ export const analyzeDataOld = catchAsync(async (c: Context) => {
 
     labels =
       aiType === "food"
-        ? stepReport.dailyReport?.menuPlan?.menuFoodItem
-          ?.map((item) => ({
-            id: item.foodItem?.name?.trim() || "",
-            en: item.foodItem?.nameEn?.trim() || item.foodItem?.name?.trim() || "",
-          }))
-          ?.filter((l) => l.id && l.en)
+        ? stepReport?.dailyReport?.menuPlan?.menuFoodItem
+          .flatMap((item) =>
+            (item.foodItem.ingredients || []).map((ing) => ({
+              id: ing.name?.trim() || "",
+              en: ing.nameEn?.trim() || item.foodItem?.name?.trim() || "",
+            }))
+          )
+          .filter((l) => l.id && l.en)
         : [];
 
     if (aiType === "food" && labels.length === 0) {

@@ -1,4 +1,4 @@
-import { index, jsonb, numeric, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { index, jsonb, numeric, pgTable, text, timestamp, unique, uuid } from "drizzle-orm/pg-core";
 import { analysisTypeEnum } from "./enums/enums";
 
 export const aiAnalysisLogs = pgTable(
@@ -24,5 +24,7 @@ export const aiAnalysisLogs = pgTable(
     analysisTypeIdx: index('idx_ai_analysis_type').on(table.analysisType),
     createdAtIdx: index('idx_ai_created_at').on(table.createdAt),
     storageIdIdx: index("idx_ai_storage_id").on(table.storageId),
+    entityAnalysisUnique: unique('uq_ai_entity_analysis')
+      .on(table.entityId, table.analysisType),
   })
 );

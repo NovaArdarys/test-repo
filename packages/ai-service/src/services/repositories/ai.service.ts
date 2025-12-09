@@ -37,6 +37,17 @@ export async function insertAiLog(params: InsertAiLogParams) {
     input,
     metadata: metadata ?? {},
     createdAt: new Date()
+  }).onConflictDoUpdate({
+    target: [aiAnalysisLogs.entityId],
+    set: {
+      sourceImageUrl: sourceImageUrl ?? null,
+      outputImageUrl: outputImageUrl ?? null,
+      processingTime: processingTime ?? null,
+      threshold: threshold ?? null,
+      output,
+      input,
+      metadata: metadata ?? {},
+    },
   });
 }
 
