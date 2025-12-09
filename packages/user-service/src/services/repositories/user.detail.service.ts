@@ -212,7 +212,7 @@ export async function getUserById(id: string) {
       phoneNumber: userDetails.phoneNumber,
       address: userDetails.address,
       fullName: sql<string>`CONCAT(${userDetails.firstName}, ' ', ${userDetails.lastName})`,
-
+      imageURL: userDetails.imageURL,
       kitchen: {
         id: kitchens.id,
         name: kitchens.name,
