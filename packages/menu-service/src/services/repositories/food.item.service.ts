@@ -1,7 +1,7 @@
 import { db } from "@/db";
 import { foodItems, } from "@/db/schemas"; // Asumsi skema Anda di sini
 import { APIPagination } from "@/types/paginations.type";
-import { eq, and, sql, desc, SQLWrapper, InferSelectModel, InferInsertModel } from "drizzle-orm";
+import { eq, and, sql, desc, SQLWrapper, InferSelectModel, InferInsertModel, asc } from "drizzle-orm";
 import { MenuPlan } from "./menu.plan.service";
 
 export type FoodItem = InferSelectModel<typeof foodItems>;
@@ -43,7 +43,7 @@ export async function getFoodItemsList({
     .where(and(...whereConditions))
     .limit(limit)
     .offset(offset)
-    .orderBy(desc(foodItems.createdAt));
+    .orderBy(asc(foodItems.name));
 
   const countPromise = db
     .select({ count: sql<number>`count(*)` })

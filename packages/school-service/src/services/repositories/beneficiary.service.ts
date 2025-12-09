@@ -1,7 +1,7 @@
 import { db } from "@/db"; // Asumsi koneksi Drizzle di sini
 import { beneficiaries, userBeneficiaries } from "@/db/schemas"; // Asumsi skema Anda di sini
 import { APIPagination } from "@/types/paginations.type";
-import { eq, and, sql, desc, SQLWrapper, InferInsertModel, InferSelectModel, or, inArray } from "drizzle-orm";
+import { eq, and, sql, desc, SQLWrapper, InferInsertModel, InferSelectModel, or, inArray, asc } from "drizzle-orm";
 import { compact } from "lodash";
 
 export type Beneficiary = InferSelectModel<typeof beneficiaries>;
@@ -116,7 +116,7 @@ export async function getBeneficiaryList({
     where: and(...whereConditions),
     limit,
     offset,
-    orderBy: desc(beneficiaries.createdAt),
+    orderBy: asc(beneficiaries.name),
   });
 
   const countPromise = db
