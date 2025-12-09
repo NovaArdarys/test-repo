@@ -41,12 +41,15 @@ export const foodWorker = new Worker<StorageCommittedType>(
         const labels =
           aiType === "food"
             ? stepReport?.dailyReport?.menuPlan?.menuFoodItem
-              .map((item) => ({
-                id: item.foodItem?.name?.trim() || "",
-                en: item.foodItem?.nameEn?.trim() || item.foodItem?.name?.trim() || "",
-              }))
+              .flatMap((item) =>
+                (item.foodItem.ingredients || []).map((ing) => ({
+                  id: ing.name?.trim() || "",
+                  en: ing.nameEn?.trim() || item.foodItem?.name?.trim() || "",
+                }))
+              )
               .filter((l) => l.id && l.en)
             : [];
+
 
         if (aiType === "food" && (!labels || labels.length === 0)) {
           throw new Error("No valid food labels found for AI request.");

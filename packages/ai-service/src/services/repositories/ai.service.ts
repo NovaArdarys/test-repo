@@ -62,6 +62,7 @@ export async function getStepReportDetail(entityId?: string) {
                     columns: {
                       name: true,
                       nameEn: true,
+                      ingredients: true
                     },
                   },
                 },
