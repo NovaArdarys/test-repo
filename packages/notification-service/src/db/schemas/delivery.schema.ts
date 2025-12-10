@@ -21,6 +21,7 @@ export const deliveries = pgTable('deliveries', {
   targetPortion: integer("target_portion").default(0).notNull(),
   receivedPortion: integer("received_portion").default(0).notNull(),
   takenTray: integer("taken_tray").default(0).notNull(),
+  type: text("type").default("DROPOFF").notNull(),
 }, (table) => ({
   // uniqKitchenDriverDate: uniqueIndex('uniq_kitchen_driver_date').on(
   //   table.kitchenId,
