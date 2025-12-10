@@ -73,6 +73,8 @@ export const foodWorker = new Worker<z.infer<typeof stepCommittedSchema>>(
       }
 
       imageURL = stepReport.imageURL;
+      console.log(stepReport.imageURL, "=======stepReport.imageURL====== 🅿️");
+
       const image = await compressImageToBase64(imageURL);
       let labels: { id: string; en: string; }[] = [];
 
