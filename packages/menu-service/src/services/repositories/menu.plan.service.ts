@@ -8,7 +8,7 @@ import { buildPaginatedWhere } from "@/utils/pagination";
 type ExpandedStep = {
     stepId: string;
     subDomain: string | null;
-    stepKey: "preparationTool" | "preparation" | "cooking" | "packaging" | "pickup" | "delivery" | "confirmation" | "receive" | "receive_big_class" | "receive_big_portion" | "receive_small_class" | "receive_small_portion" | "inspection" | "distribution" | "alergic";
+    stepKey: "preparationTool" | "preparation" | "cooking" | "packaging" | "pickup" | "delivery" | "confirmation" | "receive" | "receive_big_class" | "receive_big_portion" | "receive_small_class" | "receive_small_portion" | "inspection" | "inspection_before" | "inspection_after" | "distribution" | "alergic";
 };
 export type MenuPlanBeneficiaries = InferSelectModel<typeof menuPlanBeneficiaries>;
 export type MenuPlan = InferSelectModel<typeof menuPlans>;

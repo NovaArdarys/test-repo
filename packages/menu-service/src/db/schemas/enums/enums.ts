@@ -42,6 +42,8 @@ export const stepKeyEnum = pgEnum("step_key_enum", [
   "receive_small_class",
   "receive_small_portion",
   "inspection",
+  "inspection_before",
+  "inspection_after",
   "distribution",
   "alergic"
 ]);
