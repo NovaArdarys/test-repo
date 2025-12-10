@@ -122,6 +122,7 @@ export async function getDriverDeliveries(params: {
       targetPortion: deliveries.targetPortion,
       receivedPortion: deliveries.receivedPortion,
       takenTray: deliveries.takenTray,
+      type: deliveries.type
     })
     .from(deliveries)
     .leftJoin(deliveryBeneficiaries, eq(deliveries.id, deliveryBeneficiaries.deliveryId))
@@ -226,6 +227,7 @@ export async function getDriverDeliveries(params: {
       targetPortion: row.targetPortion,
       receivedPortion: row.receivedPortion,
       takenTray: row.takenTray,
+      type: row.type,
       steps,
     });
 
