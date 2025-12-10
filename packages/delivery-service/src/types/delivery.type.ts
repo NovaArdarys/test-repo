@@ -11,10 +11,13 @@ export const dropoffJobSchema = z.object({
 });
 
 export const pickupJobSchema = z.object({
-  dropoffId: z.string(),
   kitchenId: z.string(),
   portionType: z.string(),
   targetPortion: z.number(),
+  driverId: z.string(),
+  startTime: z.string(),
+  estimatedDeliveryTime: z.string(),
+  notes: z.string(),
 });
 
 export const notifyJobSchema = z.object({
