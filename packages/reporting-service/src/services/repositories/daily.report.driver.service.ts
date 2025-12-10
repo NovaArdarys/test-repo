@@ -198,19 +198,25 @@ export async function getDriverDeliveries(params: {
           date: row.planDate,
           name: row.planName,
         },
+        portion: {
+          small: 0,
+          large: 0,
+          total: 0,
+        },
         delivery: [],
       };
     }
 
-    const steps = row.deliveryBeneficiaryId && stepsBySchool[row.deliveryBeneficiaryId]
-      ? Array.from(stepsBySchool[row.deliveryBeneficiaryId].values()).sort(
-        (a, b) => a.stepOrder - b.stepOrder
-      )
-      : [];
+    const steps =
+      row.deliveryBeneficiaryId && stepsBySchool[row.deliveryBeneficiaryId]
+        ? Array.from(stepsBySchool[row.deliveryBeneficiaryId].values()).sort(
+          (a, b) => a.stepOrder - b.stepOrder,
+        )
+        : [];
 
     acc[row.menuPlanId].delivery.push({
       id: row.deliveryId,
-      school: {
+      beneficiary: {
         id: row.beneficiaryId,
         name: row.beneficiaryName,
       },
@@ -222,6 +228,16 @@ export async function getDriverDeliveries(params: {
       takenTray: row.takenTray,
       steps,
     });
+
+    if (row.portionType === "SMALL") {
+      acc[row.menuPlanId].portion.small += row.targetPortion ?? 0;
+    } else if (row.portionType === "LARGE") {
+      acc[row.menuPlanId].portion.large += row.targetPortion ?? 0;
+    }
+
+    acc[row.menuPlanId].portion.total =
+      acc[row.menuPlanId].portion.small +
+      acc[row.menuPlanId].portion.large;
 
     return acc;
   }, {} as Record<string, any>);

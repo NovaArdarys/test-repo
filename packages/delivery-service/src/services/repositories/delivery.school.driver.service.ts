@@ -183,22 +183,29 @@ export async function createAutoDelivery(data: CreateAutoDeliveryInput) {
       const assignedUnits = assignments[driver.id];
 
       for (const unit of assignedUnits) {
-        const estTime = estimateDeliveryTime(unit.distance, 30, 10, unit.deliveryTime || new Date());
+        const AVERAGE_SPEED_KMH = 30;
+        const BUFFER_MINUTES = 10;
 
+        const totalDistance = unit.distance ?? 0;
+        const estimatedMinutes = Math.round((totalDistance / AVERAGE_SPEED_KMH) * 60 + BUFFER_MINUTES);
+        const estimatedDeliveryTime = new Date(Date.now() + estimatedMinutes * 60000);
         const [delivery] = await tx.insert(deliveries)
           .values({
             kitchenId: data.kitchenId,
             driverId: driver.id,
-            startTime: unit.deliveryTime || new Date(),
-            endTime: null,
-            estimatedDeliveryTime: estTime,
-            notes: `${unit.type} portion`,
-            status: "PENDING",
+            startTime: new Date(),
+            estimatedDeliveryTime,
+            deliveryCode: generateDeliveryCode(data.kitchenId, unit.beneficiaryId, unit.type),
+            notes: `Pengiriman ${menuPlan.name} - ${unit.type}`,
+            status: data.status || "PENDING",
             createdAt: new Date(),
-            createdBy: data.createdBy,
             updatedAt: new Date(),
+            createdBy: data.createdBy,
             updatedBy: data.createdBy,
-            portionType: unit.type
+            deliveryDate: menuPlan.planStartDate,
+            portionType: unit.type,
+            targetPortion: unit?.portion,
+            endTime: null
           })
           .returning();
         const dailyReportMap: Record<string, Record<string, string>> = {};
@@ -210,6 +217,7 @@ export async function createAutoDelivery(data: CreateAutoDeliveryInput) {
             beneficiaryId: unit.beneficiaryId,
             menuPlanId: unit.menuPlanId,
             createdBy: data.createdBy,
+            createdAt: new Date(),
           })
           .returning();
 
