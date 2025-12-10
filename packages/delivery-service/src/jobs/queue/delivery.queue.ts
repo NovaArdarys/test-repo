@@ -1,10 +1,10 @@
 import { Queue } from "bullmq";
 import redis from "@/constants/redis";
-import { stepCommittedSchema } from "@/types/delivery.type";
+import { dropoffJobSchema } from "@/types/delivery.type";
 import { z } from "zod";
 
 export const DELIVERY_QUEUE_NAME = "delivery";
 
-export const deliveryQueue = new Queue<z.infer<typeof stepCommittedSchema>>(DELIVERY_QUEUE_NAME, {
+export const deliveryQueue = new Queue(DELIVERY_QUEUE_NAME, {
   connection: redis,
 });

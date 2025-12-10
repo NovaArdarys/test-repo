@@ -2,7 +2,7 @@ import { z } from "zod";
 import { Channel } from "amqplib";
 import { EXCHANGES } from "../events/exchanges";
 import { safeConsume } from "../utils/consumerHelper";
-import { stepCommittedSchema } from "@/types/delivery.type";
+import { dropoffJobSchema } from "@/types/delivery.type";
 import { deliveryQueue } from "@/jobs/queue/delivery.queue";
 import { format } from "date-fns";
 
@@ -14,14 +14,14 @@ const LOG_QUEUE_NAME = "delivery_service_log_queue";
 const LOG_ROUTING_KEY = "log.#";
 
 // ================= HANDLERS =================
-async function handleStepCommit(data: z.infer<typeof stepCommittedSchema>) {
-  const parsed = stepCommittedSchema.parse(data);
+async function handleStepCommit(data: z.infer<typeof dropoffJobSchema>) {
+  const parsed = dropoffJobSchema.parse(data);
   console.log("🪅 [DELIVERY EVENT IN] Parsed:", parsed);
 
   if (parsed.entityType === "kitchen" && parsed.allStepCompleted) {
     console.log("🪅 Masuk:", parsed);
 
-    await deliveryQueue.add("delivery-creation", parsed, {
+    await deliveryQueue.add("dropoff-creation", parsed, {
       jobId: `delivery|${parsed.entityId}|${parsed.menuPlanId}|${format(new Date(), "yyyyMMdd_HHmmss")}`,
       attempts: 3,
       backoff: { type: "exponential", delay: 3000 },
