@@ -74,15 +74,14 @@ export const foodWorker = new Worker<z.infer<typeof stepCommittedSchema>>(
 
       imageURL = stepReport.imageURL;
       const image = await compressImageToBase64(imageURL);
-
       let labels: { id: string; en: string; }[] = [];
 
       if (aiType === "food") {
         labels = stepReport.dailyReport?.menuPlan?.menuFoodItem
           ?.flatMap((item) =>
             item.foodItem.ingredients?.map((ing) => ({
-              id: ing.name?.trim() || "",
-              en: ing.nameEn?.trim() || item.foodItem?.name?.trim() || "",
+              id: ing.name?.toLowerCase()?.trim() || "",
+              en: ing.nameEn?.toLowerCase()?.trim() || item.foodItem?.name?.toLowerCase()?.trim() || "",
             })) ?? []
           )
           .filter((l) => l.id && l.en) ?? [];
