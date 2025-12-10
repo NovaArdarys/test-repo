@@ -6,7 +6,7 @@ const entityTypeValidator = z.enum(entityTypeEnum.enumValues, {
 });
 
 const singleFileSchema = z.instanceof(File, { message: "File must be a valid File object" })
-  .refine(file => file.size <= 5 * 1024 * 1024, { message: "File size max 5MB" })
+  .refine(file => file.size <= 15 * 1024 * 1024, { message: "File size max 15MB" })
   .refine(file => ["image/jpeg", "image/png", "application/pdf"].includes(file.type), {
     message: "Only JPEG, PNG, or PDF files are allowed",
   });

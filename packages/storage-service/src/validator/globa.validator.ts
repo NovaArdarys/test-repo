@@ -36,7 +36,7 @@ export const idParamSchema = z.object({
 
 export const fileSchema = z.instanceof(File, {
   message: "Invalid file type",
-}).refine((file) => file.size <= 5 * 1024 * 1024, "File size max 5MB")
+}).refine((file) => file.size <= 15 * 1024 * 1024, "File size max 15MB")
   .refine(
     (file) => ["image/jpeg", "image/png", "application/pdf"].includes(file.type),
     "Only JPEG, PNG, or PDF files are allowed");
