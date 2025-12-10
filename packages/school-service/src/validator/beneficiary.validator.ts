@@ -23,9 +23,9 @@ const BeneficiaryBaseSchema = z.object({
   joinedDate: z.string(),
   category: z.string(),
   smallPortion: z.number().min(0).default(0),
-  smallPortionTime: z.string().min(1, "Jam porsi kecil harus diisi"),
+  smallDeliveryTime: z.string().min(1, "Jam porsi kecil harus diisi"),
   largePortion: z.number().min(0).default(0),
-  largePortionTime: z.string().min(1, "Jam porsi besar harus diisi"),
+  largeDeliveryTime: z.string().min(1, "Jam porsi besar harus diisi"),
   status: z.string(),
 });
 
