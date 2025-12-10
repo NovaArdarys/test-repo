@@ -8,6 +8,7 @@ import { buildPaginatedWhere } from "@/utils/pagination";
 type ExpandedStep = {
     stepId: string;
     subDomain: string | null;
+    stepKey: "preparationTool" | "preparation" | "cooking" | "packaging" | "pickup" | "delivery" | "confirmation" | "receive" | "receive_big_class" | "receive_big_portion" | "receive_small_class" | "receive_small_portion" | "inspection" | "distribution" | "alergic";
 };
 export type MenuPlanBeneficiaries = InferSelectModel<typeof menuPlanBeneficiaries>;
 export type MenuPlan = InferSelectModel<typeof menuPlans>;
@@ -391,12 +392,13 @@ export async function createMenuPlan(
                 const list = Array.isArray(step.subDomains) ? step.subDomains : [];
 
                 if (list.length === 0) {
-                    return [{ stepId: step.id, subDomain: null }];
+                    return [{ stepId: step.id, subDomain: null, stepKey: step.stepKey }];
                 }
 
                 return list.map(sub => ({
                     stepId: step.id,
                     subDomain: sub,
+                    stepKey: step.stepKey
                 }));
             }).flat();
 
@@ -478,15 +480,17 @@ export async function createMenuPlan(
                     const list = Array.isArray(step.subDomains) ? step.subDomains : [];
 
                     if (list.length === 0) {
-                        return [{ stepId: step.id, subDomain: null }];
+                        return [{ stepId: step.id, subDomain: null, stepKey: step.stepKey }];
                     }
 
                     return list.map(sub => ({
                         stepId: step.id,
                         subDomain: sub,
+                        stepKey: step.stepKey
                     }));
                 }).flat();
                 for (const report of beneficiaryDailyReports) {
+                    // beneficiary
                     await trx.insert(stepReports).values(
                         expandedBeneficiarySteps.map((step) => ({
                             dailyReportId: report.id,

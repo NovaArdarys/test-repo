@@ -23,7 +23,9 @@ const BeneficiaryBaseSchema = z.object({
   joinedDate: z.string(),
   category: z.string(),
   smallPortion: z.number().min(0).default(0),
+  smallPortionTime: z.string().min(1, "Jam porsi kecil harus diisi"),
   largePortion: z.number().min(0).default(0),
+  largePortionTime: z.string().min(1, "Jam porsi besar harus diisi"),
   status: z.string(),
 });
 
@@ -34,7 +36,7 @@ export const CreateBeneficiarySchema = BeneficiaryBaseSchema.extend({
     z.string()
   ).optional(),
   storageId: z.string().optional(),
-  imageURL: z.string().optional()
+  imageURL: z.string().optional(),
 });
 
 export type CreateBeneficiarySchemaType = z.infer<typeof CreateBeneficiarySchema>;
