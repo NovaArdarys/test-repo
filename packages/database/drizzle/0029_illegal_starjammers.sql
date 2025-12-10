@@ -1,0 +1,1 @@
+ALTER TABLE "deliveries" ADD COLUMN "type" text DEFAULT 'DROPOFF' NOT NULL;
