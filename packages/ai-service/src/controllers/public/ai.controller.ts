@@ -36,8 +36,9 @@ export const analyzeData = catchAsync(async (c: Context) => {
     await foodQueue.add("detection", {
       entityId: entityId,
       entityType: stepReport.step.entityType,
-      storageId: storageId,
-      url: url
+      id: "",
+      menuPlanId: "",
+      allStepCompleted: false
     }, {
       removeOnComplete: true,
       removeOnFail: false,

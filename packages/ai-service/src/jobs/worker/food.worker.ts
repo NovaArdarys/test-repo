@@ -26,7 +26,6 @@ export const foodWorker = new Worker<z.infer<typeof stepCommittedSchema>>(
 
     const start = performance.now();
 
-    // Default state
     let analysisType:
       | "cleanliness"
       | "food_authenticity"
@@ -103,7 +102,7 @@ export const foodWorker = new Worker<z.infer<typeof stepCommittedSchema>>(
 
 
       await insertAiLog({
-        entityId: job.data.entityId ?? null,
+        entityId: job.data.id ?? null,
         storageId,
         analysisType,
         sourceImageUrl: imageURL,
@@ -137,7 +136,7 @@ export const foodWorker = new Worker<z.infer<typeof stepCommittedSchema>>(
 
       try {
         await insertAiLog({
-          entityId: job?.data?.entityId ?? null,
+          entityId: job.data.id ?? null,
           analysisType,
           sourceImageUrl: imageURL,
           storageId,

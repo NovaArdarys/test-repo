@@ -36,22 +36,22 @@ export async function compressImageToBase64(
   let quality = 80;
   let outputBuffer = Buffer.from(inputBuffer);
 
-  while (quality >= 20) {
-    let encoded: ArrayBuffer | Uint8Array;
-    if (isJPG) {
-      encoded = await encodeJpeg(imageData, { quality });
-    } else {
-      encoded = await encodePng(imageData);
-    }
+  // while (quality >= 20) {
+  //   let encoded: ArrayBuffer | Uint8Array;
+  //   if (isJPG) {
+  //     encoded = await encodeJpeg(imageData, { quality });
+  //   } else {
+  //     encoded = await encodePng(imageData);
+  //   }
 
-    outputBuffer = Buffer.from(encoded);
-    if (outputBuffer.length <= targetBytes) break;
-    quality -= 10;
-  }
+  //   outputBuffer = Buffer.from(encoded);
+  //   if (outputBuffer.length <= targetBytes) break;
+  //   quality -= 10;
+  // }
 
-  console.log(
-    `🗜️ Compressed: ${(inputBuffer.length / 1024).toFixed(1)} KB → ${(outputBuffer.length / 1024).toFixed(1)} KB (quality=${quality})`
-  );
+  // console.log(
+  //   `🗜️ Compressed: ${(inputBuffer.length / 1024).toFixed(1)} KB → ${(outputBuffer.length / 1024).toFixed(1)} KB (quality=${quality})`
+  // );
 
   return outputBuffer.toString("base64");
 }
