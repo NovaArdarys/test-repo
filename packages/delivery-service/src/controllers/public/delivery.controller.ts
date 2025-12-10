@@ -33,8 +33,6 @@ const getAuditFields = (c: Context) => ({
   isAppManager: c.get("isAppManager") as boolean,
 });
 
-
-
 export const listDeliveriesHandler = catchAsync(async (c: Context) => {
   const query = c.req.query() as unknown as ListDeliveriesQuerySchemaType;
 
@@ -57,104 +55,9 @@ export const listDeliveriesHandler = catchAsync(async (c: Context) => {
   return c.json({ data: data.data, meta: data.meta }, 200);
 });
 
-export const createDeliveryHandler = catchAsync(async (c: Context) => {
-  const body = await c.req.parseBody() as unknown as CreateDeliverySchemaType;
-  const { createdBy } = getAuditFields(c);
-
-  const newDelivery = await createDelivery({
-    ...body,
-    startTime: new Date(body.startTime),
-    endTime: new Date(body.endTime),
-    estimatedDeliveryTime: new Date(body.estimatedDeliveryTime),
-    createdBy,
-  });
-
-  return c.json({ data: newDelivery, message: "Delivery trip created" }, 201);
-});
-
 export const getDeliveryByIdHandler = catchAsync(async (c: Context) => {
   const { id } = c.req.param();
   const data = await getDeliveryById(id);
 
   return c.json({ data }, 200);
-});
-
-export const updateDeliveryHandler = catchAsync(async (c: Context) => {
-  const { id } = c.req.param();
-  const body = await c.req.parseBody() as unknown as UpdateDeliverySchemaType;
-  const { updatedBy } = getAuditFields(c);
-
-  const updatedDelivery = await updateDelivery(id, {
-    ...body,
-    startTime: new Date(body.startTime!),
-    endTime: new Date(body.endTime!),
-    estimatedDeliveryTime: new Date(body.estimatedDeliveryTime!),
-    updatedBy,
-  });
-
-  return c.json({ data: updatedDelivery, message: "Delivery updated" }, 200);
-});
-
-export const softDeleteDeliveryHandler = catchAsync(async (c: Context) => {
-  const { id } = c.req.param();
-  const { updatedBy } = getAuditFields(c);
-
-  await softDeleteDelivery(id, updatedBy);
-
-  return c.json({ message: "Delivery soft deleted" }, 200);
-});
-
-export const updateDeliveryStatusHandler = catchAsync(async (c: Context) => {
-  const deliveryId = c.req.param("id");
-
-  const { status } = c.get("validatedData").body as unknown as {
-    status: "PENDING" | "IN_PROGRESS" | "DELIVERED" | "FAILED";
-  };
-
-  const { updatedBy } = getAuditFields(c);
-
-  const updatedDelivery = await updateDeliveryStatus({
-    deliveryId,
-    status,
-    updatedBy
-  });
-
-  return c.json(
-    { data: updatedDelivery, message: "Delivery status updated" },
-    200
-  );
-});
-
-export const listBeneficiaryByDeliveryIdHandler = catchAsync(async (c: Context) => {
-  const { id: deliveryId } = c.req.param();
-
-  await getDeliveryById(deliveryId);
-
-  const data = await getBeneficiarysByDeliveryId(deliveryId);
-
-  return c.json({ data }, 200);
-});
-
-export const assignBeneficiaryToDeliveryHandler = catchAsync(async (c: Context) => {
-  const { id: deliveryId } = c.req.param();
-  const body = await c.get("validatedData").body as unknown as AssignBeneficiarySchemaType;
-  const { createdBy } = getAuditFields(c);
-
-  await getDeliveryById(deliveryId);
-
-  const newAssignment = await assignBeneficiaryToDelivery({
-    ...body,
-    deliveryId,
-    createdBy,
-  });
-
-  return c.json({ data: newAssignment, message: "Beneficiary assigned to delivery" }, 201);
-});
-
-export const unassignBeneficiaryFromDeliveryHandler = catchAsync(async (c: Context) => {
-  const { id: deliveryId, beneficiaryId } = c.req.param();
-
-  await unassignBeneficiaryFromDelivery(deliveryId, beneficiaryId);
-
-  return c.json({ message: "Beneficiary unassigned from delivery" }, 200);
 });

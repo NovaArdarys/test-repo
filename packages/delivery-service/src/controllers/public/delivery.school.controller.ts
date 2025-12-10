@@ -23,8 +23,6 @@ const getAuditFields = (c: Context) => ({
   isAppManager: c.get("isAppManager") as boolean,
 });
 
-
-
 export const listDeliveryBeneficiaryHandler = catchAsync(async (c: Context) => {
   const query = c.req.query() as unknown as DeliveryBeneficiaryListQueryType;
 
@@ -41,51 +39,4 @@ export const listDeliveryBeneficiaryHandler = catchAsync(async (c: Context) => {
   });
 
   return c.json({ data: data.data, meta: data.meta }, 200);
-});
-
-export const createDeliveryBeneficiaryHandler = catchAsync(async (c: Context) => {
-  const body = await c.req.parseBody() as unknown as DeliveryBeneficiaryCreatebodySchemaType;
-  const { createdBy } = getAuditFields(c);
-
-  const newRecord = await assignBeneficiaryToDelivery({
-    ...body,
-    createdBy,
-  });
-
-  return c.json({ data: newRecord, message: "Delivery Beneficiary record created" }, 201);
-});
-
-export const getDeliveryBeneficiaryByIdHandler = catchAsync(async (c: Context) => {
-  const { id } = c.req.param();
-  const data = await getDeliveryBeneficiaryById(id);
-
-  return c.json({ data }, 200);
-});
-
-export const updateDeliveryBeneficiaryHandler = catchAsync(async (c: Context) => {
-  const { id } = c.req.param();
-  const body = await c.req.parseBody() as unknown as DeliveryBeneficiaryUpdateType;
-
-  const updatedRecord = await updateDeliveryBeneficiary(id);
-
-  return c.json({ data: updatedRecord, message: "Delivery Beneficiary record updated" }, 200);
-});
-
-export const softDeleteDeliveryBeneficiaryHandler = catchAsync(async (c: Context) => {
-  const { id } = c.req.param();
-
-  await softDeleteDeliveryBeneficiary(id);
-
-  return c.json({ message: "Delivery Beneficiary record soft deleted" }, 200);
-});
-
-export const updateDeliveryBeneficiaryStatusHandler = catchAsync(async (c: Context) => {
-  const { id } = c.req.param();
-  const { status, deliveredAt } = await c.req.parseBody() as unknown as UpdateDeliveryBeneficiaryStatusSchemaType;
-
-  const updatedRecord = await updateDeliveryBeneficiaryStatusById(
-    id,
-  );
-
-  return c.json({ data: updatedRecord, message: `Delivery Beneficiary status set to ${status}` }, 200);
 });
