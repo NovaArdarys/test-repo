@@ -312,7 +312,7 @@ export async function createMenuPlan(
         const beneficiariesByKitchen = await trx
             .select()
             .from(beneficiaries)
-            .where(eq(beneficiaries.kitchenId, kitchenId));
+            .where(and(eq(beneficiaries.kitchenId, kitchenId), eq(beneficiaries.status, "AKTIF")));
         const driverByKitchen = await trx
             .select()
             .from(drivers)
