@@ -65,6 +65,7 @@ export async function getKitchensList({
   isAppManager,
   author,
   kitchenIds,
+  orderBy
 }: {
   page: number;
   limit: number;
@@ -78,6 +79,7 @@ export async function getKitchensList({
   isAppManager?: boolean;
   author?: string;
   kitchenIds?: string[];
+  orderBy?: any[];
 }) {
   const offset = (page - 1) * limit;
   const whereConditions: SQLWrapper[] = [];
@@ -124,7 +126,10 @@ export async function getKitchensList({
       name ? ilike(k.name, `%${name.toLowerCase()}%`) : undefined,
       status ? eq(k.status, status) : undefined,
     ),
-    orderBy: (k, { desc }) => [desc(k.createdAt)],
+    orderBy: (table, helpers) =>
+      orderBy && orderBy.length > 0
+        ? orderBy.map(fn => fn(table, helpers))
+        : [helpers.desc(table.createdAt)],
     limit,
     offset,
   });

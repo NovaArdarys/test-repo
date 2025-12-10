@@ -6,6 +6,9 @@ import { assignUserToKitchen, isUserAssignedToKitchen, syncUserKitchenByMerge, u
 import { AssignUserToKitchenSchemaType, CreateKitchenSchemaType } from "@/validator/kitchen.validator";
 import { updateSchoolServiceClient } from "../../../services/clients/school.service";
 import { isArray, isEmpty, uniq } from "lodash";
+import { buildPaginationAndSort } from "@/utils/buildGlobalQuery";
+import { paginationSchema } from "@/validator/global.validator";
+import { kitchenSortMapper } from "@/services/mappers/kitchen.mapper";
 
 const getAuditFields = (c: Context) => ({
   createdBy: c.get('userId'),
@@ -26,8 +29,6 @@ const getAuditFields = (c: Context) => ({
 
 export const listKitchensHandler = catchAsync(async (c: Context) => {
   const query = c.req.query();
-  const page = parseInt(query.page || '1');
-  const limit = parseInt(query.limit || '10');
   const name = query.name;
   const neLat = query.neLat;
   const neLng = query.neLng;
@@ -37,6 +38,12 @@ export const listKitchensHandler = catchAsync(async (c: Context) => {
   const joinDate = query.joinDate;
 
   const audit = getAuditFields(c);
+
+  const { page, limit, orderBy } = buildPaginationAndSort(
+    query,
+    paginationSchema,
+    kitchenSortMapper,
+  );
 
   const data = await getKitchensList({
     page,
@@ -50,7 +57,8 @@ export const listKitchensHandler = catchAsync(async (c: Context) => {
     kitchenIds: uniq([
       ...(isArray(audit.kitchenId) ? audit.kitchenId : []),
     ]),
-    isAppManager: audit.isAppManager
+    isAppManager: audit.isAppManager,
+    orderBy
   });
 
   return c.json({ data: data.data, meta: data.meta }, 200);
