@@ -16,6 +16,7 @@ import {
   detectAI,
   getAITypeFromStepOrder,
 } from '@/services/clients/ai.client.service';
+import { aiStatus } from '@/messaging/publishers/notification.publisher';
 
 const SKIPPABLE_ERRORS = ["ECONNREFUSED", "ECONNRESET", "ETIMEDOUT"];
 
@@ -23,7 +24,6 @@ export const foodWorker = new Worker<z.infer<typeof stepCommittedSchema>>(
   "food-detect-queue",
   async (job) => {
     console.log(`🍳 [Worker] Processing job ${job.id}`);
-
     const start = performance.now();
 
     let analysisType:
@@ -50,7 +50,24 @@ export const foodWorker = new Worker<z.infer<typeof stepCommittedSchema>>(
         return null;
       }
 
+      await job.updateData({
+        ...job.data,
+        dailyReportId: stepReport.dailyReportId,
+        storageId: stepReport.storageId || "",
+        stepKey: stepReport.step.stepKey
+      });
+
       storageId = stepReport.storageId ?? null;
+
+      await aiStatus.processing({
+        channel: `dailyReport:${stepReport.dailyReportId}`,
+        status: "PROCESSING",
+        stepId: stepReport.id,
+        storageId: stepReport.storageId ?? "",
+        dailyReportId: stepReport.dailyReportId,
+        stepKey: stepReport.step.stepKey,
+        jobId: String(job.id),
+      });
 
       if (stepReport.step?.analysisType) {
         analysisType = stepReport.step.analysisType;
@@ -173,10 +190,37 @@ export const foodWorker = new Worker<z.infer<typeof stepCommittedSchema>>(
   }
 );
 
-foodWorker.on("completed", (job) => {
+foodWorker.on("completed", async (job, result) => {
   console.log(`🎉 [Worker] Job ${job.id} completed successfully`);
+
+  await aiStatus.done({
+    channel: `dailyReport:${job.data.dailyReportId}`,
+    status: "DONE",
+    stepId: job.data.id,
+    storageId: job.data.storageId ?? "",
+    dailyReportId: job.data.dailyReportId || "",
+    stepKey: job.data.stepKey,
+    jobId: String(job.id),
+    result,
+  });
 });
 
-foodWorker.on("failed", (job, err) => {
-  console.error(`💥 [Worker] Job ${job?.id} failed:`, err);
+foodWorker.on("failed", async (job, err) => {
+  if (!job) {
+    console.error(`💥 [Worker] Job failed:`, err);
+    return;
+  }
+
+  console.error(`💥 [Worker] Job ${job.id} failed:`, err);
+
+  await aiStatus.failed({
+    channel: `dailyReport:${job.data.dailyReportId}`,
+    status: "FAILED",
+    stepId: job.data.id,
+    storageId: job.data.storageId ?? "",
+    dailyReportId: job.data.dailyReportId || "",
+    stepKey: job.data.stepKey,
+    jobId: String(job.id),
+    error: err?.message ?? "Unknown error"
+  });
 });

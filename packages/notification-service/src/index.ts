@@ -12,14 +12,28 @@ import { checkBroker, connectRabbitMQ } from './messaging/broker';
 import { checkDatabase } from '@/db';
 import { eventMonitorRoute } from './routes/event.monitor.route';
 import { swaggerUI } from '@hono/swagger-ui';
+import { initializeConsumers } from './messaging/consumers';
+import { sendSseToAll, sseController } from './controllers/public/notification.controller';
 
 type Variables = JwtVariables;
 
 
 export const clients = new Set<WebSocket>();
 
-const app = new Hono<{ Variables: Variables; }>()
-  .use(logger())
+const app = new Hono<{ Variables: Variables; }>();
+app.get("/notifications/sse", sseController);
+
+app.get('/trigger', async (c) => {
+  await sendSseToAll('main', { hello: 'world', timestamp: Date.now() });
+  return c.text('Triggered');
+});
+app.use("*", async (c, next) => {
+  if (c.req.path.startsWith("/notifications/sse")) {
+    return next();
+  }
+  return next();
+});
+app.use("/api/*", logger())
   .use('/api', timeout(5000))
   .use(
     '/api/*',
@@ -75,11 +89,18 @@ const app = new Hono<{ Variables: Variables; }>()
 
 async function bootstrap() {
   try {
-    await connectRabbitMQ();
-    console.log("RabbitMQ ready for publishing.");
+    console.log("Starting application initialization...");
+
+    const channel = await connectRabbitMQ();
+
+    console.log("RabbitMQ connected and ready.");
+
+    await initializeConsumers(channel);
+
+    console.log("All RabbitMQ Consumers are successfully listening.");
 
   } catch (error) {
-    console.error("🚨 FATAL ERROR: Gagal menginisialisasi layanan (DB/Broker). Keluar dari aplikasi.", error);
+    console.error("🚨 FATAL ERROR: Application setup failed. Exiting...", error);
     process.exit(1);
   }
 }

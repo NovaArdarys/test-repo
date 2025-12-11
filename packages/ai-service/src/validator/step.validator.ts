@@ -9,4 +9,7 @@ export const stepCommittedSchema = z.object({
   entityType: entityTypeValidator,
   entityId: z.string(),
   allStepCompleted: z.boolean(),
+  dailyReportId: z.string().optional(),
+  storageId: z.string().optional(),
+  stepKey: z.string().optional()
 });

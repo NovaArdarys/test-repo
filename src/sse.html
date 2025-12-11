@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>SSE Tester</title>
+    <style>
+      body {
+        font-family: monospace;
+        background: #0d1117;
+        color: #e6edf3;
+        padding: 20px;
+      }
+      input,
+      button {
+        font-size: 14px;
+        padding: 6px 10px;
+        background: #161b22;
+        color: #fff;
+        border: 1px solid #30363d;
+        border-radius: 4px;
+      }
+      #log {
+        white-space: pre-wrap;
+        background: #161b22;
+        padding: 12px;
+        border-radius: 6px;
+        border: 1px solid #30363d;
+        margin-top: 15px;
+        height: 400px;
+        overflow-y: auto;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>SSE Tester</h2>
+
+    <label>SSE URL:</label><br />
+    <input
+      id="sseUrl"
+      type="text"
+      placeholder="https://api.example.com/sse?channel=dailyReport:123"
+      style="width: 500px" />
+    <br /><br />
+
+    <button id="connectBtn">Connect</button>
+    <button id="disconnectBtn" disabled>Disconnect</button>
+
+    <div id="log"></div>
+
+    <script>
+      let sse = null;
+
+      const logBox = document.getElementById('log');
+
+      function log(message) {
+        logBox.textContent += message + '\n';
+        logBox.scrollTop = logBox.scrollHeight;
+      }
+
+      document.getElementById('connectBtn').onclick = () => {
+        const url = document.getElementById('sseUrl').value;
+        if (!url) {
+          alert('Please enter SSE URL');
+          return;
+        }
+
+        log(`Connecting to: ${url} ...`);
+
+        sse = new EventSource(url);
+
+        sse.onopen = () => log('✅ Connected!');
+
+        sse.onerror = (e) => log('❌ Error or disconnected:', e);
+
+        // Listen ALL events dynamically
+        sse.onmessage = (event) => {
+          log(`📨 [default] ${event.data}`);
+        };
+
+        // Capture custom events
+        sse.addEventListener('__all__', (event) => {
+          log(`🌐 [ALL] ${event.data}`);
+        });
+
+        // Generic handler to capture ALL event types:
+        const originalDispatch = sse.dispatchEvent.bind(sse);
+        sse.dispatchEvent = (evt) => {
+          if (evt.type !== 'message' && evt.type !== 'open' && evt.type !== 'error') {
+            log(`🔔 Event: ${evt.type}\n${evt.data ?? ''}`);
+          }
+          return originalDispatch(evt);
+        };
+
+        document.getElementById('connectBtn').disabled = true;
+        document.getElementById('disconnectBtn').disabled = false;
+      };
+
+      document.getElementById('disconnectBtn').onclick = () => {
+        if (sse) {
+          sse.close();
+          log('🔌 Disconnected');
+        }
+
+        document.getElementById('connectBtn').disabled = false;
+        document.getElementById('disconnectBtn').disabled = true;
+      };
+    </script>
+  </body>
+</html>
