@@ -1,4 +1,4 @@
-import aiClient from "@/utils/api";
+import apiAiAgent from "@/utils/apiAiAgent";
 import { AxiosError } from "axios";
 
 export interface ChatPayload {
@@ -18,8 +18,8 @@ export interface ChatPayload {
 
 export async function sendToAIAgent(payload: ChatPayload) {
   try {
-    const res = await aiClient.post(
-      "https://dev-mbg-be-ai-agent.midigi.id/chat/",
+    const res = await apiAiAgent.post(
+      "/chat/",
       payload
     );
     return res.data;
