@@ -125,6 +125,7 @@ export async function createDriver(data: NewDriver): Promise<Driver> {
       ...data,
       updatedAt: new Date(),
       updatedBy: data.createdBy,
+      portionCapacity: 5000
     })
     .returning();
 
