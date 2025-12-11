@@ -1,6 +1,7 @@
 
 import { db } from "@/db";
-import { deliveries, } from "@/db/schemas";
+import { deliveries, deliveryBeneficiaries, } from "@/db/schemas";
+import { generateDeliveryCode } from "@/messaging/utils/generateDeliveryCode";
 import { entityTypeEnum } from "@/validator/globa.validator";
 import { eq, InferSelectModel, InferInsertModel } from "drizzle-orm";
 import { isEmpty } from "lodash";
@@ -197,18 +198,48 @@ export async function getDeliveryById(id: string): Promise<Delivery | null> {
 }
 
 
-export async function createDelivery(data: NewDelivery): Promise<Delivery> {
-  const [newItem] = await db.insert(deliveries)
-    .values({
-      ...data,
-      status: data?.status || 'PENDING',
-      updatedAt: new Date(),
-      updatedBy: data.createdBy
-    })
-    .returning();
-  return newItem;
-}
+export async function createDelivery(
+  data: NewDelivery,
+  beneficiaryId: string,
+  portionType: string,
+  menuPlanId: string
+): Promise<Delivery> {
 
+  return await db.transaction(async (tx) => {
+
+    console.log(generateDeliveryCode(
+      data.kitchenId,
+      beneficiaryId,
+      portionType
+    ), "=====code =====");
+
+    const [newDelivery] = await tx.insert(deliveries)
+      .values({
+        ...data,
+        status: data?.status || "PENDING",
+        portionType,
+        updatedAt: new Date(),
+        updatedBy: data.createdBy,
+        type: "PICKUP",
+        deliveryCode: generateDeliveryCode(
+          data.kitchenId,
+          beneficiaryId,
+          portionType
+        ),
+      })
+      .returning();
+
+    await tx.insert(deliveryBeneficiaries)
+      .values({
+        deliveryId: newDelivery.id,
+        beneficiaryId: beneficiaryId,
+        menuPlanId: menuPlanId,
+        createdBy: data.createdBy,
+      });
+
+    return newDelivery;
+  });
+}
 export async function updateDelivery(id: string, data: UpdateDelivery): Promise<Delivery | null> {
   const [updatedItem] = await db.update(deliveries)
     .set({ ...data, updatedAt: new Date() })

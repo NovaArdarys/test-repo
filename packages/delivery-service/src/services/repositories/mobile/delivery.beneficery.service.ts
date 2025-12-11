@@ -185,3 +185,32 @@ export async function getDeliveriesListBeneficiary({
     },
   };
 }
+
+export async function getDeliveryBeneficiary(deliveryId: string) {
+  const rows = await db
+    .select({
+      id: deliveryBeneficiaries.id,
+      deliveryId: deliveryBeneficiaries.deliveryId,
+      beneficiaryId: deliveryBeneficiaries.beneficiaryId,
+      menuPlanId: deliveryBeneficiaries.menuPlanId,
+      beneficiaryName: beneficiaries.name,
+      smallPortion: beneficiaries.smallPortion,
+      largePortion: beneficiaries.largePortion,
+      lat: beneficiaries.lat,
+      lon: beneficiaries.lon,
+      menuPlanStart: menuPlans.planStartDate,
+    })
+    .from(deliveryBeneficiaries)
+    .innerJoin(
+      beneficiaries,
+      eq(beneficiaries.id, deliveryBeneficiaries.beneficiaryId)
+    )
+    .innerJoin(
+      menuPlans,
+      eq(menuPlans.id, deliveryBeneficiaries.menuPlanId)
+    )
+    .where(eq(deliveryBeneficiaries.deliveryId, deliveryId))
+    .limit(1);
+
+  return rows[0] ?? null;
+}

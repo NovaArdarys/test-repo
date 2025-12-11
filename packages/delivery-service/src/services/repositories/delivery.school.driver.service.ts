@@ -164,7 +164,7 @@ export async function createAutoDelivery(data: CreateAutoDeliveryInput) {
         smallPortion: beneficiaries.smallPortion,
         largePortion: beneficiaries.largePortion,
         smallDeliveryTime: beneficiaries.smallDeliveryTime,
-        largeDeliveryTime: beneficiaries.largeDeliveryTime
+        largeDeliveryTime: beneficiaries.largeDeliveryTime,
       })
       .from(menuPlanBeneficiaries)
       .innerJoin(beneficiaries, eq(menuPlanBeneficiaries.beneficiaryId, beneficiaries.id))

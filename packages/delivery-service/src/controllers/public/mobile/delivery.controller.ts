@@ -102,6 +102,7 @@ export const updateDeliveryStatusHandler = catchAsync(async (c: Context) => {
 
   if (updatedDelivery.type === "DROPOFF" && status === "DELIVERED") {
     await deliveryQueue.add("pickup-creation", {
+      id: updatedDelivery.id,
       kitchenId: updatedDelivery.kitchenId,
       portionType: updatedDelivery.portionType,
       targetPortion: updatedDelivery.targetPortion,
@@ -109,6 +110,7 @@ export const updateDeliveryStatusHandler = catchAsync(async (c: Context) => {
       startTime: updatedDelivery.startTime,
       estimatedDeliveryTime: updatedDelivery.estimatedDeliveryTime,
       notes: updatedDelivery.notes,
+      deliveryCode: updatedDelivery.deliveryCode
     });
   }
 

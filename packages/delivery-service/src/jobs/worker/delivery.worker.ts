@@ -4,6 +4,7 @@ import { createLoggedWorker } from "@/utils/catchWorker";
 import { DELIVERY_QUEUE_NAME } from "../queue/delivery.queue";
 import { createDelivery } from "@/services/repositories/delivery.service";
 import { dropoffJobSchema, notifyJobSchema, pickupJobSchema } from "@/types/delivery.type";
+import { getDeliveryBeneficiary } from "@/services/repositories/mobile/delivery.beneficery.service";
 
 export const deliveryWorker = createLoggedWorker<unknown>(
   DELIVERY_QUEUE_NAME,
@@ -27,6 +28,7 @@ export const deliveryWorker = createLoggedWorker<unknown>(
 
       case "pickup-creation": {
         const parsed = pickupJobSchema.parse(job.data);
+        const beneficiary = await getDeliveryBeneficiary(parsed.id);
 
         await createDelivery({
           kitchenId: parsed.kitchenId,
@@ -39,7 +41,7 @@ export const deliveryWorker = createLoggedWorker<unknown>(
           portionType: parsed.portionType,
           receivedPortion: 0,
           createdBy: "11111111-1111-1111-1111-111111111111",
-        });
+        }, beneficiary.beneficiaryId, parsed.portionType, beneficiary.menuPlanId);
 
         break;
       }
