@@ -201,7 +201,6 @@ foodWorker.on("completed", async (job, result) => {
     dailyReportId: job.data.dailyReportId || "",
     stepKey: job.data.stepKey,
     jobId: String(job.id),
-    result,
   });
 });
 
@@ -221,6 +220,5 @@ foodWorker.on("failed", async (job, err) => {
     dailyReportId: job.data.dailyReportId || "",
     stepKey: job.data.stepKey,
     jobId: String(job.id),
-    error: err?.message ?? "Unknown error"
   });
 });
