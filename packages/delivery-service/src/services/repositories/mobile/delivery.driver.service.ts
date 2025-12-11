@@ -101,6 +101,7 @@ export async function getDeliveriesListDriver({
       d.portion_type AS "portionType",
       d.status,
       d.created_at AS "createdAt",
+      d.type AS "type",
       json_build_object(
         'id', k.id,
         'name', k.name,
