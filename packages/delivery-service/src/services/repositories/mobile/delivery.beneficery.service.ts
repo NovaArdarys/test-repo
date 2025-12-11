@@ -54,11 +54,13 @@ export async function getDeliveriesListBeneficiary({
     EXISTS (
       SELECT 1
       FROM ${deliveryBeneficiaries} db
+      JOIN ${deliveries} d2 ON d2.id = db.delivery_id
       JOIN ${menuPlans} mp ON db.menu_plan_id = mp.id
       WHERE db.delivery_id = ${deliveries.id}
         ${beneficiaryArray ? sql`AND db.beneficiary_id = ANY(${beneficiaryArray})` : sql``}
         AND mp.plan_start_date >= ${startDate}
         AND mp.plan_start_date <= ${endDate}
+        AND d2.status != 'DELIVERED'
     )
   `;
 

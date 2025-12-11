@@ -7,6 +7,7 @@ import {
 import { updateDeliveryStatus, getDeliveriesListDriver } from "@/services/repositories/mobile/delivery.driver.service";
 import { getDeliveriesListKitchen } from "@/services/repositories/mobile/delivery.kitchen.service";
 import { getDeliveriesListBeneficiary } from "@/services/repositories/mobile/delivery.beneficery.service";
+import { deliveryQueue } from "@/jobs/queue/delivery.queue";
 
 const getAuditFields = (c: Context) => ({
   createdBy: c.get('userId'),
@@ -97,6 +98,19 @@ export const updateDeliveryStatusHandler = catchAsync(async (c: Context) => {
     status,
     updatedBy
   });
+
+
+  if (updatedDelivery.type === "DROPOFF" && status === "DELIVERED") {
+    await deliveryQueue.add("pickup-creation", {
+      kitchenId: updatedDelivery.kitchenId,
+      portionType: updatedDelivery.portionType,
+      targetPortion: updatedDelivery.targetPortion,
+      driverId: updatedDelivery.driverId,
+      startTime: updatedDelivery.startTime,
+      estimatedDeliveryTime: updatedDelivery.estimatedDeliveryTime,
+      notes: updatedDelivery.notes,
+    });
+  }
 
   return c.json(
     { data: updatedDelivery, message: "Delivery status updated" },

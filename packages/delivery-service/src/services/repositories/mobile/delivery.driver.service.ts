@@ -81,11 +81,13 @@ export async function getDeliveriesListDriver({
       SELECT 1
       FROM delivery_beneficiaries ds
       JOIN menu_plans mp ON ds.menu_plan_id = mp.id
+      JOIN deliveries dd ON dd.id = ds.delivery_id
       WHERE ds.delivery_id = d.id
       ${schoolFilterSql}
       ${kitchenFilterSql}
       AND mp.plan_start_date >= '${start}'
       AND mp.plan_start_date <= '${end}'
+      AND dd.status != 'DELIVERED'
     )
   `);
 

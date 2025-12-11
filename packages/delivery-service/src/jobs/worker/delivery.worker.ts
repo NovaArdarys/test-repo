@@ -28,21 +28,18 @@ export const deliveryWorker = createLoggedWorker<unknown>(
       case "pickup-creation": {
         const parsed = pickupJobSchema.parse(job.data);
 
-        // await createDelivery({
-        //   kitchenId: data.kitchenId,
-        //   driverId: driver.id,
-        //   startTime: unit.deliveryTime || new Date(),
-        //   endTime: null,
-        //   estimatedDeliveryTime: estTime,
-        //   notes: `${unit.type} portion`,
-        //   status: "PENDING",
-        //   updatedAt: new Date(),
-        //   updatedBy: data.createdBy,
-        //   portionType: unit.type,
-        //   receivedPortion: 0,
-        //   createdAt: new Date(),
-        //   createdBy: "11111111-1111-1111-1111-111111111111",
-        // });
+        await createDelivery({
+          kitchenId: parsed.kitchenId,
+          driverId: parsed.driverId,
+          startTime: new Date(parsed.startTime) || new Date(),
+          endTime: null,
+          estimatedDeliveryTime: new Date(parsed.estimatedDeliveryTime),
+          status: "PENDING",
+          notes: parsed.notes,
+          portionType: parsed.portionType,
+          receivedPortion: 0,
+          createdBy: "11111111-1111-1111-1111-111111111111",
+        });
 
         break;
       }
