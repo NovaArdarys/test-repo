@@ -59,8 +59,6 @@ export async function resolveKitchenId(params: {
 }): Promise<string> {
   const { entityType, entityId } = params;
 
-  console.log(entityType, entityId, "=====ok=====");
-
   switch (entityType) {
     case "kitchen":
       return getKitchenIdFromKitchen(entityId);
