@@ -1,6 +1,7 @@
 import { db } from "@/db";
 import { foodItems, menuFoodItem, suppliers, suppliersFoodItems, suppliersProducts } from "@/db/schemas";
 import { buildPaginatedWhere } from "@/utils/pagination";
+import { transformPhoneNumber } from "@/utils/phone.formater.util";
 import { and, eq, ilike, inArray, like, or, sql } from "drizzle-orm";
 import { InferSelectModel, InferInsertModel } from "drizzle-orm";
 import { isEmpty } from "lodash";
@@ -149,7 +150,11 @@ export async function createSupplier(
   foodItemsIds?: string[]
 ) {
   return db.transaction(async (trx) => {
-    const [supplier] = await trx.insert(suppliers).values(data).returning();
+    const [supplier] = await trx.insert(suppliers).values({
+      ...data, phoneNumber: await transformPhoneNumber(
+        data?.phoneNumber || ""
+      )
+    }).returning();
 
     if (foodItemsIds && foodItemsIds.length > 0) {
       await Promise.all(

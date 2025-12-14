@@ -8,6 +8,8 @@ import {
   deleteSupplier,
 } from "@/services/repositories/suppliers.service";
 import { CreateSupplierSchemaType, ItemsQuerySchemaType } from "@/validator/supplier.validator";
+import { isEmpty } from "lodash";
+import { resolveKitchenId } from "@/services/repositories/additional/get.kitchen.by.user.service";
 
 
 const getAuditFields = (c: Context) => ({
@@ -56,13 +58,24 @@ export const getSupplierHandler = catchAsync(async (c: Context) => {
 
 export const createSupplierHandler = catchAsync(async (c: Context) => {
   const body = await c.req.parseBody() as unknown as CreateSupplierSchemaType;
-  const audit = getAuditFields(c);
+  const { domain: actorDomain, driverId, kitchenId, beneficiaryId, ...audit } = getAuditFields(c);
 
   const foodIdArray = body.foodIds as unknown as string[] || (body as any)["foodIds[]"] || [];
 
+  const entityId = actorDomain === "kitchen" ? !isEmpty(driverId) ? driverId?.[0] ?? null : kitchenId?.[0] ?? null : actorDomain === "beneficiary" ? beneficiaryId?.[0] ?? null : null;
+
+  if (isEmpty(entityId)) {
+    return c.json({ message: "User belum punya lokasi penempatan" }, 400);
+  }
+
+  const kitchenByUser = await resolveKitchenId({
+    entityType: actorDomain,
+    entityId: entityId || "",
+  });
+
   const data = await createSupplier({
     ...body,
-    kitchenId: body.kitchenId || "",
+    kitchenId: body.kitchenId || kitchenByUser,
     createdBy: audit.createdBy,
     createdAt: audit.createdAt,
     updatedAt: audit.updatedAt,
