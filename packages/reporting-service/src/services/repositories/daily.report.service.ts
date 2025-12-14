@@ -5,6 +5,7 @@ import { buildPaginatedWhere } from "@/utils/pagination";
 import { addDays } from "date-fns";
 import { eq, and, desc, InferInsertModel, InferSelectModel, between, gte, lte, sql, inArray, SQLWrapper } from "drizzle-orm";
 import { isEmpty, orderBy } from "lodash";
+import { getHomeWidgets } from "./additionals/widgets.service";
 
 export type DailyReport = InferSelectModel<typeof dailyReports>;
 export type DailyReportInsert = InferInsertModel<typeof dailyReports>;
@@ -283,292 +284,61 @@ export async function getDailyReportsList(params?: {
   kitchenIds?: string[];
   schoolIds?: string[];
   driversIds?: string[];
-  page: number; // default 1
-  limit: number; // default 10
+  page?: number;
+  limit?: number;
   menuPlanName?: string;
   view?: "home" | "calendar" | "delivery" | "report" | "profile";
   subDomains?: string[];
 }) {
-  const today = new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
+  const today = new Date().toISOString().slice(0, 10);
 
   const {
     entityType,
     entityId,
     status,
-
     startDate = today,
     endDate = today,
-
     kitchenIds = [],
     schoolIds = [],
     driversIds = [],
     subDomains = [],
     page = 1,
     limit = 10,
-    view
+    view,
+    menuPlanName,
   } = params ?? {};
-  let computedEndDate = endDate;
-  if (view === "home" && endDate) {
-    try {
-      computedEndDate = addDays(new Date(endDate), 3).toISOString().split("T")[0];
-    } catch {
-      computedEndDate = endDate;
-    }
-  }
 
-  const threeDaysMenuField =
-    view === "home"
-      ? sql`
-      COALESCE((
-        SELECT jsonb_agg(
-          jsonb_build_object(
-            'id', t.id,
-            'name', t.name,
-            'date', t.plan_start_date
-          )
-        )
-        FROM (
-          SELECT mp.id, mp.name, mp.plan_start_date
-          FROM menu_plans mp
-          WHERE mp.is_deleted = false
-            ${entityType === "driver" && driversIds.length > 0
-          ? sql`AND mp.kitchen_id IN (
-                         SELECT uk.kitchen_id
-                         FROM user_kitchens uk
-                         WHERE uk.user_id = ANY(${sql.raw(`ARRAY[${driversIds.map(id => `'${id}'`).join(",")}]::uuid[]`)})
-                           AND uk.is_deleted = false
-                       )`
-          : sql``
-        }
-            ${entityType === "kitchen" && kitchenIds.length > 0
-          ? sql`AND mp.kitchen_id = ANY(${sql.raw(`ARRAY[${kitchenIds.map(id => `'${id}'`).join(",")}]::uuid[]`)})`
-          : sql``
-        }
-            ${(entityType === "school" || entityType === "beneficiary") && schoolIds.length > 0
-          ? sql`AND mp.id IN (
-                         SELECT mps.menu_plan_id
-                         FROM menu_plan_beneficiaries mps
-                         WHERE mps.beneficiary_id = ANY(${sql.raw(`ARRAY[${schoolIds.map(id => `'${id}'`).join(",")}]::uuid[]`)})
-                           AND mps.is_deleted = false
-                       )`
-          : sql``
-        }
-            AND mp.plan_start_date >= ${endDate}
-            AND mp.plan_start_date <= ${computedEndDate}
-          ORDER BY mp.plan_start_date ASC
-        ) t
-      ), '[]'::jsonb)
-    `
-      : sql`'[]'::jsonb`;
+  const toISO = (d: Date) => d.toISOString().split("T")[0];
+  const tomorrow = toISO(addDays(new Date(endDate), 1));
+  const threeDaysAfterTomorrow = toISO(addDays(new Date(endDate), 3));
 
-
-  const schoolListField =
-    sql`
-      COALESCE((
-        SELECT jsonb_agg(
-          jsonb_build_object(
-            'id', s.id,
-            'name', s.name,
-            'address', s.address,
-            'phoneNumber', s.phone_number,
-            'category', s.category,
-            'imageURL', s.image_url,
-            'smallPortion', s.small_portion,
-            'largePortion', s.large_portion
-          )
-        )
-        FROM (
-          SELECT DISTINCT b.id, b.name, b.address, b.phone_number, b.category, b.image_url, b.small_portion, b.large_portion
-          FROM beneficiaries b
-          INNER JOIN menu_plan_beneficiaries mpb ON mpb.beneficiary_id = b.id
-          INNER JOIN menu_plans mp ON mp.id = mpb.menu_plan_id
-          WHERE b.is_deleted = false
-            AND mp.is_deleted = false
-            ${entityType === "driver" && driversIds.length > 0
-        ? sql`AND mp.kitchen_id IN (
-                      SELECT uk.kitchen_id
-                      FROM user_kitchens uk
-                      WHERE uk.user_id = ANY(${sql.raw(`ARRAY[${driversIds.map(id => `'${id}'`).join(",")}]::uuid[]`)})
-                        AND uk.is_deleted = false
-                    )`
-        : sql``
-      }
-            ${entityType === "kitchen" && kitchenIds.length > 0
-        ? sql`AND mp.kitchen_id = ANY(${sql.raw(`ARRAY[${kitchenIds.map(id => `'${id}'`).join(",")}]::uuid[]`)})`
-        : sql``
-      }
-            ${(entityType === "school" || entityType === "beneficiary") && schoolIds.length > 0
-        ? sql`AND b.id = ANY(${sql.raw(`ARRAY[${schoolIds.map(id => `'${id}'`).join(",")}]::uuid[]`)})`
-        : sql``
-      }
-            AND mp.plan_start_date >= ${endDate}
-            AND mp.plan_start_date <= ${computedEndDate}
-          ORDER BY b.name ASC
-        ) s
-      ), '[]'::jsonb)
-  `;
-
-  const eventReportsField =
-    view === "home"
-      ? sql`
-    COALESCE((
-      SELECT jsonb_agg(
-        jsonb_build_object(
-          'id', inner_er.id,
-          'name', inner_er.name,
-          'reportType', inner_er.report_type,
-          'date', inner_er.date,
-          'location', inner_er.location,
-          'description', inner_er.description
-        )
-      )
-      FROM (
-        SELECT er.*
-        FROM event_reports er
-        WHERE er.is_deleted = false
-          ${entityType === "driver" && driversIds.length > 0
-          ? sql`AND er.entity_id = ANY(${sql.raw(`ARRAY[${driversIds.map(id => `'${id}'`).join(",")}]::uuid[]`)})`
-          : sql``}
-          ${entityType === "kitchen" && kitchenIds.length > 0
-          ? sql`AND er.entity_id = ANY(${sql.raw(`ARRAY[${kitchenIds.map(id => `'${id}'`).join(",")}]::uuid[]`)})`
-          : sql``}
-          ${(entityType === "school" || entityType === "beneficiary") && schoolIds.length > 0
-          ? sql`AND er.entity_id = ANY(${sql.raw(`ARRAY[${schoolIds.map(id => `'${id}'`).join(",")}]::uuid[]`)})`
-          : sql``}
-        ORDER BY er.created_at DESC
-        LIMIT 3
-      ) inner_er
-    ), '[]'::jsonb)
-  `
-      : sql`'[]'::jsonb`;
-
-  const topSuppliersField =
-    view === "home"
-      ? sql`
-      COALESCE((
-        SELECT jsonb_agg(
-          jsonb_build_object(
-            'id', s.id,
-            'name', s.name,
-            'phoneNumber', s.phone_number,
-            'imageURL', s.image_url,
-            'foodItems', (
-              SELECT jsonb_agg(
-                jsonb_build_object(
-                  'id', fi.id,
-                  'name', fi.name,
-                  'type', fi.type
-                )
-              )
-              FROM suppliers_products sp
-              INNER JOIN food_items fi ON fi.id = sp.food_item_id
-              WHERE sp.supplier_id = s.id
-                AND sp.is_deleted = false
-                AND fi.is_deleted = false
-            )
-          )
-        )
-        FROM (
-          SELECT s.*
-          FROM suppliers s
-          WHERE s.is_deleted = false
-            ${entityType === "driver" && driversIds.length > 0
-          ? sql`AND s.kitchen_id IN (
-                        SELECT uk.kitchen_id
-                        FROM user_kitchens uk
-                        WHERE uk.user_id = ANY(${sql.raw(
-            `ARRAY[${driversIds.map((id) => `'${id}'`).join(",")}]::uuid[]`
-          )})
-                          AND uk.is_deleted = false
-                      )`
-          : sql``
-        }
-            ${entityType === "b" && kitchenIds.length > 0
-          ? sql`AND s.kitchen_id = ANY(${sql.raw(
-            `ARRAY[${kitchenIds.map((id) => `'${id}'`).join(",")}]::uuid[]`
-          )})`
-          : sql``
-        }
-            ${entityType === "a" && schoolIds.length > 0
-          ? sql`AND s.kitchen_id IN (
-                        SELECT mp.kitchen_id
-                        FROM menu_plans mp
-                        INNER JOIN menu_plan_beneficiaries mps ON mps.menu_plan_id = mp.id
-                        WHERE mps.beneficiary_id = ANY(${sql.raw(
-            `ARRAY[${schoolIds.map((id) => `'${id}'`).join(",")}]::uuid[]`
-          )})
-                          AND mp.is_deleted = false
-                          AND mps.is_deleted = false
-                      )`
-          : sql``
-        }
-          ORDER BY s.created_at DESC
-          LIMIT 3
-        ) s
-      ), '[]'::jsonb)
-    `
-      : sql`'[]'::jsonb`;
-
-
-  const filterSubDomain =
-    subDomains.length > 0
-      ? sql`sr.sub_domains = ANY(${sql.raw(`ARRAY[${subDomains.map(d => `'${d}'`).join(",")}]::text[]`)})`
-      : sql`sr.sub_domains IS NULL`;
-
-  const stepTomorrowField = sql`
-      COALESCE((
-        SELECT jsonb_agg(
-          jsonb_build_object(
-            'id', sr.id,
-            'stepKey', ms.step_key,
-            'stepName', ms.step_name,
-            'stepOrder', ms.step_order,
-            'isCompleted', sr.is_completed,
-            'notes', sr.notes
-          )
-        )
-        FROM (
-          SELECT sr.*
-          FROM step_reports sr
-          INNER JOIN daily_reports dr ON dr.id = sr.daily_report_id
-          INNER JOIN menu_plans mp ON mp.id = dr.menu_plan_id
-          WHERE dr.entity_id = ANY(${sql.raw(
-    `ARRAY[${kitchenIds.map((id) => `'${id}'`).join(",")}]::uuid[]`
-  )})
-            AND dr.entity_type = 'kitchen'
-            AND dr.date = ${addDays(new Date(endDate), 1).toISOString().split("T")[0]}
-            AND ${filterSubDomain}
-        ) sr
-        INNER JOIN master_steps ms ON ms.id = sr.step_id
-      ), '[]'::jsonb)
-    `;
+  const uuidArray = (ids: string[]) =>
+    sql.raw(`ARRAY[${ids.map((id) => `'${id}'`).join(",")}]::uuid[]`);
 
   const { where, meta } = await buildPaginatedWhere({
     table: dailyReports,
     tableName: "daily_reports",
     base: {
-      entityType: entityType,
+      entityType,
       entityId,
       status,
-      date: {
-        gte: startDate ?? undefined,
-        lte: endDate ?? undefined,
-      },
+      date: { gte: startDate, lte: endDate },
     },
     extra: [
-      driversIds.length > 0 && entityType === "driver"
-        ? sql`${dailyReports.entityId} = ANY(${sql.raw(`ARRAY[${driversIds.map(id => `'${id}'`).join(',')}]::uuid[]`)})`
+      driversIds.length && entityType === "driver"
+        ? sql`${dailyReports.entityId} = ANY(${uuidArray(driversIds)})`
         : undefined,
-      kitchenIds.length > 0 && entityType === "kitchen"
-        ? sql`${dailyReports.entityId} = ANY(${sql.raw(`ARRAY[${kitchenIds.map(id => `'${id}'`).join(',')}]::uuid[]`)})`
+      kitchenIds.length && entityType === "kitchen"
+        ? sql`${dailyReports.entityId} = ANY(${uuidArray(kitchenIds)})`
         : undefined,
-      schoolIds.length > 0 && (entityType === "school" || entityType === "beneficiary")
-        ? sql`${dailyReports.entityId} = ANY(${sql.raw(`ARRAY[${schoolIds.map(id => `'${id}'`).join(',')}]::uuid[]`)})`
+      schoolIds.length &&
+        (entityType === "school" || entityType === "beneficiary")
+        ? sql`${dailyReports.entityId} = ANY(${uuidArray(schoolIds)})`
         : undefined,
-      params?.menuPlanName
+      menuPlanName
         ? sql`${dailyReports.menuPlanId} IN (
             SELECT id FROM menu_plans
-            WHERE name ILIKE ${`%${params?.menuPlanName}%`}
+            WHERE name ILIKE ${`%${menuPlanName}%`}
           )`
         : undefined,
     ],
@@ -576,72 +346,49 @@ export async function getDailyReportsList(params?: {
     limit,
   });
 
-  let widgets: Record<string, any[]> = {
-    threeDaysMenu: [],
-    eventReports: [],
-    topSuppliers: [],
-    stepTomorrow: [],
-    beneficiaries: [],
-  };
+  const filterSubDomain =
+    subDomains.length > 0
+      ? sql`sr.sub_domains = ANY(${sql.raw(
+        `ARRAY[${subDomains.map((d) => `'${d}'`).join(",")}]::text[]`
+      )})`
+      : sql`sr.sub_domains IS NULL`;
 
-
-  if (view === "home") {
-    const [
-      threeDaysMenuData,
-      eventReportsData,
-      topSuppliersData,
-      stepTomorrowData,
-    ] = await Promise.all([
-      db.execute(sql`SELECT (${threeDaysMenuField}) AS "threeDaysMenu"`),
-      db.execute(sql`SELECT (${eventReportsField}) AS "eventReports"`),
-      db.execute(sql`SELECT (${topSuppliersField}) AS "topSuppliers"`),
-      db.execute(sql`SELECT (${stepTomorrowField}) AS "stepTomorrow"`),
-    ]);
-
-    widgets = {
-      threeDaysMenu: threeDaysMenuData?.rows?.[0]?.threeDaysMenu as any ?? [],
-      eventReports: eventReportsData?.rows?.[0]?.eventReports as any ?? [],
-      topSuppliers: topSuppliersData?.rows?.[0]?.topSuppliers as any ?? [],
-      stepTomorrow: stepTomorrowData?.rows?.[0]?.stepTomorrow as any ?? [],
-    };
-  } else {
-    const [
-      beneficiariesData,
-      stepTomorrowData
-    ] = await Promise.all([
-      db.execute(sql`SELECT (${schoolListField}) AS "beneficiaries"`),
-      db.execute(sql`SELECT (${stepTomorrowField}) AS "stepTomorrow"`),
-    ]);
-
-    widgets = {
-      beneficiaries: beneficiariesData?.rows?.[0]?.beneficiaries as any ?? [],
-      stepTomorrow: stepTomorrowData?.rows?.[0]?.stepTomorrow as any ?? [],
-    };
-  }
-
-  const includeBeneficiaries = view === "calendar";
-
-  const data = await db
+  const rows = await db
     .select({
       dailyReports,
       menuPlan: {
         id: menuPlans.id,
         name: menuPlans.name,
-        planEndDate: menuPlans.planEndDate,
         planStartDate: menuPlans.planStartDate,
-        beneficiaries: includeBeneficiaries
-          ? sql`
-          (
-            SELECT json_agg(
-              json_build_object(
-                'id', b.id,
-                'name', b.name,
-                'address', b.address,
-                'category', b.category,
-                'imageURL', b.image_url,
-                'smallPortion', b.small_portion,
-                'largePortion', b.large_portion
+        beneficiaries:
+          view === "calendar"
+            ? sql`
+              (
+                SELECT json_agg(
+                  json_build_object(
+                    'id', b.id,
+                    'name', b.name,
+                    'address', b.address,
+                    'category', b.category,
+                    'imageURL', b.image_url,
+                    'smallPortion', b.small_portion,
+                    'largePortion', b.large_portion
+                  )
+                )
+                FROM menu_plan_beneficiaries mpb
+                JOIN beneficiaries b ON b.id = mpb.beneficiary_id
+                WHERE mpb.menu_plan_id = ${menuPlans.id}
+                  AND mpb.is_deleted = false
+                  AND b.is_deleted = false
               )
+            `
+            : sql`null`,
+        targetPortion: sql`
+          (
+            SELECT json_build_object(
+              'small', COALESCE(SUM(b.small_portion), 0),
+              'large', COALESCE(SUM(b.large_portion), 0),
+              'total', COALESCE(SUM(b.small_portion + b.large_portion), 0)
             )
             FROM menu_plan_beneficiaries mpb
             JOIN beneficiaries b ON b.id = mpb.beneficiary_id
@@ -649,22 +396,7 @@ export async function getDailyReportsList(params?: {
               AND mpb.is_deleted = false
               AND b.is_deleted = false
           )
-        `.as("beneficiaries")
-          : sql`null`.as("beneficiaries"),
-        targetPortion: sql`
-        (
-          SELECT json_build_object(
-            'small', COALESCE(SUM(b.small_portion), 0),
-            'large', COALESCE(SUM(b.large_portion), 0),
-            'total', COALESCE(SUM(b.small_portion + b.large_portion), 0)
-          )
-          FROM menu_plan_beneficiaries mpb
-          JOIN beneficiaries b ON b.id = mpb.beneficiary_id
-          WHERE mpb.menu_plan_id = ${menuPlans.id}
-            AND mpb.is_deleted = false
-            AND b.is_deleted = false
-        )
-      `.as("targetPortion"),
+        `,
       },
       suppliersFoodItem: {
         id: suppliersFoodItems.id,
@@ -682,42 +414,37 @@ export async function getDailyReportsList(params?: {
         description: suppliers.description,
         phoneNumber: suppliers.phoneNumber,
       },
-
       steps: sql`
-  COALESCE(
-    (
-      SELECT json_agg(
-        json_build_object(
-          'id', sr.id,
-          'isCompleted', sr.is_completed,
-          'notes', sr.notes,
-          'stepKey', ms.step_key,
-          'stepName', ms.step_name,
-          'stepOrder', ms.step_order,
-          'imageURL', st.file_url,
-          'createdAt', sr.updated_at
+        COALESCE(
+          (
+            SELECT json_agg(
+              json_build_object(
+                'id', sr.id,
+                'isCompleted', sr.is_completed,
+                'notes', sr.notes,
+                'stepKey', ms.step_key,
+                'stepName', ms.step_name,
+                'stepOrder', ms.step_order,
+                'imageURL', st.file_url,
+                'createdAt', sr.updated_at
+              )
+              ORDER BY ms.step_order
+            )
+            FROM step_reports sr
+            JOIN master_steps ms ON ms.id = sr.step_id
+            LEFT JOIN storages st ON st.id = sr.storage_id
+            WHERE sr.daily_report_id = ${dailyReports.id}
+              AND ${filterSubDomain}
+          ),
+          '[]'::json
         )
-        ORDER BY ms.step_order
-      )
-      FROM step_reports sr
-      JOIN master_steps ms ON ms.id = sr.step_id
-      LEFT JOIN storages st ON st.id = sr.storage_id
-      WHERE sr.daily_report_id = ${dailyReports.id} AND ${filterSubDomain}
-    ),
-    '[]'::json
-  )
-`.as("steps"),
+      `,
     })
     .from(dailyReports)
     .leftJoin(menuPlans, eq(dailyReports.menuPlanId, menuPlans.id))
     .leftJoin(suppliersFoodItems, eq(menuPlans.id, suppliersFoodItems.menuPlanId))
     .leftJoin(foodItems, eq(suppliersFoodItems.foodItemId, foodItems.id))
     .leftJoin(suppliers, eq(suppliersFoodItems.supplierId, suppliers.id))
-
-    .leftJoin(stepReports, eq(dailyReports.id, stepReports.dailyReportId))
-    .leftJoin(masterSteps, eq(stepReports.stepId, masterSteps.id))
-    .leftJoin(storage, eq(stepReports.id, storage.entityId))
-
     .where(where)
     .groupBy(
       dailyReports.id,
@@ -730,17 +457,9 @@ export async function getDailyReportsList(params?: {
     .offset((page - 1) * limit)
     .orderBy(desc(dailyReports.date));
 
-  type Supplier = {
-    id: string;
-    address: string | null;
-    name: string;
-    description: string | null;
-    phoneNumber: string | null;
-  };
+  const reportMap = new Map<string, any>();
 
-  const reportMap = new Map();
-
-  data.forEach((row) => {
+  rows.forEach((row) => {
     const reportId = row.dailyReports.id;
 
     if (!reportMap.has(reportId)) {
@@ -749,54 +468,45 @@ export async function getDailyReportsList(params?: {
         menuPlan: row.menuPlan
           ? { ...row.menuPlan, _foodItemMap: new Map() }
           : null,
-
         steps: row.steps,
       });
     }
 
     const report = reportMap.get(reportId);
-
     const sfiId = row.suppliersFoodItem?.id;
-    const foodItemId = row.foodItem?.id;
 
     if (sfiId && report.menuPlan) {
-      let foodRow = report.menuPlan._foodItemMap.get(sfiId);
+      let food = report.menuPlan._foodItemMap.get(sfiId);
 
-      if (!foodRow) {
-        foodRow = {
+      if (!food) {
+        food = {
           ...(row.foodItem ?? {}),
           id: sfiId,
-          foodId: foodItemId,
+          foodId: row.foodItem?.id,
           suppliers: [],
         };
-        report.menuPlan._foodItemMap.set(sfiId, foodRow);
+        report.menuPlan._foodItemMap.set(sfiId, food);
       }
 
       if (
         row.supplier &&
-        !foodRow.suppliers.some((s: Supplier) => s.id === row.supplier?.id)
+        !food.suppliers.some((s: any) => s.id === row?.supplier?.id)
       ) {
-        foodRow.suppliers.push(row.supplier);
+        food.suppliers.push(row.supplier);
       }
     }
   });
 
-  const finalGroupedData = Array.from(reportMap.values()).map((report) => {
-    if (report.menuPlan) {
-      report.menuPlan.foodItems = Array.from(
-        report.menuPlan._foodItemMap.values()
-      );
-      delete report.menuPlan._foodItemMap;
+  const finalGroupedData = Array.from(reportMap.values()).map((r) => {
+    if (r.menuPlan) {
+      r.menuPlan.foodItems = Array.from(r.menuPlan._foodItemMap.values());
+      delete r.menuPlan._foodItemMap;
 
-      const { planEndDate, planStartDate, ...rest } = report.menuPlan;
-
-      report.menuPlan = {
-        date: planStartDate,
-        ...rest,
-      };
+      const { planStartDate, ...rest } = r.menuPlan;
+      r.menuPlan = { date: planStartDate, ...rest };
     }
 
-    report.steps = orderBy(report.steps, "stepOrder", "asc");
+    r.steps = orderBy(r.steps, "stepOrder", "asc");
 
     const {
       entityId,
@@ -808,22 +518,31 @@ export async function getDailyReportsList(params?: {
       date,
       entityType,
       status,
-      ...finalReport
-    } = report;
+      ...final
+    } = r;
 
-    return finalReport;
+    return final;
+  });
+
+  const widgets = await getHomeWidgets({
+    view,
+    entityType,
+    endDate,
+    kitchenIds,
+    schoolIds,
+    driversIds,
+    subDomains,
   });
 
   return {
     data: {
       agenda: finalGroupedData,
-      ...(entityType !== "kitchen" ? {} : view === "home" ? widgets : { beneficiaries: widgets?.beneficiaries }),
-      ...(entityType !== "kitchen" ? {} : view === "home" ? widgets : { stepTomorrow: widgets?.stepTomorrow }),
-      ...(view === "home" && entityType === "beneficiary" ? { eventReports: widgets?.eventReports, threeDaysMenu: widgets.threeDaysMenu } : {}),
+      ...widgets,
     },
     meta,
   };
 }
+
 
 export async function updateDailyReport(
   id: string,

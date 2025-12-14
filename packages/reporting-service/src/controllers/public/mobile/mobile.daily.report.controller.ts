@@ -8,7 +8,7 @@ import {
   getDailyReportWithoutMaskById,
 } from "@/services/repositories/daily.report.service";
 import { publishStepUpdate } from "@/messaging/publishers/reporting.publisher";
-import { every } from "lodash";
+import { every, isEmpty } from "lodash";
 import { getDriverDeliveries } from "@/services/repositories/daily.report.driver.service";
 import { getDailyReportsListSPPG } from "@/services/repositories/daily.report.sppg.service";
 
@@ -72,13 +72,19 @@ export const listDailyReportsHandler = catchAsync(async (c: Context) => {
     return c.json(data);
   }
 
+  const entityId = audit.domain === "kitchen" ? !isEmpty(audit.driverId) ? audit.driverId?.[0] ?? null : audit.kitchenId?.[0] ?? null : audit.domain === "beneficiary" ? audit.beneficiaryId?.[0] ?? null : null;
+
+  if (isEmpty(entityId)) {
+    return c.json({ message: "User belum punya lokasi penempatan" }, 400);
+  }
+
   const data = await getDailyReportsList({
     entityType: entity,
     entityId: query.entityId,
     status: query.status,
     startDate: query.startDate,
     endDate: query.endDate,
-    kitchenIds: audit.kitchenId,
+    kitchenIds: audit.kitchenId ?? [entityId],
     schoolIds: audit.beneficiaryId,
     driversIds: audit.driverId,
     page,

@@ -15,6 +15,7 @@ import {
 } from "@/validator/event.report.validator";
 import { publishEventReportCommit } from "@/messaging/publishers/reporting.publisher";
 import { isEmpty } from "lodash";
+import { resolveKitchenId } from "@/services/repositories/additionals/get.kitchen.by.user.service";
 
 const getAuditFields = (c: Context) => ({
   createdBy: c.get('userId'),
@@ -54,23 +55,29 @@ export const listEventReportsHandler = catchAsync(async (c: Context) => {
 
 export const createEventReportHandler = catchAsync(async (c: Context) => {
   const body = await c.get("validatedData").body as CreateEventReportSchemaType;
-  const { createdBy, domain, driverId, kitchenId, beneficiaryId } = getAuditFields(c);
+  const { createdBy, domain: actorDomain, driverId, kitchenId, beneficiaryId } = getAuditFields(c);
+
+  const entityId = actorDomain === "kitchen" ? !isEmpty(driverId) ? driverId?.[0] ?? null : kitchenId?.[0] ?? null : actorDomain === "beneficiary" ? beneficiaryId?.[0] ?? null : null;
+
+  if (isEmpty(entityId)) {
+    return c.json({ message: "User belum punya lokasi penempatan" }, 400);
+  }
+
+  const kitchenByUser = await resolveKitchenId({
+    entityType: actorDomain,
+    entityId: entityId || "",
+  });
 
   const newReport = await createEventReport({
     ...body,
-    entityId: domain === "kitchen" ? !isEmpty(driverId) ? driverId?.[0] ?? null : kitchenId?.[0] ?? null : domain === "beneficiary" ? beneficiaryId?.[0] ?? null : null,
-    reportType: body.reportType ? body.reportType : !isEmpty(driverId) ? "driver" : domain,
+    entityType: actorDomain,
+    domain: "kitchen",
+    domainId: kitchenByUser,
+    entityId: entityId,
+    reportType: body.reportType ? body.reportType : !isEmpty(driverId) ? "driver" : actorDomain,
     date: body.date,
     createdBy,
   });
-
-  if (newReport) {
-    await publishEventReportCommit({
-      entityId: newReport.id,
-      storageIds: body.storageIds,
-      entityType: "other"
-    });
-  }
 
   return c.json({ data: newReport, message: "Event report created" }, 201);
 });
