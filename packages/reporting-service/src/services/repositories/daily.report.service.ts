@@ -6,6 +6,8 @@ import { addDays } from "date-fns";
 import { eq, and, desc, InferInsertModel, InferSelectModel, between, gte, lte, sql, inArray, SQLWrapper } from "drizzle-orm";
 import { isEmpty, orderBy } from "lodash";
 import { getHomeWidgets } from "./additional/widgets.service";
+import { SUB_DOMAIN_ORDER } from "../aditional/step.order.service";
+import { buildOrderedDomainSteps } from "./additional/order.step.service";
 
 export type DailyReport = InferSelectModel<typeof dailyReports>;
 export type DailyReportInsert = InferInsertModel<typeof dailyReports>;
@@ -81,7 +83,7 @@ export async function createDailyReport(data: DailyReportInsert) {
 }
 
 export async function getDailyReportById(id: string) {
-  const data = await db.query.dailyReports.findFirst({
+  const report = await db.query.dailyReports.findFirst({
     where: eq(dailyReports.id, id),
     with: {
       menuPlan: {
@@ -98,10 +100,10 @@ export async function getDailyReportById(id: string) {
                 columns: {
                   name: true,
                   smallPortion: true,
-                  largePortion: true
-                }
-              }
-            }
+                  largePortion: true,
+                },
+              },
+            },
           },
           suppliersFoodItems: {
             with: {
@@ -132,6 +134,8 @@ export async function getDailyReportById(id: string) {
           isCompleted: true,
           notes: true,
           imageURL: true,
+          updatedAt: true,
+          subDomain: true,
         },
         with: {
           step: {
@@ -143,31 +147,60 @@ export async function getDailyReportById(id: string) {
           },
         },
       },
-    }
+    },
   });
 
-  const report = data;
-
-  console.log(report?.steps, "=====report=====");
-
-  if (!report?.menuPlan) return report;
+  if (!report) return null;
+  if (!report.menuPlan) return report;
 
   const foodItemMap = new Map<string, any>();
+
   report.menuPlan.suppliersFoodItems.forEach((sfi) => {
-    const foodItem = { ...sfi.foodItem, id: sfi.id, foodId: sfi.foodItem.id };
-    const supplier = sfi.supplier;
+    const foodItem = {
+      ...sfi.foodItem,
+      id: sfi.id,
+      foodId: sfi.foodItem.id,
+    };
+
     if (!foodItem) return;
 
-    const fi = foodItemMap.get(foodItem.id) ?? {
+    const existing = foodItemMap.get(foodItem.id) ?? {
       ...foodItem,
       suppliers: [],
     };
-    if (supplier) fi.suppliers.push(supplier);
-    foodItemMap.set(foodItem.id, fi);
+
+    if (sfi.supplier) {
+      existing.suppliers.push(sfi.supplier);
+    }
+
+    foodItemMap.set(foodItem.id, existing);
   });
 
   const groupedFoodItems = Array.from(foodItemMap.values());
-  const { suppliersFoodItems, planEndDate, planStartDate, ...menuPlan } = report.menuPlan;
+
+  const flatSteps = report.steps.map(({ step, ...s }) => ({
+    id: s.id,
+    isCompleted: s.isCompleted,
+    notes: s.notes,
+    imageURL: s.imageURL,
+    createdAt: s.updatedAt,
+    subDomain: s.subDomain ?? null,
+    stepKey: step.stepKey,
+    stepName: step.stepName,
+    stepOrder: step.stepOrder,
+  }));
+
+  const orderedStepGroups = buildOrderedDomainSteps(flatSteps);
+
+  const mainStep = orderedStepGroups[0] ?? null;
+  const otherSteps = orderedStepGroups.slice(1);
+
+  const {
+    suppliersFoodItems,
+    planEndDate,
+    planStartDate,
+    ...menuPlan
+  } = report.menuPlan;
 
   return {
     menuPlan: {
@@ -175,12 +208,12 @@ export async function getDailyReportById(id: string) {
       date: planStartDate,
       foodItems: groupedFoodItems,
     },
-    steps: report.steps.map(({ step, ...steps }) => ({
-      ...steps,
-      ...step,
-    })),
+
+    steps: mainStep?.steps ?? [],
+    otherSteps,
   };
 }
+
 export async function getDailyReportWithoutMaskById(id: string) {
   const data = await db.query.dailyReports.findFirst({
     where: eq(dailyReports.id, id),
@@ -353,6 +386,13 @@ export async function getDailyReportsList(params?: {
       )})`
       : sql`sr.sub_domains IS NULL`;
 
+  const filterOtherSubDomain =
+    subDomains.length > 0
+      ? sql`sr.sub_domains != ANY(${sql.raw(
+        `ARRAY[${subDomains.map((d) => `'${d}'`).join(",")}]::text[]`
+      )})`
+      : sql`sr.sub_domains IS NULL`;
+
   const rows = await db
     .select({
       dailyReports,
@@ -360,9 +400,7 @@ export async function getDailyReportsList(params?: {
         id: menuPlans.id,
         name: menuPlans.name,
         planStartDate: menuPlans.planStartDate,
-        beneficiaries:
-          view === "calendar"
-            ? sql`
+        beneficiaries: sql`
               (
                 SELECT json_agg(
                   json_build_object(
@@ -381,8 +419,7 @@ export async function getDailyReportsList(params?: {
                   AND mpb.is_deleted = false
                   AND b.is_deleted = false
               )
-            `
-            : sql`null`,
+            `,
         targetPortion: sql`
           (
             SELECT json_build_object(
@@ -422,6 +459,7 @@ export async function getDailyReportsList(params?: {
                 'id', sr.id,
                 'isCompleted', sr.is_completed,
                 'notes', sr.notes,
+                'subDomain', sr.sub_domains,
                 'stepKey', ms.step_key,
                 'stepName', ms.step_name,
                 'stepOrder', ms.step_order,
@@ -435,6 +473,32 @@ export async function getDailyReportsList(params?: {
             LEFT JOIN storages st ON st.id = sr.storage_id
             WHERE sr.daily_report_id = ${dailyReports.id}
               AND ${filterSubDomain}
+          ),
+          '[]'::json
+        )
+      `,
+      otherSteps: sql`
+        COALESCE(
+          (
+            SELECT json_agg(
+              json_build_object(
+                'id', sr.id,
+                'isCompleted', sr.is_completed,
+                'notes', sr.notes,
+                'subDomain', sr.sub_domains,
+                'stepKey', ms.step_key,
+                'stepName', ms.step_name,
+                'stepOrder', ms.step_order,
+                'imageURL', st.file_url,
+                'createdAt', sr.updated_at
+              )
+              ORDER BY ms.step_order
+            )
+            FROM step_reports sr
+            JOIN master_steps ms ON ms.id = sr.step_id
+            LEFT JOIN storages st ON st.id = sr.storage_id
+            WHERE sr.daily_report_id = ${dailyReports.id}
+              AND ${filterOtherSubDomain}
           ),
           '[]'::json
         )
@@ -463,12 +527,24 @@ export async function getDailyReportsList(params?: {
     const reportId = row.dailyReports.id;
 
     if (!reportMap.has(reportId)) {
+      const orderedCurrentSteps = buildOrderedDomainSteps(
+        (row.steps as any[]) ?? []
+      );
+
+      const orderedOtherSteps = buildOrderedDomainSteps(
+        (row.otherSteps as any[]) ?? []
+      );
+      const mainStep = orderedCurrentSteps[0] ?? null;
+
       reportMap.set(reportId, {
         ...row.dailyReports,
         menuPlan: row.menuPlan
           ? { ...row.menuPlan, _foodItemMap: new Map() }
           : null,
-        steps: row.steps,
+        ...(mainStep ?? {
+          steps: row.steps,
+        }),
+        otherSteps: orderedOtherSteps,
       });
     }
 
@@ -542,7 +618,6 @@ export async function getDailyReportsList(params?: {
     meta,
   };
 }
-
 
 export async function updateDailyReport(
   id: string,

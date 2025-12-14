@@ -39,6 +39,12 @@ export const listDailyReportsHandler = catchAsync(async (c: Context) => {
 
   const { view, entity } = await c.get("validatedData").param;
 
+  const entityId = audit.domain === "kitchen" ? !isEmpty(audit.driverId) ? audit.driverId?.[0] ?? null : audit.kitchenId?.[0] ?? null : audit.domain === "beneficiary" ? audit.beneficiaryId?.[0] ?? null : null;
+
+  if (isEmpty(entityId)) {
+    return c.json({ message: "User belum punya lokasi penempatan" }, 400);
+  }
+
   if (entity === "driver") {
     const data = await getDriverDeliveries({
       driverId: audit.driverId?.[0],
@@ -70,12 +76,6 @@ export const listDailyReportsHandler = catchAsync(async (c: Context) => {
     });
 
     return c.json(data);
-  }
-
-  const entityId = audit.domain === "kitchen" ? !isEmpty(audit.driverId) ? audit.driverId?.[0] ?? null : audit.kitchenId?.[0] ?? null : audit.domain === "beneficiary" ? audit.beneficiaryId?.[0] ?? null : null;
-
-  if (isEmpty(entityId)) {
-    return c.json({ message: "User belum punya lokasi penempatan" }, 400);
   }
 
   const data = await getDailyReportsList({
