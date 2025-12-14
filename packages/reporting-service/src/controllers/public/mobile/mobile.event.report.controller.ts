@@ -15,7 +15,7 @@ import {
 } from "@/validator/event.report.validator";
 import { publishEventReportCommit } from "@/messaging/publishers/reporting.publisher";
 import { isEmpty } from "lodash";
-import { resolveKitchenId } from "@/services/repositories/additionals/get.kitchen.by.user.service";
+import { resolveKitchenId } from "@/services/repositories/additional/get.kitchen.by.user.service";
 
 const getAuditFields = (c: Context) => ({
   createdBy: c.get('userId'),

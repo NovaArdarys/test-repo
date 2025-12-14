@@ -5,7 +5,7 @@ import { buildPaginatedWhere } from "@/utils/pagination";
 import { addDays } from "date-fns";
 import { eq, and, desc, InferInsertModel, InferSelectModel, between, gte, lte, sql, inArray, SQLWrapper } from "drizzle-orm";
 import { isEmpty, orderBy } from "lodash";
-import { getHomeWidgets } from "./additionals/widgets.service";
+import { getHomeWidgets } from "./additional/widgets.service";
 
 export type DailyReport = InferSelectModel<typeof dailyReports>;
 export type DailyReportInsert = InferInsertModel<typeof dailyReports>;
