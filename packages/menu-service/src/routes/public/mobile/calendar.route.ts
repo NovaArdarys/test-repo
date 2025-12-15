@@ -17,6 +17,8 @@ app.get(
   '/:entity',
   validate({
     query: listCalendarQuerySchema,
+  }),
+  validate({
     param: z.object({
       entity: entityTypeEnum
     }),
