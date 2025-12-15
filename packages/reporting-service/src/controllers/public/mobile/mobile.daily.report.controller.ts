@@ -47,6 +47,11 @@ export const listDailyReportsHandler = catchAsync(async (c: Context) => {
 
   if (entity === "driver") {
     const data = await getDriverDeliveries({
+      driversIds: audit.driverId,
+      entityType: entity,
+      kitchenIds: audit.kitchenId ?? [entityId],
+      schoolIds: audit.beneficiaryId,
+      subDomains: audit.subDomain,
       driverId: audit.driverId?.[0],
       startDate: query.startDate,
       endDate: query.endDate,
@@ -72,7 +77,7 @@ export const listDailyReportsHandler = catchAsync(async (c: Context) => {
       limit,
       menuPlanName: search,
       view,
-      typeOfReport: typeOfReport as any
+      typeOfReport: typeOfReport as any,
     });
 
     return c.json(data);
