@@ -22,10 +22,18 @@ export const buildOrderedDomainSteps = (steps: NormalizedStep[]) => {
   }, {} as Record<string, NormalizedStep[]>);
 
   return Object.entries(grouped)
-    .map(([subDomain, items]) => ({
-      subDomain,
-      orderStep: SUB_DOMAIN_ORDER[subDomain] ?? 999,
-      steps: items.sort((a, b) => a.stepOrder - b.stepOrder),
-    }))
+    .map(([subDomain, items]) => {
+      const firstIncomplete = items
+        .sort((a, b) => a.stepOrder - b.stepOrder)
+        .find(item => item.isCompleted !== true);
+
+      const allCompleted = !firstIncomplete;
+      return ({
+        subDomain,
+        isCompleted: allCompleted,
+        orderStep: SUB_DOMAIN_ORDER[subDomain] ?? 999,
+        steps: items.sort((a, b) => a.stepOrder - b.stepOrder),
+      });
+    })
     .sort((a, b) => a.orderStep - b.orderStep);
 };
