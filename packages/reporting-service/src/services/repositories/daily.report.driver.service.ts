@@ -36,15 +36,6 @@ export async function getDriverDeliveries(params: {
 
   const toISO = (d: Date) => d.toISOString().split("T")[0];
 
-  let computedEndDate = endDate;
-  if (view === "home" && endDate) {
-    try {
-      computedEndDate = toISO(addDays(new Date(endDate), 3));
-    } catch {
-      computedEndDate = endDate;
-    }
-  }
-
   const widgets = await getHomeWidgets({
     view,
     entityType,

@@ -273,11 +273,19 @@ export async function getMenuPlanById(
 
     const schoolMap = new Map<string, any>();
     data.menuPlanBeneficiaries.forEach((mpsk) => {
-        if (mpsk.beneficiary?.id)
+        if (mpsk.beneficiary?.id) {
+            const { smallPortion, largePortion, ...beneficiary } = mpsk.beneficiary;
             schoolMap.set(mpsk.beneficiary.id, {
-                ...mpsk.beneficiary,
+                ...beneficiary,
+                targetPortion: {
+                    small: smallPortion ?? 0,
+                    large: largePortion ?? 0,
+                    total: (smallPortion ?? 0) + (largePortion ?? 0)
+                },
                 portion: 0,
             });
+        }
+
     });
 
     const { menuPlanBeneficiaries, suppliersFoodItems, planEndDate, planStartDate, ...menuPlan } = data;
