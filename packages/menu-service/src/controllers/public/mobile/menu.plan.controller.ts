@@ -20,8 +20,6 @@ const getAuditFields = (c: Context) => ({
   isAppManager: c.get("isAppManager") as boolean,
 });
 
-
-
 export const listMenuPlansHandler = catchAsync(async (c: Context) => {
   const query = c.get("validatedData").query as unknown as ListMenuPlansQuerySchemaType;
   const param = c.get("validatedData").param;

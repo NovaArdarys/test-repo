@@ -219,7 +219,22 @@ export async function getMenuPlanById(
                     }
                 }
             },
-            menuPlankitchen: true,
+            menuPlankitchen: {
+                columns: {
+                    id: true,
+                    name: true,
+                    address: true,
+                    status: true,
+                    joinDate: true,
+                    phoneNumber: true,
+                    lon: true,
+                    lat: true,
+                    imageURL: true,
+                    storageId: true,
+                    createdAt: true,
+                    updatedAt: true
+                }
+            },
             menuPlanBeneficiaries: {
                 with: {
                     beneficiary: {
@@ -228,7 +243,9 @@ export async function getMenuPlanById(
                             address: true,
                             name: true,
                             phoneNumber: true,
-                            updatedAt: true
+                            updatedAt: true,
+                            smallPortion: true,
+                            largePortion: true
                         }
                     },
                 }
