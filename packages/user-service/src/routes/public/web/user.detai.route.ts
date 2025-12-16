@@ -26,11 +26,6 @@ app.use(checkAccessToken)
     validate(userDetailSchema),
     updateUserDetailsHandler
   )
-  .post('/',
-    permission(),
-    validate(createUserSchema),
-    createUserHandler
-  )
   .get('/:id',
     validate(idParamSchema, 'param'),
     getUserByIdHandler
