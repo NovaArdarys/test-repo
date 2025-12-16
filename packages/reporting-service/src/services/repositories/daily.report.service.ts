@@ -340,10 +340,11 @@ export async function getDailyReportsList(params?: {
     view,
     menuPlanName,
   } = params ?? {};
+  console.log(entityType, "=====entityType=====", schoolIds);
 
-  const toISO = (d: Date) => d.toISOString().split("T")[0];
-  const tomorrow = toISO(addDays(new Date(endDate), 1));
-  const threeDaysAfterTomorrow = toISO(addDays(new Date(endDate), 3));
+  // const toISO = (d: Date) => d.toISOString().split("T")[0];
+  // const tomorrow = toISO(addDays(new Date(endDate), 1));
+  // const threeDaysAfterTomorrow = toISO(addDays(new Date(endDate), 3));
 
   const uuidArray = (ids: string[]) =>
     sql.raw(`ARRAY[${ids.map((id) => `'${id}'`).join(",")}]::uuid[]`);

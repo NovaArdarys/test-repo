@@ -43,8 +43,6 @@ export async function getBeneficiaryList({
 
   const whereConditions: SQLWrapper[] = [];
 
-  console.log(kitchenIds, "=====kitchenIds=====");
-
   if (!isAppManager && kitchenIds) {
     whereConditions.push(inArray(beneficiaries.kitchenId, compact(kitchenIds)));
   }

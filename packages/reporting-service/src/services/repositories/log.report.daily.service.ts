@@ -63,8 +63,6 @@ export async function getStepReportsWithFilter({
   const kitchenIdsNormalized = castArray(kitchenIds).filter(Boolean);
 
   if (!isAppManager && kitchenIdsNormalized?.length) {
-    console.log(isAppManager, kitchenIds, "=====kitchenIds====", entity);
-
     conditions.push(
       and(entity ? eq(dailyReports.entityType, entity as any) : undefined,
         or(

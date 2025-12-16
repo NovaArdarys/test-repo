@@ -21,8 +21,6 @@ export async function getHomeWidgets(params: {
     subDomains,
   } = params;
 
-  console.log(kitchenIds, "=====kitchenIds====");
-
   const toISO = (d: Date) => d.toISOString().split("T")[0];
   const tomorrow = toISO(addDays(new Date(endDate), 1));
   const threeDaysAfterTomorrow = toISO(addDays(new Date(endDate), 3));

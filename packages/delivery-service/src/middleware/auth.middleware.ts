@@ -1,6 +1,7 @@
 import { tokenParams, verifyToken } from '@/utils/jwt';
 import { Context, Next } from 'hono';
 import * as HttpStatus from "http-status";
+import { isEmpty } from 'lodash';
 
 export const checkAccessToken = async (c: Context, next: Next) => {
   const authHeader = c.req.header('Authorization');
@@ -19,18 +20,25 @@ export const checkAccessToken = async (c: Context, next: Next) => {
       accessToken
     ) as tokenParams;
 
-    c.set('userId', id);
-    c.set('roleId', roleId);
-    c.set('beneficiaryId', data?.beneficiary?.beneficiaryIds || []);
-    c.set('kitchenId', data?.kitchen?.kitchenIds || []);
-    c.set('driverId', data?.driver?.driverIds || []);
-    c.set('driverKitchenId', data?.driver?.kitchenId || []);
-    c.set('domain', data?.domain || "");
-    c.set('subDomain', data?.subDomain);
-    c.set('userEmail', email);
-    c.set('isAppManager', data?.domain === "app_manager");
+    if (!isEmpty(data?.beneficiary?.beneficiaryIds) || !isEmpty(data?.kitchen?.kitchenIds) || !isEmpty(data?.driver?.driverIds) || !isEmpty(data?.driver?.kitchenId)) {
 
-    await next();
+      c.set('userId', id);
+      c.set('roleId', roleId);
+      c.set('beneficiaryId', data?.beneficiary?.beneficiaryIds || []);
+      c.set('kitchenId', data?.kitchen?.kitchenIds || []);
+      c.set('driverId', data?.driver?.driverIds || []);
+      c.set('driverKitchenId', data?.driver?.kitchenId || []);
+      c.set('domain', data?.domain || "");
+      c.set('subDomain', data?.subDomain);
+      c.set('userEmail', email);
+      c.set('isAppManager', data?.domain === "app_manager");
+
+      await next();
+    }
+    return c.json({
+      success: false,
+      error: HttpStatus.default['401_MESSAGE']
+    }, HttpStatus.default.UNAUTHORIZED);
 
   } catch (error) {
     let errorMessage = 'Invalid or expired Access Token';
