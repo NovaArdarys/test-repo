@@ -68,13 +68,17 @@ export async function getEventReportById(id: string) {
   return grouped;
 }
 
-
 export async function getEventReports(options?: {
   page?: number;
   limit?: number;
   startDate?: string;
   endDate?: string;
   reportType?: string;
+  kitchenIds: string[];
+  beneficiaryIds: string[];
+  driversIds: string[];
+  subDomains: string[];
+  entityType?: string;
 }) {
   const page = options?.page ?? 1;
   const limit = options?.limit ?? 10;
@@ -84,8 +88,12 @@ export async function getEventReports(options?: {
     eq(eventReports.isDeleted, false),
     options?.startDate ? gte(eventReports.date, options.startDate) : undefined,
     options?.endDate ? lte(eventReports.date, options.endDate) : undefined,
-    options?.reportType ? eq(eventReports.reportType, options.reportType) : undefined
+    options?.reportType ? eq(eventReports.reportType, options.reportType) : undefined,
+    inArray(eventReports.entityId, options?.kitchenIds)
   );
+
+  console.log(options, "=====options=====", options?.startDate);
+
 
   const rows = await db
     .select({

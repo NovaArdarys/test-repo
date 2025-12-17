@@ -36,18 +36,27 @@ const getAuditFields = (c: Context) => ({
 
 export const listEventReportsHandler = catchAsync(async (c: Context) => {
   const query = await c.get("validatedData").query as GetEventReportListSchemaType;
+  const { entityType } = await c.get("validatedData").param;
+
   const page = parseInt(String(query.page || "1"));
   const limit = parseInt(String(query.limit || "10"));
   const reportType = query.reportType || undefined;
   const startDate = query.startDate ? query.startDate : undefined;
   const endDate = query.endDate ? query.endDate : undefined;
 
+  const { kitchenId, driverId, beneficiaryId, userId, subDomain } = getAuditFields(c);
+
   const reports = await getEventReports({
     page,
     limit,
     reportType,
     startDate,
-    endDate
+    endDate,
+    entityType: entityType ?? "",
+    driversIds: driverId ?? [],
+    kitchenIds: kitchenId ?? [],
+    beneficiaryIds: beneficiaryId ?? [],
+    subDomains: subDomain
   });
 
   return c.json({ data: reports.data, meta: reports.meta }, 200);

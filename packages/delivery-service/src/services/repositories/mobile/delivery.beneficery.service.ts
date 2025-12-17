@@ -9,7 +9,7 @@ import {
   driverLocations,
   menuPlans
 } from "@/db/schemas";
-import { and, eq, sql, inArray } from "drizzle-orm";
+import { and, eq, sql, inArray, ne } from "drizzle-orm";
 import { isEmpty } from "lodash";
 
 export async function getDeliveriesListBeneficiary({
@@ -37,7 +37,7 @@ export async function getDeliveriesListBeneficiary({
 
   const conditions = [
     eq(deliveries.isDeleted, isDeleted),
-    status ? eq(deliveries.status, status as any) : undefined,
+    status ? eq(deliveries.status, status as any) : ne(deliveries.status, "DELIVERED"),
     !isEmpty(kitchenIds) ? inArray(deliveries.kitchenId, kitchenIds!) : undefined,
     !isEmpty(driverIds) ? inArray(deliveries.driverId, driverIds!) : undefined,
   ].filter(Boolean);
@@ -60,7 +60,6 @@ export async function getDeliveriesListBeneficiary({
         ${beneficiaryArray ? sql`AND db.beneficiary_id = ANY(${beneficiaryArray})` : sql``}
         AND mp.plan_start_date >= ${startDate}
         AND mp.plan_start_date <= ${endDate}
-        AND d2.status != 'DELIVERED'
     )
   `;
 

@@ -36,9 +36,6 @@ export const listDeliveriesHandler = catchAsync(async (c: Context) => {
   const startDate = query.startDate || null;
   const endDate = query.endDate || null;
 
-  console.log(param?.entity, "===== param?.entity ======");
-
-
   if (param?.entity === "driver") {
     const data = await getDeliveriesListDriver({
       page,
