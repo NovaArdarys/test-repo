@@ -7,6 +7,7 @@ export const CreateDeliveryEventReportSchema = z.object({
   location: z.string().optional(),
   description: z.string().optional(),
   receivedPortion: z.number().optional(),
+  deliveredPortion: z.number().optional(),
   takenTray: z.number().optional(),
   storageIds: z.array(z.string()).default([]),
 });
