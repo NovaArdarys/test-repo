@@ -89,8 +89,9 @@ export async function getEventReports(options?: {
     options?.startDate ? gte(eventReports.date, options.startDate) : undefined,
     options?.endDate ? lte(eventReports.date, options.endDate) : undefined,
     options?.reportType ? eq(eventReports.reportType, options.reportType) : undefined,
-    inArray(eventReports.entityId, options?.kitchenIds)
-  );
+    options?.kitchenIds && options.kitchenIds.length > 0
+      ? inArray(eventReports.entityId, options.kitchenIds)
+      : undefined,);
 
   console.log(options, "=====options=====", options?.startDate);
 
