@@ -26,7 +26,7 @@ import {
   menuPlanBeneficiaries,
 } from "../food.schema";
 import { suppliers, suppliersFoodItems, suppliersProducts } from "../supplier.schema";
-import { deliveries, deliveryBeneficiaries } from "../delivery.schema";
+import { deliveries, deliveryBeneficiaries, deliveryStepReports } from "../delivery.schema";
 import { districts, provinces, regencies, villages } from "../master.schema";
 import { dailyReports, eventReports, stepReports } from "../reporting.Schema";
 import { masterSteps } from "../stepPlan.schema";
@@ -148,6 +148,7 @@ export const stepReportRelations = relations(stepReports, ({ one }) => ({
  */
 export const masterStepRelations = relations(masterSteps, ({ many }) => ({
   stepReports: many(stepReports),
+  deliveryStepReports: many(deliveryStepReports),
 }));
 
 /**
@@ -600,9 +601,29 @@ export const deliveriesRelations = relations(deliveries, ({ one, many }) => ({
 /**
  * deliveryBeneficiaries relations
  */
-export const deliveryBeneficiariesRelations = relations(deliveryBeneficiaries, ({ one }) => ({
+export const deliveryBeneficiariesRelations = relations(deliveryBeneficiaries, ({ one, many }) => ({
   delivery: one(deliveries, { fields: [deliveryBeneficiaries.deliveryId], references: [deliveries.id] }),
   beneficiary: one(beneficiaries, { fields: [deliveryBeneficiaries.beneficiaryId], references: [beneficiaries.id] }),
   menuPlan: one(menuPlans, { fields: [deliveryBeneficiaries.menuPlanId], references: [menuPlans.id] }),
   createdBy: one(users, { fields: [deliveryBeneficiaries.createdBy], references: [users.id], relationName: "created_by" }),
+  deliveryStepReports: many(deliveryStepReports),
 }));
+
+export const deliveryStepReportsRelations = relations(
+  deliveryStepReports,
+  ({ one }) => ({
+    deliveryBeneficiary: one(deliveryBeneficiaries, {
+      fields: [deliveryStepReports.deliveryBeneficiaryId],
+      references: [deliveryBeneficiaries.id],
+    }),
+    step: one(masterSteps, {
+      fields: [deliveryStepReports.stepId],
+      references: [masterSteps.id],
+    }),
+    createdByUser: one(users, {
+      fields: [deliveryStepReports.createdBy],
+      references: [users.id],
+      relationName: "created_by",
+    }),
+  })
+);
