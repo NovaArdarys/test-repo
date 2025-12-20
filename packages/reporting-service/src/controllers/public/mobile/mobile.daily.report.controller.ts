@@ -11,6 +11,7 @@ import { publishStepUpdate } from "@/messaging/publishers/reporting.publisher";
 import { every, isEmpty } from "lodash";
 import { getDriverDeliveries } from "@/services/repositories/daily.report.driver.service";
 import { getDailyReportsListSPPG } from "@/services/repositories/daily.report.sppg.service";
+import { getDriverDeliveriesV2 } from "@/services/repositories/mobile/daily.report.driver.service";
 
 const getAuditFields = (c: Context) => ({
   createdBy: c.get('userId'),
@@ -41,12 +42,13 @@ export const listDailyReportsHandler = catchAsync(async (c: Context) => {
 
   const entityId = audit.domain === "kitchen" ? !isEmpty(audit.driverId) ? audit.driverId?.[0] ?? null : audit.kitchenId?.[0] ?? null : audit.domain === "beneficiary" ? audit.beneficiaryId?.[0] ?? null : null;
 
+
   if (isEmpty(entityId)) {
     return c.json({ message: "User belum punya lokasi penempatan" }, 400);
   }
 
   if (entity === "driver") {
-    const data = await getDriverDeliveries({
+    const data = await getDriverDeliveriesV2({
       driversIds: audit.driverId,
       entityType: entity,
       kitchenIds: audit.kitchenId ?? [entityId],

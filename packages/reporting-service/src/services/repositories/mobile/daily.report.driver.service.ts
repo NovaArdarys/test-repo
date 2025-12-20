@@ -1,11 +1,65 @@
 import { db } from "@/db";
-import { beneficiaries, dailyReports, deliveries, deliveryBeneficiaries, masterSteps, menuPlans, stepReports, storage } from "@/db/schemas";
-import { addDays } from "date-fns";
+import {
+  beneficiaries,
+  dailyReports,
+  deliveries,
+  deliveryBeneficiaries,
+  masterSteps,
+  menuPlans,
+  stepReports,
+  storage,
+} from "@/db/schemas";
 import { eq, desc, sql, inArray } from "drizzle-orm";
-import { getHomeWidgets } from "./additional/widgets.service";
+import { getHomeWidgets } from "../additional/widgets.service";
 
 
-export async function getDriverDeliveries(params: {
+function restructureAgenda(rawAgenda: any[]) {
+  return rawAgenda.map((agenda) => {
+    const stepMap: Record<string, any> = {};
+
+    for (const delivery of agenda.deliveries) {
+      for (const step of delivery.steps ?? []) {
+
+        // 🚫 FILTER DOMAIN (INI INTI FIX-NYA)
+        if (step.stepKey === "pickup" && delivery.type === "DROPOFF") {
+          continue;
+        }
+
+        if (!stepMap[step.stepKey]) {
+          stepMap[step.stepKey] = {
+            stepKey: step.stepKey,
+            stepName: step.stepName,
+            stepOrder: step.stepOrder,
+            deliveries: [],
+          };
+        }
+
+        stepMap[step.stepKey].deliveries.push({
+          id: delivery.id,
+          beneficiary: delivery.beneficiary,
+          status: delivery.status,
+          deliveredAt: delivery.deliveredAt,
+          portionType: delivery.portionType,
+          targetPortion: delivery.targetPortion,
+          receivedPortion: delivery.receivedPortion,
+          takenTray: delivery.takenTray,
+          type: delivery.type,
+        });
+      }
+    }
+
+    return {
+      ...agenda,
+      steps: Object.values(stepMap).sort(
+        (a: any, b: any) => a.stepOrder - b.stepOrder
+      ),
+      deliveries: undefined,
+    };
+  });
+}
+
+
+export async function getDriverDeliveriesV2(params: {
   entityType?: string;
   driverId: string;
   startDate?: string;
@@ -34,11 +88,6 @@ export async function getDriverDeliveries(params: {
     entityType = "driver",
   } = params;
 
-  console.log(params, "=====params=====");
-
-
-  const toISO = (d: Date) => d.toISOString().split("T")[0];
-
   const widgets = await getHomeWidgets({
     view,
     entityType,
@@ -48,7 +97,6 @@ export async function getDriverDeliveries(params: {
     driversIds,
     subDomains,
   });
-
 
   const deliveriesRows = await db
     .select({
@@ -97,6 +145,9 @@ export async function getDriverDeliveries(params: {
     };
   }
 
+  /* =========================
+     STEP REPORTS
+     ========================= */
   const deliveryBeneficiaryIds = deliveriesRows
     .map((d) => d.deliveryBeneficiaryId)
     .filter((v): v is string => Boolean(v));
@@ -144,6 +195,9 @@ export async function getDriverDeliveries(params: {
     return acc;
   }, {} as Record<string, Map<string, any>>);
 
+  /* =========================
+     BUILD AGENDA (RAW)
+     ========================= */
   const agendaMap: Record<string, any> = {};
 
   for (const row of deliveriesRows) {
@@ -202,7 +256,7 @@ export async function getDriverDeliveries(params: {
       agendaMap[row.menuPlanId].portion.large;
   }
 
-  const agenda = Object.values(agendaMap);
+  const agenda = restructureAgenda(Object.values(agendaMap));
 
   const [{ count }] =
     (await db
@@ -223,5 +277,3 @@ export async function getDriverDeliveries(params: {
     },
   };
 }
-
-
