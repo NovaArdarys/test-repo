@@ -17,7 +17,7 @@ import type { InferInsertModel, InferSelectModel } from "drizzle-orm";
 import { getReportTypeDate } from "@/utils/reportType";
 import { getBeneficiariesAndDriversByKitchenIds } from "./daily.reference.ids.service";
 import { getKitchenDetailByUsers } from "./additional/get.kitchen.by.user.service";
-import { groupStepsByDomain, transformSteps } from "@/utils/transformSteps";
+import { groupStepsByDomain } from "@/utils/transformSteps";
 
 export type DailyReport = InferSelectModel<typeof dailyReports>;
 export type DailyReportInsert = InferInsertModel<typeof dailyReports>;

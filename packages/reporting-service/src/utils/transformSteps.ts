@@ -1,6 +1,3 @@
-import { orderBy } from "lodash";
-import { computeAIStatus } from "./aiScore.utils";
-
 export interface StepItem {
   id: string;
   isCompleted: boolean;
@@ -20,50 +17,6 @@ export interface StepGroup {
   steps: Array<StepItem & { aiStatus: any; }>;
 }
 
-export function transformSteps(rawSteps: StepItem[]): StepGroup[] {
-  if (!rawSteps?.length) return [];
-
-  const sorted = orderBy(rawSteps, "stepOrder", "asc");
-
-  const enriched = sorted.map((step) => {
-    const { ai, ...stepData } = step;
-    return ({
-      ...stepData,
-      aiStatus: computeAIStatus(ai ?? []),
-    });
-  });
-
-  const domainMap = new Map<string, any[]>();
-
-  enriched.forEach((step) => {
-    const domain = step.subDomain ?? "unknown";
-
-    if (!domainMap.has(domain)) {
-      domainMap.set(domain, []);
-    }
-    domainMap.get(domain)!.push(step);
-  });
-
-  const result: StepGroup[] = Array.from(domainMap.entries()).map(
-    ([domain, steps]) => {
-      const statuses = steps.map((s: any) => s.aiStatus.status);
-
-      let domainStatus: StepGroup["status"] = "PENDING";
-
-      if (statuses.includes("FAIL")) domainStatus = "FAIL";
-      else if (statuses.includes("OK")) domainStatus = "OK";
-
-      return {
-        domain,
-        status: domainStatus,
-        steps,
-      };
-    }
-  );
-
-  return result;
-}
-
 export function computeDomainStatusFromOutput(ai: any, domain: string) {
   if (!ai?.output) return false;
 
@@ -71,7 +24,7 @@ export function computeDomainStatusFromOutput(ai: any, domain: string) {
   const type = ai.type;
 
   //
-  // 🔥 DOMAIN: APD
+  // DOMAIN: APD
   //
   if (domain.toLowerCase().includes("apd")) {
     const nonCompliant = output?.data?.non_compliant_count ?? null;
@@ -80,7 +33,7 @@ export function computeDomainStatusFromOutput(ai: any, domain: string) {
   }
 
   //
-  // 🔥 DOMAIN: KEBERSIHAN
+  // DOMAIN: KEBERSIHAN
   //
   if (domain.toLowerCase().includes("kebersihan")) {
     const dirtyScore = output?.data?.dirty_score ?? null;
@@ -89,7 +42,7 @@ export function computeDomainStatusFromOutput(ai: any, domain: string) {
   }
 
   //
-  // 🔥 DOMAIN: FOOD DETECTION
+  // DOMAIN: FOOD DETECTION
   //
   if (type === "food_detection") {
     const missing = output?.data?.not_found?.length ?? null;
@@ -98,7 +51,7 @@ export function computeDomainStatusFromOutput(ai: any, domain: string) {
   }
 
   //
-  // 🔥 FALLBACK DOMAIN (PERSIAPAN / PEMORSIAN)
+  // FALLBACK DOMAIN (PERSIAPAN / PEMORSIAN)
   //
   if (output.error) return false;
   return true;
@@ -174,4 +127,35 @@ export function groupStepsByDomain(rawSteps: any[]) {
       storages: domainImages,
     };
   });
+}
+
+export function groupStepsBySubDomain(steps: any[]) {
+  const group: Record<string, any> = {};
+
+  for (const step of steps) {
+    const key = step.subDomain;
+
+    if (!group[key]) {
+      group[key] = {
+        subDomain: key,
+        steps: []
+      };
+    }
+
+    group[key].steps.push({
+      id: step.id,
+      stepName: step.stepName,
+      stepOrder: step.stepOrder,
+      imageURL: step.imageURL,
+      storageId: step.storageId,
+      createdAt: step.createdAt,
+      ai: step.ai
+    });
+  }
+
+  for (const key of Object.keys(group)) {
+    group[key].steps.sort((a: any, b: any) => a.stepOrder - b.stepOrder);
+  }
+
+  return Object.values(group);
 }

@@ -1,10 +1,12 @@
 import { Hono } from 'hono';
 
 import dailyReports from '@/routes/public/mobile/mobile.daily.report.route';
+import stepReports from '@/routes/public/mobile/mobile.step.report.route';
 import eventReports from '@/routes/public/mobile/mobile.event.report.route';
 import { generateOpenAPIDoc, } from '@/utils/autoRoute';
 
 const app = new Hono()
+  .route('/step-reports', stepReports)
   .route('/daily-reports', dailyReports)
   .route('/event-reports', eventReports);
 
