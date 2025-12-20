@@ -8,6 +8,7 @@ import { updateDeliveryStatus, getDeliveriesListDriver } from "@/services/reposi
 import { getDeliveriesListKitchen } from "@/services/repositories/mobile/delivery.kitchen.service";
 import { getDeliveriesListBeneficiary } from "@/services/repositories/mobile/delivery.beneficery.service";
 import { deliveryQueue } from "@/jobs/queue/delivery.queue";
+import { UpdateDeliveryStatusSchemaType } from "../../../validator/delivery.validator";
 
 const getAuditFields = (c: Context) => ({
   createdBy: c.get('userId'),
@@ -84,16 +85,17 @@ export const listDeliveriesHandler = catchAsync(async (c: Context) => {
 export const updateDeliveryStatusHandler = catchAsync(async (c: Context) => {
   const deliveryId = c.req.param("id");
 
-  const { status } = c.get("validatedData").body as unknown as {
-    status: "PENDING" | "IN_PROGRESS" | "DELIVERED" | "FAILED";
-  };
+  const { status, imageUrl, storageId } = c.get("validatedData")
+    .body as UpdateDeliveryStatusSchemaType;
 
   const { updatedBy } = getAuditFields(c);
 
   const updatedDelivery = await updateDeliveryStatus({
     deliveryId,
     status,
-    updatedBy
+    imageUrl,
+    storageId,
+    updatedBy,
   });
 
 

@@ -232,26 +232,44 @@ interface UpdateDeliveryStatusInput {
   deliveryId: string;
   status: "PENDING" | "IN_PROGRESS" | "DELIVERED" | "FAILED";
   updatedBy: string;
+
+  imageUrl?: string;
+  storageId?: string;
 }
 
 export const updateDeliveryStatus = async ({
   deliveryId,
   status,
-  updatedBy
+  updatedBy,
+  imageUrl,
+  storageId
 }: UpdateDeliveryStatusInput) => {
 
   const isFinished =
     status === "DELIVERED" ||
     status === "FAILED";
 
+  const payload: any = {
+    status,
+    updatedAt: new Date(),
+    updatedBy,
+  };
+
+  if (isFinished) {
+    payload.endTime = new Date();
+  }
+
+  if (typeof imageUrl === "string") {
+    payload.imageUrl = imageUrl;
+  }
+
+  if (typeof storageId === "string") {
+    payload.storageId = storageId;
+  }
+
   const [updated] = await db
     .update(deliveries)
-    .set({
-      status,
-      endTime: isFinished ? new Date() : null,
-      updatedAt: new Date(),
-      updatedBy
-    })
+    .set(payload)
     .where(eq(deliveries.id, deliveryId))
     .returning();
 

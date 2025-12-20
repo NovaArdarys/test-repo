@@ -2,6 +2,7 @@ import { boolean, date, index, integer, pgTable, text, timestamp, uniqueIndex, u
 import { deliveryBeneficiaryStatusEnum, deliveryStatusEnum } from "./enums/enums";
 import { masterSteps } from "./stepPlan.schema";
 import { users } from "./user.schema";
+import { storage } from "./storage.schema";
 
 export const deliveries = pgTable('deliveries', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -25,6 +26,10 @@ export const deliveries = pgTable('deliveries', {
   deliveredPortion: integer("delivered_portion").default(0).notNull(),
   takenTray: integer("taken_tray").default(0).notNull(),
   type: text("type").default("DROPOFF").notNull(),
+  storageId: uuid("storage_id").references(() => storage.id, {
+    onDelete: "set null",
+  }),
+  imageUrl: text("image_url"),
 }, (table) => ({
   // uniqKitchenDriverDate: uniqueIndex('uniq_kitchen_driver_date').on(
   //   table.kitchenId,

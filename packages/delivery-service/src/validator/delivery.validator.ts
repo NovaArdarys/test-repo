@@ -34,7 +34,10 @@ export const ListDeliveriesQuerySchema = paginationSchema.extend({
 
 export const UpdateDeliveryStatusSchema = z.object({
   status: DeliveryStatusTypeEnum,
+  imageUrl: z.string().url().optional(),
+  storageId: z.string().optional(),
 });
+
 
 export const AssignBeneficiarySchema = z.object({
   beneficiaryId: z.string(),
