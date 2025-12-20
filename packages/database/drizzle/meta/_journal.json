@@ -246,6 +246,13 @@
       "when": 1766249192775,
       "tag": "0034_first_next_avengers",
       "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1766250305092,
+      "tag": "0035_charming_living_tribunal",
+      "breakpoints": true
     }
   ]
 }
