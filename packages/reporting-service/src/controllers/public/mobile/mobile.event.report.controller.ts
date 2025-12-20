@@ -36,7 +36,6 @@ const getAuditFields = (c: Context) => ({
 
 export const listEventReportsHandler = catchAsync(async (c: Context) => {
   const query = await c.get("validatedData").query as GetEventReportListSchemaType;
-  const { entityType } = await c.get("validatedData").param;
 
   const page = parseInt(String(query.page || "1"));
   const limit = parseInt(String(query.limit || "10"));
@@ -44,7 +43,7 @@ export const listEventReportsHandler = catchAsync(async (c: Context) => {
   const startDate = query.startDate ? query.startDate : undefined;
   const endDate = query.endDate ? query.endDate : undefined;
 
-  const { kitchenId, driverId, beneficiaryId, userId, subDomain } = getAuditFields(c);
+  const { kitchenId, driverId, beneficiaryId, userId, subDomain, domain } = getAuditFields(c);
 
   const reports = await getEventReports({
     page,
@@ -52,7 +51,7 @@ export const listEventReportsHandler = catchAsync(async (c: Context) => {
     reportType,
     startDate,
     endDate,
-    entityType: entityType ?? "",
+    entityType: domain ?? "",
     driversIds: driverId ?? [],
     kitchenIds: kitchenId ?? [],
     beneficiaryIds: beneficiaryId ?? [],
