@@ -1,6 +1,6 @@
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { db } from "@/db";
-import { drivers, beneficiaries } from "@/db/schemas";
+import { drivers, beneficiaries, kitchens, userKitchens } from "@/db/schemas";
 
 export async function getKitchenIdFromDriver(driverId: string): Promise<string> {
   const row = await db.query.drivers.findFirst({
@@ -52,6 +52,33 @@ export async function getKitchenIdFromKitchen(
 
   return row.kitchenId;
 }
+
+export async function getKitchenDetailByUsers(
+  userIds: string[],
+) {
+  const rows = await db
+    .select({
+      id: kitchens.id,
+      name: kitchens.name,
+      address: kitchens.address,
+      status: kitchens.status,
+      phoneNumber: kitchens.phoneNumber,
+      imageURL: kitchens.imageURL,
+      storageId: kitchens.storageId,
+    })
+    .from(kitchens)
+    .innerJoin(userKitchens, eq(userKitchens.kitchenId, kitchens.id))
+    .where(
+      inArray(userKitchens.userId, userIds)
+    );
+
+  if (!rows.length) {
+    throw new Error("Kitchen not found");
+  }
+
+  return rows?.[0] ?? null;
+}
+
 
 export async function resolveKitchenId(params: {
   entityType: "kitchen" | "driver" | "beneficiary";

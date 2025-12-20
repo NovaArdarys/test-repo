@@ -16,6 +16,8 @@ import { orderBy } from "lodash";
 import type { InferInsertModel, InferSelectModel } from "drizzle-orm";
 import { getReportTypeDate } from "@/utils/reportType";
 import { getBeneficiariesAndDriversByKitchenIds } from "./daily.reference.ids.service";
+import { getKitchenDetailByUsers } from "./additional/get.kitchen.by.user.service";
+import { groupStepsByDomain, transformSteps } from "@/utils/transformSteps";
 
 export type DailyReport = InferSelectModel<typeof dailyReports>;
 export type DailyReportInsert = InferInsertModel<typeof dailyReports>;
@@ -50,6 +52,13 @@ export async function getDailyReportsListSPPG(params?: {
     view,
     typeOfReport
   } = params ?? {};
+
+  const uuidArray = (ids: string[]) =>
+    sql.raw(`ARRAY[${ids.map((id) => `'${id}'`).join(",")}]::uuid[]`);
+  const toISO = (d: Date) => d.toISOString().split("T")[0];
+  const tomorrow = toISO(addDays(new Date(endDate), 1));
+  const threeDaysAfterTomorrow = toISO(addDays(new Date(endDate), 3));
+
   const graphReportStartDate = getReportTypeDate(startDate, typeOfReport);
   const { beneficiaries: schoolIds, drivers: driversIds } = await getBeneficiariesAndDriversByKitchenIds(kitchenIds);
   const ORentityIds = [
@@ -120,16 +129,9 @@ export async function getDailyReportsListSPPG(params?: {
             SELECT mp.id, mp.name, mp.plan_start_date
             FROM menu_plans mp
             WHERE mp.is_deleted = false
-              ${entityType === "kitchen" && kitchenIds.length > 0
-          ? sql`AND mp.kitchen_id = ANY(${sql.raw(
-            `ARRAY[${kitchenIds
-              .map((id) => `'${id}'`)
-              .join(",")}]::uuid[]`
-          )})`
-          : sql``
-        }
-              AND mp.plan_start_date >= ${endDate}
-              AND mp.plan_start_date <= ${computedEndDate}
+              AND mp.kitchen_id = ANY(${uuidArray(kitchenIds)})
+              AND mp.plan_start_date >= ${tomorrow}
+              AND mp.plan_start_date <= ${threeDaysAfterTomorrow}
             ORDER BY mp.plan_start_date ASC
           ) t
         ), '[]'::jsonb)
@@ -217,6 +219,7 @@ export async function getDailyReportsListSPPG(params?: {
               'stepKey', ms.step_key,
               'stepName', ms.step_name,
               'stepOrder', ms.step_order,
+              'subDomain', sr.sub_domains,
               'isCompleted', sr.is_completed,
               'notes', sr.notes
             )
@@ -341,7 +344,15 @@ export async function getDailyReportsListSPPG(params?: {
 
   const data = await db
     .select({
-      dailyReports,
+      dailyReports: sql`
+      jsonb_build_object(
+        'id', ${dailyReports.id},
+        'entityId', ${dailyReports.entityId},
+        'date', ${dailyReports.date},
+        'status', ${dailyReports.status}
+      )
+    `.as("dailyReports"),
+
       menuPlan: {
         id: menuPlans.id,
         name: menuPlans.name,
@@ -349,77 +360,102 @@ export async function getDailyReportsListSPPG(params?: {
         planStartDate: menuPlans.planStartDate,
         beneficiaries: sql`null`.as("beneficiaries"),
         targetPortion: sql`
-          (
-            SELECT json_build_object(
-              'small', COALESCE(SUM(b.small_portion), 0),
-              'large', COALESCE(SUM(b.large_portion), 0),
-              'total', COALESCE(SUM(b.small_portion + b.large_portion), 0)
-            )
-            FROM menu_plan_beneficiaries mpb
-            JOIN beneficiaries b ON b.id = mpb.beneficiary_id
-            WHERE mpb.menu_plan_id = ${menuPlans.id}
-              AND mpb.is_deleted = false
-              AND b.is_deleted = false
+        (
+          SELECT json_build_object(
+            'small', COALESCE(SUM(b.small_portion), 0),
+            'large', COALESCE(SUM(b.large_portion), 0),
+            'total', COALESCE(SUM(b.small_portion + b.large_portion), 0)
           )
-        `.as("targetPortion"),
+          FROM menu_plan_beneficiaries mpb
+          JOIN beneficiaries b ON b.id = mpb.beneficiary_id
+          WHERE mpb.menu_plan_id = ${menuPlans.id}
+            AND mpb.is_deleted = false
+            AND b.is_deleted = false
+        )
+      `.as("targetPortion"),
       },
-      suppliersFoodItem: { id: suppliersFoodItems.id },
-      foodItem: {
-        id: foodItems.id,
-        description: foodItems.description,
-        name: foodItems.name,
-        type: foodItems.type,
-      },
-      supplier: {
-        id: suppliers.id,
-        address: suppliers.address,
-        name: suppliers.name,
-        description: suppliers.description,
-        phoneNumber: suppliers.phoneNumber,
-      },
-      steps: sql`
+
+      suppliers: sql`
         COALESCE(
           (
             SELECT json_agg(
               json_build_object(
-                'id', sr.id,
-                'isCompleted', sr.is_completed,
-                'notes', sr.notes,
-                'stepKey', ms.step_key,
-                'stepName', ms.step_name,
-                'stepOrder', ms.step_order,
-                'imageURL', st.file_url,
-                'createdAt', sr.updated_at
+                'id', sfi.id,
+                'foodId', fi.id,
+                'name', fi.name,
+                'description', fi.description,
+                'type', fi.type,
+                'supplierId', s.id,
+                'supplierName', s.name
               )
-              ORDER BY ms.step_order
             )
-            FROM step_reports sr
-            JOIN master_steps ms ON ms.id = sr.step_id
-            LEFT JOIN storages st ON st.id = sr.storage_id
-            WHERE sr.daily_report_id = ${dailyReports.id}
+            FROM menu_food_item mfi
+            JOIN food_items fi ON fi.id = mfi.food_item_id
+            LEFT JOIN suppliers_food_items sfi 
+              ON sfi.food_item_id = fi.id
+              AND sfi.menu_plan_id = ${menuPlans.id}
+              AND sfi.is_deleted = false
+            LEFT JOIN suppliers s
+              ON s.id = sfi.supplier_id
+              AND (
+                ${kitchenIds.length > 0}
+                AND s.kitchen_id = ANY(${sql.raw(
+        `ARRAY[${kitchenIds.map(id => `'${id}'`).join(",")}]::uuid[]`
+      )})
+              )
+            WHERE mfi.menu_food_plan_id = ${menuPlans.id}
           ),
           '[]'::json
         )
-      `.as("steps"),
+      `.as("suppliers"),
+
+      steps: sql`
+  COALESCE(
+    (
+      SELECT json_agg(
+        json_build_object(
+          'id', sr.id,
+          'isCompleted', sr.is_completed,
+          'notes', sr.notes,
+          'stepKey', ms.step_key,
+          'stepName', ms.step_name,
+          'stepOrder', ms.step_order,
+          'subDomain', sr.sub_domains,
+          'imageURL', st.file_url,
+          'createdAt', sr.updated_at,
+          'storageId', sr.storage_id,
+          'ai', (
+            SELECT json_agg(
+              json_build_object(
+                'type', al.analysis_type,
+                'thumbnail', al.output_image_url,
+                'threshold', al.threshold,
+                'output', al.output,
+                'storageId', al.storage_id
+              )
+            )
+            FROM ai_analysis_logs al
+            WHERE al.entity_id = sr.id
+          )
+        )
+        ORDER BY ms.step_order
+      )
+      FROM step_reports sr
+      JOIN master_steps ms ON ms.id = sr.step_id
+      LEFT JOIN storages st ON st.id = sr.storage_id
+      WHERE sr.daily_report_id = ${dailyReports.id}
+    ),
+    '[]'::json
+  )
+`.as("steps"),
+
     })
     .from(dailyReports)
     .leftJoin(menuPlans, eq(dailyReports.menuPlanId, menuPlans.id))
-    .leftJoin(
-      suppliersFoodItems,
-      eq(menuPlans.id, suppliersFoodItems.menuPlanId)
-    )
-    .leftJoin(foodItems, eq(suppliersFoodItems.foodItemId, foodItems.id))
-    .leftJoin(suppliers, eq(suppliersFoodItems.supplierId, suppliers.id))
-    .leftJoin(stepReports, eq(dailyReports.id, stepReports.dailyReportId))
-    .leftJoin(masterSteps, eq(stepReports.stepId, masterSteps.id))
-    .leftJoin(storage, eq(stepReports.id, storage.entityId))
     .where(where)
     .groupBy(
       dailyReports.id,
-      menuPlans.id,
-      suppliersFoodItems.id,
-      foodItems.id,
-      suppliers.id
+      menuPlans.id
     )
     .limit(limit)
     .offset((page - 1) * limit)
@@ -427,7 +463,7 @@ export async function getDailyReportsListSPPG(params?: {
 
   const reportMap = new Map<string, any>();
 
-  data.forEach((row) => {
+  data.forEach((row: any) => {
     const reportId = row.dailyReports.id as string;
 
     if (!reportMap.has(reportId)) {
@@ -436,32 +472,42 @@ export async function getDailyReportsListSPPG(params?: {
         menuPlan: row.menuPlan
           ? { ...row.menuPlan, _foodItemMap: new Map() }
           : null,
-        steps: row.steps,
+        steps: row.steps ?? [],
       });
     }
 
     const report = reportMap.get(reportId);
-    const sfiId = row.suppliersFoodItem?.id as string | undefined;
-    const foodItemId = row.foodItem?.id as string | undefined;
 
-    if (sfiId && report.menuPlan) {
-      let foodRow = report.menuPlan._foodItemMap.get(sfiId);
-      if (!foodRow) {
-        foodRow = {
-          ...(row.foodItem ?? {}),
-          id: sfiId,
-          foodId: foodItemId,
-          suppliers: [],
-        };
-        report.menuPlan._foodItemMap.set(sfiId, foodRow);
-      }
+    //
+    //  NEW: supplier aggregation happens here
+    //
+    if (row.suppliers && report.menuPlan) {
+      row.suppliers.forEach((sup: any) => {
+        const foodKey = sup.foodId;
 
-      if (
-        row.supplier &&
-        !foodRow.suppliers.some((s: any) => s.id === row.supplier?.id)
-      ) {
-        foodRow.suppliers.push(row.supplier);
-      }
+        let foodRow = report.menuPlan._foodItemMap.get(foodKey);
+        if (!foodRow) {
+          foodRow = {
+            id: sup.id,
+            foodId: foodKey,
+            name: sup.name,
+            type: sup.type,
+            description: sup.description,
+            suppliers: [],
+          };
+          report.menuPlan._foodItemMap.set(foodKey, foodRow);
+        }
+
+        // FILTER: supplier null jangan masuk ke array
+        if (sup.supplierId) {
+          if (!foodRow.suppliers.some((s: any) => s.id === sup.supplierId)) {
+            foodRow.suppliers.push({
+              id: sup.supplierId,
+              name: sup.supplierName,
+            });
+          }
+        }
+      });
     }
   });
 
@@ -476,7 +522,7 @@ export async function getDailyReportsListSPPG(params?: {
       report.menuPlan = { date: planStartDate, ...rest };
     }
 
-    report.steps = orderBy(report.steps, "stepOrder", "asc");
+    report.steps = groupStepsByDomain(report.steps);
 
     const {
       entityId,
@@ -494,6 +540,9 @@ export async function getDailyReportsListSPPG(params?: {
     return finalReport;
   });
 
+
+  const kitchen = await getKitchenDetailByUsers(params?.kitchenIds || []);
+
   return {
     data: {
       agenda: finalGroupedData,
@@ -507,6 +556,7 @@ export async function getDailyReportsListSPPG(params?: {
           eventReports: eventReportsHome,
         }
         : { widgets }),
+      kitchen,
     },
     meta,
   };
