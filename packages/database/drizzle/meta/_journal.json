@@ -239,6 +239,13 @@
       "when": 1766218059011,
       "tag": "0033_fearless_emma_frost",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1766249192775,
+      "tag": "0034_first_next_avengers",
+      "breakpoints": true
     }
   ]
 }
