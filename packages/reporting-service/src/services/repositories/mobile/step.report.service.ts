@@ -40,31 +40,31 @@ export async function getAllDailyReports({
       id: dailyReports.id,
       date: dailyReports.date,
       menuPlan: sql`
-(
-  SELECT json_build_object(
-    'id', mp.id,
-    'name', mp.name,
-    'planStartDate', mp.plan_start_date,
-    'planEndDate', mp.plan_end_date,
-    'items', (
-      SELECT json_agg(
-        json_build_object(
-          'id', fi.id,
-          'name', fi.name,
-          'nameEn', fi.name_en,
-          'type', fi.type
+      (
+        SELECT json_build_object(
+          'id', mp.id,
+          'name', mp.name,
+          'planStartDate', mp.plan_start_date,
+          'planEndDate', mp.plan_end_date,
+          'items', (
+            SELECT json_agg(
+              json_build_object(
+                'id', fi.id,
+                'name', fi.name,
+                'nameEn', fi.name_en,
+                'type', fi.type
+              )
+            )
+            FROM menu_food_item mfi
+            JOIN food_items fi ON fi.id = mfi.food_item_id
+            WHERE mfi.menu_food_plan_id = mp.id
+            AND mfi.is_deleted = false
+          )
         )
+        FROM menu_plans mp
+        WHERE mp.id = daily_reports.menu_plan_id
       )
-      FROM menu_food_item mfi
-      JOIN food_items fi ON fi.id = mfi.food_item_id
-      WHERE mfi.menu_food_plan_id = mp.id
-      AND mfi.is_deleted = false
-    )
-  )
-  FROM menu_plans mp
-  WHERE mp.id = daily_reports.menu_plan_id
-)
-`.as("menuPlan"),
+      `.as("menuPlan"),
       steps: sql`
       (
         SELECT json_agg(
@@ -76,10 +76,21 @@ export async function getAllDailyReports({
             'stepKey', ms.step_key,
             'stepName', ms.step_name,
             'stepOrder', ms.step_order,
-            'subDomain', sr.sub_domains,
             'imageURL', st.file_url,
             'createdAt', sr.updated_at,
             'storageId', sr.storage_id,
+            'storageFileName', st.file_name,
+            'storageMimeType', st.mime_type,
+            'storageSize', st.size,
+            'storageMeta', st.meta,
+            'storageCreatedAt', st.created_at,
+            'storageCreatedBy', json_build_object(
+              'id', u.id,
+              'email', u.email,
+              'name', trim(concat_ws(' ', ud.first_name, ud.last_name)),
+              'phoneNumber', ud.phone_number,
+              'imageURL', ud.image_url
+            ),
             'ai', (
               SELECT json_agg(
                 json_build_object(
@@ -91,14 +102,14 @@ export async function getAllDailyReports({
               )
               FROM ai_analysis_logs al
               WHERE al.entity_id = sr.id
-            ),
-            'imageURL', st.file_url,
-            'storageId', st.id
+            )
           )
         )
         FROM step_reports sr
         JOIN master_steps ms ON ms.id = sr.step_id
         LEFT JOIN storages st ON st.id = sr.storage_id
+        LEFT JOIN users u ON u.id = st.created_by
+        LEFT JOIN user_details ud ON ud.user_id = u.id
         WHERE sr.daily_report_id = daily_reports.id
         ${subDomain ? sql`AND sr.sub_domains = ${subDomain}` : sql``}
       )

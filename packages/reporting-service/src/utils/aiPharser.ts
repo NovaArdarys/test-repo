@@ -37,6 +37,9 @@ export function groupBySubDomain(steps: any[]) {
       imageURL: step.imageURL,
       storageId: step.storageId,
       createdAt: step.createdAt,
+      storageMeta: normalizeMeta(step.storageMeta),
+      storageCreatedBy: step.storageCreatedBy,
+      storageCreatedAt: step.storageCreatedAt,
       ai: step.ai,
     });
   }
@@ -76,6 +79,9 @@ export function buildUIStepFromStepLevel(step: any, menuItems: any[]) {
     title: step.stepName,
     image: step.imageURL,
     timestamp: step.createdAt,
+    storageMeta: normalizeMeta(step.storageMeta),
+    storageCreatedBy: step.storageCreatedBy,
+    storageCreatedAt: step.storageCreatedAt,
     status: false,
   };
 }
@@ -101,6 +107,9 @@ function buildAPDStep(step: any, ai: any[]) {
     image: step.imageURL ?? null,
     timestamp: step.createdAt ?? null,
     status,
+    storageMeta: normalizeMeta(step.storageMeta),
+    storageCreatedBy: step.storageCreatedBy,
+    storageCreatedAt: step.storageCreatedAt,
     items: buildAPDItems(persons, found.length > 0),
   };
 }
@@ -151,6 +160,9 @@ function buildCleanlinessStep(step: any, ai: any[], pos: "before" | "after") {
     title: pos === "before" ? "Kebersihan Sebelum" : "Kebersihan Sesudah",
     image: step.imageURL ?? null,
     timestamp: step.createdAt ?? null,
+    storageMeta: normalizeMeta(step.storageMeta),
+    storageCreatedBy: step.storageCreatedBy,
+    storageCreatedAt: step.storageCreatedAt,
     status, score,
     scoreLabel:
       score > 80 ? "Baik" :
@@ -201,7 +213,9 @@ function buildServingStep(step: any, ai: any[], menuItems: any[]) {
     title: "Foto Menu",
     image: step.imageURL ?? null,
     timestamp: step.createdAt ?? null,
-
+    storageMeta: normalizeMeta(step.storageMeta),
+    storageCreatedBy: step.storageCreatedBy,
+    storageCreatedAt: step.storageCreatedAt,
     status,
 
     planned: menu,
@@ -215,4 +229,21 @@ export function calculateStatus(domains: any[]) {
   return domains.every((domain: any) =>
     domain.steps.every((step: any) => step.status === true)
   );
+}
+
+
+function normalizeMeta(meta: any) {
+  if (!meta) return {};
+
+  if (typeof meta === "string") {
+    try {
+      return JSON.parse(meta);
+    } catch {
+      return {};
+    }
+  }
+
+  if (typeof meta === "object") return meta;
+
+  return {};
 }
