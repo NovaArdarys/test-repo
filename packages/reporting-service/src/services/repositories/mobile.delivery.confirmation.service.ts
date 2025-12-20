@@ -16,16 +16,37 @@ export async function confirmBeneficiaryDelivery(deliveryId: string, receivedPor
   return updated;
 }
 
-export async function confirmDriverDelivery(deliveryId: string, takenTray: number, updatedBy: string) {
+export async function confirmDriverDelivery({
+  deliveryId,
+  deliveredPortion,
+  takenTray,
+  updatedBy,
+}: {
+  deliveryId: string;
+  deliveredPortion?: number;
+  takenTray?: number;
+  updatedBy: string;
+}) {
+  const updatePayload: any = {
+    updatedAt: new Date(),
+    updatedBy,
+  };
+
+  if (typeof deliveredPortion === 'number') {
+    updatePayload.deliverPortion = deliveredPortion;
+  }
+
+  if (typeof takenTray === 'number') {
+    updatePayload.takenTray = takenTray;
+  }
+
   const [updated] = await db.update(deliveries)
-    .set({
-      takenTray,
-      updatedAt: new Date(),
-      updatedBy
-    })
+    .set(updatePayload)
     .where(eq(deliveries.id, deliveryId))
     .returning();
 
   return updated;
 }
+
+
 

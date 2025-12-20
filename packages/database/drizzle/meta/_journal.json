@@ -225,6 +225,13 @@
       "when": 1765987786467,
       "tag": "0031_shocking_bastion",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1766216318444,
+      "tag": "0032_luxuriant_swarm",
+      "breakpoints": true
     }
   ]
 }

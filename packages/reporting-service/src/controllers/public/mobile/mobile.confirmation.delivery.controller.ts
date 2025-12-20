@@ -60,7 +60,12 @@ export const createEventReportDeliveryDriverHandler = catchAsync(async (c: Conte
     createdBy,
   });
 
-  await confirmDriverDelivery(deliveryId, body?.takenTray || 0, createdBy);
+  await confirmDriverDelivery({
+    deliveryId,
+    deliveredPortion: body?.deliveredPortion,
+    takenTray: body?.takenTray,
+    updatedBy: createdBy,
+  });
 
   if (newReport) {
     await publishEventReportCommit({

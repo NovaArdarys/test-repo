@@ -22,6 +22,7 @@ export const deliveries = pgTable('deliveries', {
   portionType: text("portion_type").default("DEFAULT"),
   targetPortion: integer("target_portion").default(0).notNull(),
   receivedPortion: integer("received_portion").default(0).notNull(),
+  deliveredPortion: integer("delivered_portion").default(0).notNull(),
   takenTray: integer("taken_tray").default(0).notNull(),
   type: text("type").default("DROPOFF").notNull(),
 }, (table) => ({
