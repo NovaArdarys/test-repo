@@ -131,6 +131,7 @@ export async function getHomeWidgets(params: {
               'id', t.id,
               'name', t.name,
               'phoneNumber', t.phone_number,
+              'address', t.address,
               'imageURL', t.image_url,
               'foodItems', (
                 SELECT COALESCE(jsonb_agg(
@@ -149,7 +150,7 @@ export async function getHomeWidgets(params: {
             )
           )
           FROM (
-            SELECT s.id, s.name, s.phone_number, s.image_url
+            SELECT s.id, s.name, s.phone_number, s.image_url, s.address
             FROM suppliers s
             WHERE s.is_deleted = false
             AND s.kitchen_id = ANY(${uuidArray(kitchenIds)})
