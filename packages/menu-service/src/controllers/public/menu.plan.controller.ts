@@ -102,8 +102,15 @@ export const createMenuPlanHandler = catchAsync(async (c: Context) => {
       },
       {
         priority: getPriorityByDate(date),
+        attempts: 5,
+        backoff: {
+          type: "exponential",
+          delay: 10000
+        },
         removeOnComplete: true,
-        attempts: 3
+        removeOnFail: {
+          age: 86400
+        }
       }
     );
   }
