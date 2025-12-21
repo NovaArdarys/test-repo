@@ -4,9 +4,9 @@ import ApiError from "@/utils/ApiError";
 import { isEmpty } from "lodash";
 import * as HttpStatus from "http-status";
 import { getUserInfoServiceClient, updateUserPasswordServiceClient } from "@/services/clients/user.service";
-import { sendEmail } from "@/services/repositories/email.service";
 import * as process from "process";
 import { generateResetToken, verifyResetToken } from "@/utils/jwt";
+import { emailQueue } from "@/jobs/queue/email.queue";
 
 export const forgotPasswordHandler = catchAsync(async (c) => {
   const { username }: ForgotPasswordSchemaType = await c.get("validatedData").body;
@@ -14,13 +14,27 @@ export const forgotPasswordHandler = catchAsync(async (c) => {
   const findUser = await getUserInfoServiceClient({ username });
 
   if (isEmpty(findUser)) {
-    throw new ApiError(HttpStatus.default.UNAUTHORIZED, { message: "Unauthorized" });
+    throw new ApiError(HttpStatus.default.NOT_FOUND, { message: "user tidak ditemukkan" });
   }
 
   const resetToken = await generateResetToken({ email: findUser.email, id: findUser.id });
   const resetLink = `${process.env.FRONTEND_URL}/auth/reset-password/${resetToken}`;
 
-  await sendEmail("reset-password", findUser.email, { resetLink });
+  await emailQueue.add(
+    "send-email", {
+    type: "forgot-password",
+    to: findUser.email,
+    data: {
+      resetLink: resetLink
+    },
+  },
+    {
+      jobId: `email:${"forgot-password"}:${findUser.email}`
+    }
+  );
+
+
+  // await sendEmail("reset-password", findUser.email, { resetLink });
 
   return c.json({
     status: "success",

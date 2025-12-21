@@ -1,5 +1,6 @@
 // /user-service/src/messaging/consumers/index.ts
 import * as amqplib from 'amqplib';
+export * from "@/jobs/worker/email.worker";
 
 export async function initializeConsumers(channel: amqplib.Channel): Promise<void> {
   try {

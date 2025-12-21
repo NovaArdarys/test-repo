@@ -18,10 +18,10 @@ import { loginHandler } from '@/controllers/login.controller';
 // const { loginHandler, loginValidation } = loginRoute;
 const app = new Hono()
     .post('/login', validate({ body: LoginSchema }), loginHandler)
-    .post('/register', checkAccessToken, validate({ body: RegisterSchema }), registerHandler)
     .post('/refresh', validate({ body: RefreshTokenSchema }), refreshHandler)
     .post('/logout', validate({ body: RefreshTokenSchema }), logoutHandler)
     .post('/forgot-password', validate({ body: ForgotPasswordSchema }), forgotPasswordHandler)
-    .post('/reset-password', validate({ body: ResetPasswordSchema }), resetPasswordHandler);
+    .post('/reset-password', validate({ body: ResetPasswordSchema }), resetPasswordHandler)
+    .post('/register', checkAccessToken, validate({ body: RegisterSchema }), registerHandler);
 
 export default app;

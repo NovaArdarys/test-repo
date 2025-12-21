@@ -12,7 +12,7 @@ import redis from "@/constants/redis";
 import { getUserRolePermissonsClientService } from "@/services/clients/role.permissions.service";
 
 export const loginHandler = catchAsync(async (c) => {
-  const { password, username } = await c.get("validatedData").body;
+  const { password, username, captchaToken } = await c.get("validatedData").body;
 
   const findUser = await getUserInfoServiceClient({ username });
 
@@ -23,6 +23,42 @@ export const loginHandler = catchAsync(async (c) => {
   if (!findUser.isActive) {
     throw new ApiError(HttpStatus.default.UNAUTHORIZED, { message: "Unauthorized" });
   }
+
+  let captchaScore = null;
+
+  if (captchaToken) {
+    const response = await fetch(
+      "https://www.google.com/recaptcha/api/siteverify",
+      {
+        method: "POST",
+        body: new URLSearchParams({
+          secret: process.env.RECAPTCHA_SECRET!,
+          response: captchaToken,
+        }),
+      }
+    );
+
+    const result = await response.json();
+    console.log("verify result:", result);
+
+    if (!result.success) {
+      throw new ApiError(HttpStatus.default.UNAUTHORIZED, {
+        message: "Captcha verification failed",
+      });
+    }
+
+    captchaScore = result.score;
+  } else {
+    console.log("⚠️ captcha token missing — skipping verification");
+  }
+
+
+  if (captchaScore !== null && captchaScore < 0.5) {
+    throw new ApiError(HttpStatus.default.UNAUTHORIZED, {
+      message: "Captcha score too low",
+    });
+  }
+
 
   const verifiedPassword = await bcryptVerify(password, findUser.password);
   if (!verifiedPassword) {

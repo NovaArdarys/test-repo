@@ -12,6 +12,7 @@ import { checkBroker, connectRabbitMQ } from './messaging/broker';
 import { checkDatabase } from '@/db';
 import { eventMonitorRoute } from './routes/event.monitor.route';
 import { swaggerUI } from '@hono/swagger-ui';
+import { initializeConsumers } from './messaging/consumers';
 
 type Variables = JwtVariables;
 
@@ -75,14 +76,22 @@ const app = new Hono<{ Variables: Variables; }>()
 
 async function bootstrap() {
   try {
-    await connectRabbitMQ();
-    console.log("RabbitMQ ready for publishing.");
+    console.log("Starting application initialization...");
+
+    const channel = await connectRabbitMQ();
+
+    console.log("RabbitMQ connected and ready.");
+
+    await initializeConsumers(channel);
+
+    console.log("All RabbitMQ Consumers are successfully listening.");
 
   } catch (error) {
-    console.error("🚨 FATAL ERROR: Gagal menginisialisasi layanan (DB/Broker). Keluar dari aplikasi.", error);
+    console.error("🚨 FATAL ERROR: Application setup failed. Exiting...", error);
     process.exit(1);
   }
 }
+
 
 bootstrap();
 
