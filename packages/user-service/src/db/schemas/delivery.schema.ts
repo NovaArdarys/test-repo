@@ -21,6 +21,7 @@ export const deliveries = pgTable('deliveries', {
   updatedAt: timestamp('updated_at').notNull(),
   updatedBy: uuid('updated_by'),
   portionType: text("portion_type").default("DEFAULT"),
+  driverCapacity: integer("driver_capacity").default(0).notNull(),
   targetPortion: integer("target_portion").default(0).notNull(),
   receivedPortion: integer("received_portion").default(0).notNull(),
   deliveredPortion: integer("delivered_portion").default(0).notNull(),

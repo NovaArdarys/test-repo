@@ -25,6 +25,7 @@ export default async function insertDeliveryDropoff(
       id: sql`DEFAULT`,
       kitchenId: args.data.kitchenId,
       driverId: args.driver.id,
+      driverCapacity: args.driver.portionCapacity,
 
       deliveryDate: args.menuPlan.planStartDate,
       startTime: sql`NULL`,

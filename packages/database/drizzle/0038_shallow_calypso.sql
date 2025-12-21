@@ -1,0 +1,1 @@
+ALTER TABLE "deliveries" ADD COLUMN "driver_capacity" integer DEFAULT 0 NOT NULL;
