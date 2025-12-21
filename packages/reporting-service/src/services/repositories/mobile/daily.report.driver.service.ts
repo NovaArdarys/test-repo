@@ -17,17 +17,16 @@ function restructureAgenda(rawAgenda: any[]) {
   return rawAgenda.map((agenda) => {
     const stepMap: Record<string, any> = {};
 
+    console.log(agenda.deliveries);
+
     for (const delivery of agenda.deliveries) {
       for (const step of delivery.steps ?? []) {
 
-        // 🚫 FILTER DOMAIN (INI INTI FIX-NYA)
-        if (step.stepKey === "pickup" && delivery.type === "DROPOFF") {
-          continue;
-        }
 
         if (!stepMap[step.stepKey]) {
           stepMap[step.stepKey] = {
             id: step.id,
+            isCompleted: step.isCompleted,
             stepKey: step.stepKey,
             stepName: step.stepName,
             stepOrder: step.stepOrder,
