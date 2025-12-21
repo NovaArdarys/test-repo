@@ -13,7 +13,6 @@ export default async function processDriverAssignments(
 
     const driverUnits = args.units.filter(u => u.driverId === driver.id);
 
-    console.log(driverUnits, driver, "====masuk=====");
     if (!driverUnits.length) continue;
 
     const deliveries = await processSingleDriver(trx, {

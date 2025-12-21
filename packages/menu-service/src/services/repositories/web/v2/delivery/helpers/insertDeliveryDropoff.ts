@@ -14,20 +14,25 @@ export default async function insertDeliveryDropoff(
     .values({
       kitchenId: args.data.kitchenId,
       driverId: args.driver.id,
-      type: "DROPOFF",
-      startTime: new Date(),
+      deliveryDate: args.menuPlan.planStartDate,
+      startTime: null,
+      endTime: null,
+      estimatedDeliveryTime: null,
+      notes: `DROPOFF, ${args.menuPlan.name}, portion: ${unit.portion} - ${unit.type} `,
       deliveryCode: generateDeliveryCode(
         args.data.kitchenId,
         unit.beneficiaryId,
         unit.type
       ) + "-D",
+      status: "PENDING",
       portionType: unit.type,
       targetPortion: unit.portion,
       createdAt: new Date(),
       updatedAt: new Date(),
       createdBy: args.data.createdBy,
       updatedBy: args.data.createdBy,
-      orderIndex: unit.orderIndex * 2
+      deliveryOrder: unit.orderIndex,
+      type: "DROPOFF",
     })
     .returning();
 

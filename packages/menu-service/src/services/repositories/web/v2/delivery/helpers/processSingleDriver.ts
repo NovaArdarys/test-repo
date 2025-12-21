@@ -21,60 +21,69 @@ export default async function processSingleDriver(
   const results: DeliveryResult[] = [];
   const dailyReportMap: Record<string, Record<string, string>> = {};
 
-
-  // LOOP UNITS DENGAN INDEX
   for (let i = 0; i < args.units.length; i++) {
     const unit = args.units[i];
 
     //
-    // PICKUP CREATE
+    // PICKUP DELIVERY
     //
     const pickup = await insertPickupDelivery(trx, args, unit);
-
     await insertDriverLocation(trx, args, pickup);
-    await insertDeliveryStepReports(trx, pickup.id, args.data.createdBy);
 
     //
-    // DROPOFF CREATE
+    // DROPOFF DELIVERY
     //
     const delivery = await insertDeliveryDropoff(trx, args, unit);
+    await insertDriverLocation(trx, args, delivery);
 
-    const beneficiaryRecord = await insertDeliveryBeneficiary(
+    //
+    // BENEFICIARY - PICKUP (TRAY)
+    //
+    const beneficiaryPickupRecord = await insertDeliveryBeneficiary(
+      trx,
+      args,
+      pickup,
+      unit
+    );
+
+    //
+    // BENEFICIARY - DROPOFF (FOOD)
+    //
+    const beneficiaryDropOffRecord = await insertDeliveryBeneficiary(
       trx,
       args,
       delivery,
       unit
     );
 
-    await insertDeliveryStepReports(
-      trx,
-      beneficiaryRecord.id,
-      args.data.createdBy
-    );
+    //
+    // STEP REPORTS
+    //
+    await insertDeliveryStepReports(trx, beneficiaryPickupRecord.id, args.data.createdBy);
+    await insertDeliveryStepReports(trx, beneficiaryDropOffRecord.id, args.data.createdBy);
 
     //
-    // ASSIGN ETA KE DROPOFF DELIVERY
+    // ETA APPLY
     //
     await trx.update(deliveries)
       .set({ estimatedDeliveryTime: unit.eta })
       .where(eq(deliveries.id, delivery.id));
 
     //
-    // REPORTS
+    // DAILY REPORT: DROP-OFF ONLY
     //
     const dailyReportId = await resolveDriverDailyReport(
       trx,
       args,
-      beneficiaryRecord,
+      beneficiaryDropOffRecord,
       unit,
       dailyReportMap
     );
 
     await insertDriverStepReports(trx, args, dailyReportId);
-    await insertDriverLocation(trx, args, delivery);
 
     //
-    // ADD RESULT SET
+    // RETURN RESULT
     //
     results.push(pickup, delivery);
   }
