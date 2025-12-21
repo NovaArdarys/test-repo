@@ -1,5 +1,5 @@
 import { foodTypeEnum, planStatusEnum } from "./enums/enums";
-import { boolean, date, integer, jsonb, pgTable, text, time, timestamp, unique, uuid, varchar } from "drizzle-orm/pg-core";
+import { boolean, date, decimal, integer, jsonb, pgTable, text, time, timestamp, unique, uuid, varchar } from "drizzle-orm/pg-core";
 import { kitchens } from "./kitchen.schema";
 import { sql } from "drizzle-orm";
 
@@ -59,6 +59,8 @@ export const menuPlanBeneficiaries = pgTable('menu_plan_beneficiaries', {
   largePortion: integer("large_portion").default(0),
   smallDeliveryTime: time("small_delivery_time").default(sql`time '07:00'`),
   largeDeliveryTime: time("large_delivery_time").default(sql`time '09:00'`),
+  lon: decimal("lon", { precision: 10, scale: 6 }).default("0"),
+  lat: decimal("lat", { precision: 10, scale: 6 }).default("0"),
   isDeleted: boolean('is_deleted').default(false).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   createdBy: uuid('created_by'),

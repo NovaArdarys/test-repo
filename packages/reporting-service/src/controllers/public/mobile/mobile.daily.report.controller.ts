@@ -48,7 +48,7 @@ export const listDailyReportsHandler = catchAsync(async (c: Context) => {
   }
 
   if (entity === "driver") {
-    const data = await getDriverDeliveriesV2({
+    const data = await getDriverDeliveries({
       driversIds: audit.driverId,
       entityType: entity,
       kitchenIds: audit.kitchenId ?? [entityId],

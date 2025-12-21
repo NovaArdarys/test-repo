@@ -45,13 +45,15 @@ export const listEventReportsHandler = catchAsync(async (c: Context) => {
 
   const { kitchenId, driverId, beneficiaryId, userId, subDomain, domain } = getAuditFields(c);
 
+  console.log(driverId, "=====driverId=====");
+
   const reports = await getEventReports({
     page,
     limit,
     reportType,
     startDate,
     endDate,
-    entityType: domain ?? "",
+    entityType: !isEmpty(driverId) ? "driver" : domain ?? "",
     driversIds: driverId ?? [],
     kitchenIds: kitchenId ?? [],
     beneficiaryIds: beneficiaryId ?? [],
@@ -72,13 +74,13 @@ export const createEventReportHandler = catchAsync(async (c: Context) => {
   }
 
   const kitchenByUser = await resolveKitchenId({
-    entityType: actorDomain,
+    entityType: isEmpty(driverId) ? actorDomain : "driver",
     entityId: entityId || "",
   });
 
   const newReport = await createEventReport({
     ...body,
-    entityType: actorDomain,
+    entityType: isEmpty(driverId) ? actorDomain : "driver",
     domain: "kitchen",
     domainId: kitchenByUser,
     entityId: entityId,
