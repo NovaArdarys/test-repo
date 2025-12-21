@@ -1,6 +1,6 @@
 import ApiError from "../utils/ApiError";
 import { catchAsync } from "../utils/catchAsync";
-import { isEmpty } from "lodash";
+import { has, isEmpty } from "lodash";
 import * as HttpStatus from "http-status";
 import { bcryptVerify } from "@/utils/hashing";
 import { generateRefreshToken, generateToken } from "@/utils/jwt";
@@ -26,7 +26,7 @@ export const loginHandler = catchAsync(async (c) => {
 
   let captchaScore = null;
 
-  if (captchaToken) {
+  if (has(c.get("validatedData").body, "captchaToken")) {
     const response = await fetch(
       "https://www.google.com/recaptcha/api/siteverify",
       {
