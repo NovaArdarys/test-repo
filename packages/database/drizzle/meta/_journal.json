@@ -253,6 +253,13 @@
       "when": 1766250305092,
       "tag": "0035_charming_living_tribunal",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1766306822869,
+      "tag": "0036_tense_terror",
+      "breakpoints": true
     }
   ]
 }
