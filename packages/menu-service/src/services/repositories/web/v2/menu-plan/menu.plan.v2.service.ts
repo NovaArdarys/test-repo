@@ -6,7 +6,7 @@ import createBeneficiaryDailyReports from "./helpers/createBeneficiaryDailyRepor
 
 import { db } from "@/db";
 import { and, eq } from "drizzle-orm";
-import { beneficiaries as beneficiariesTable } from "@/db/schemas";
+import { beneficiaries as beneficiariesTable, menuPlans } from "@/db/schemas";
 import { Beneficiary, DailyReport, MenuPlan } from "./types/domain";
 import { CreateMenuPlanInput } from "./types";
 import { createAutoDelivery } from "../delivery/delivery.auto.v2.service";
@@ -33,6 +33,17 @@ export async function createMenuPlan(
       const date = new Date(dateStr);
       if (isNaN(date.getTime())) continue;
 
+      const exists = await trx.query.menuPlans.findFirst({
+        where: and(
+          eq(menuPlans.kitchenId, kitchenId),
+          eq(menuPlans.planStartDate, dateStr)
+        )
+      });
+
+      if (exists) {
+        continue;
+      }
+
       const plan: MenuPlan = await createPlan(trx, data, kitchenId, date);
       await attachFoodItems(trx, plan, foodItemsIds);
       await attachBeneficiaries(trx, plan, beneficiaries);
@@ -43,11 +54,14 @@ export async function createMenuPlan(
       const beneficiaryDaily = await createBeneficiaryDailyReports(trx, plan, beneficiaries);
       reports.push(...beneficiaryDaily);
 
-      await createAutoDelivery({
+      const delivery = await createAutoDelivery({
         kitchenId: plan.kitchenId,
         menuPlanId: plan.id,
         createdBy: plan.createdBy
       }, trx);
+
+      reports.push(...delivery);
+
     }
 
     return { dailyReports: reports };

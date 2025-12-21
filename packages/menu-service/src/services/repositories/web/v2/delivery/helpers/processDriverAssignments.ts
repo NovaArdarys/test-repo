@@ -22,12 +22,12 @@ export default async function processDriverAssignments(
       units: driverUnits,
     });
 
-    await processSingleDriverSimulated({
-      ...args,
-      trx,
-      driver,
-      units: driverUnits,
-    });
+    // await processSingleDriverSimulated({
+    //   ...args,
+    //   trx,
+    //   driver,
+    //   units: driverUnits,
+    // });
 
     results.push(...deliveries);
   }

@@ -12,7 +12,7 @@ import fetchBeneficiaries from "./helpers/fetchBeneficiaries";
 import fetchDrivers from "./helpers/fetchDrivers";
 
 import expandUnits from "./helpers/expandUnits";
-import assignDriverUnits from "./helpers/assignDriverUnits";
+import { assignDriverUnitsWithRefill } from "./helpers/assignDriverUnits";
 import processDriverAssignments from "./helpers/processDriverAssignments";
 import clusterUnits from "./lib/clusterUnits";
 import calcClusterETAs from "./lib/calcClusterETAs";
@@ -44,7 +44,7 @@ async function executeAutoDelivery(
   const clustered = clusterUnits(units, 5);
   const flattenedCluster = clustered.flat();
 
-  const assignments = assignDriverUnits(flattenedCluster, drivers);
+  const assignments = assignDriverUnitsWithRefill(flattenedCluster, drivers);
 
   const flattenedUnits: DeliveryUnit[] = Object.values(assignments)
     .flat()

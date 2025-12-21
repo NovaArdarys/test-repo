@@ -25,7 +25,7 @@ export const simulationDelivery = catchAsync((c: Context) => {
   createAutoDelivery({
     createdBy: "00000000-0000-0000-0000-000000000001",
     kitchenId: "d6ba4bba-85b6-4057-b221-6383cd41bfc3",
-    menuPlanId: "eed859c2-2d01-4d59-9c86-2191cce6768e"
+    menuPlanId: "fe22bc7c-5035-4f8a-ada9-30371bbd2189"
   }, undefined);
 
   return c.json({ data: "ok" }, 200);

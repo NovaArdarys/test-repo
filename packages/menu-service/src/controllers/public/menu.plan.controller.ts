@@ -70,20 +70,7 @@ export const createMenuPlanHandler = catchAsync(async (c: Context) => {
   const foodIdArray = body.foodIds as unknown as string[] || (body as any)["foodIds[]"] || [];
   const dateArray = body.dates as unknown as string[] || (body as any)["dates[]"] || [];
 
-  console.log(isEmpty(body?.kitchenId), "======ok======", audit.kitchenId?.[0]);
-
-  // const newPlan = await createMenuPlan({
-  //   ...body,
-  //   kitchenId: !isEmpty(body?.kitchenId) ? body?.kitchenId : audit.kitchenId?.[0] || null,
-  //   createdBy: audit.createdBy,
-  //   planStartDate: body?.planStartDate || new Date().toISOString().split("T")[0],
-  //   planEndDate: body?.planEndDate || new Date().toISOString().split("T")[0],
-  //   status: "ACTIVE"
-  // }, !isEmpty(body?.kitchenId) ? body?.kitchenId : audit.kitchenId?.[0], foodIdArray, dateArray);
-
   for (const date of dateArray) {
-    console.log(date, "====date====");
-
     await menuPlanQueue.add(
       "menuplan-create",
       {
@@ -101,16 +88,8 @@ export const createMenuPlanHandler = catchAsync(async (c: Context) => {
         dates: date
       },
       {
+        jobId: `${!isEmpty(body?.kitchenId) ? body?.kitchenId : audit.kitchenId?.[0] || null}-${date}`,
         priority: getPriorityByDate(date),
-        attempts: 5,
-        backoff: {
-          type: "exponential",
-          delay: 10000
-        },
-        removeOnComplete: true,
-        removeOnFail: {
-          age: 86400
-        }
       }
     );
   }

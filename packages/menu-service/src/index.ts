@@ -11,7 +11,7 @@ import { errorHandler } from '@/middleware/error.middleware';
 import { join } from 'path';
 import { checkBroker, connectRabbitMQ } from './messaging/broker';
 import { checkDatabase } from '@/db';
-import { eventMonitorRoute } from './routes/event.monitor.route';
+import monitor from './routes/monitor';
 import { swaggerUI } from '@hono/swagger-ui';
 import { initializeConsumers } from './messaging/consumers';
 
@@ -74,7 +74,7 @@ const app = new Hono<{ Variables: Variables; }>()
       broker: rabbitStatus,
     });
   })
-  .route("/api/events", eventMonitorRoute)
+  .route("/api/monitor", monitor)
   .route('/api', routes)
   .route('/api/mobile', routesMobile)
 

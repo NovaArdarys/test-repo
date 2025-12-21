@@ -32,6 +32,8 @@ export interface DeliveryUnit {
   distance?: number | null;
   driverId?: string | null;
   driverRemainingCapacity?: number;
+  trip?: number;
+  globalOrderIndex?: number;
 }
 
 export type DriverAssignments = Record<string, DeliveryUnit[]>;

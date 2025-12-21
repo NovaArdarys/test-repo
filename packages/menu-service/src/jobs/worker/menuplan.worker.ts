@@ -14,57 +14,63 @@ export const menuPlanWorker = new Worker(
 
       const input = menuPlanJobSchema.parse(job.data);
 
-      console.log(input.kitchenId,
-        input.foodItemsIds,
-        [input.dates], "=====menuplan=====");
+      if (input.type === "create") {
+        console.log("=====starting====");
+        const result = await createMenuPlan(
+          input.data,
+          input.kitchenId!,
+          input.foodItemsIds,
+          [input.dates]
+        );
 
-      switch (input.type) {
-        case "create":
-          await createMenuPlan(
-            input.data,
-            input.kitchenId!,
-            input.foodItemsIds,
-            [input.dates]
-          );
-          break;
-
-
-        case "update":
-          await updateMenuPlan(
-            input.menuPlanId!,
-            input.data,
-            input.kitchenId,
-            input.foodItemsIds,
-            input.updatedBy
-          );
-          break;
-
-        default:
-          console.warn("⚠ Unknown menu plan job type:", input.type);
+        return { status: "created", result };
       }
+
+      if (input.type === "update") {
+        const result = await updateMenuPlan(
+          input.menuPlanId!,
+          input.data,
+          input.kitchenId,
+          input.foodItemsIds,
+          input.updatedBy
+        );
+        return { status: "updated", result };
+      }
+
+      console.warn("⚠ Unknown menu plan job type:", input.type);
+      return { skipped: true };
+
     } catch (error: any) {
-      if (job.attemptsMade < job.opts.attempts!) {
-        throw error;
-      }
+
+      // Handle duplicate
       if (error?.code === "23505" || error?.message?.includes("duplicate key")) {
+        await job.remove();
         return { skipped: true };
       }
 
+      // Retry if still allowed
+      if (job.attemptsMade < job.opts.attempts!) {
+        throw error;
+      }
+
+      // No more retry
+      console.error("menuplan job dead:", error);
       throw error;
     }
   },
   {
     connection: redisBull,
-    concurrency: 1,
-    lockDuration: 300000,
+    concurrency: 3,
+    lockDuration: 90000,
     autorun: true,
+    maxStalledCount: 2,
+    stalledInterval: 60000,
   }
 );
 
-menuPlanWorker.on("completed", (job) => {
-  console.log(`✔ MenuPlan Job Completed: ${job.id}`);
-});
 
-menuPlanWorker.on("failed", (job, err) => {
-  console.error(`❌ MenuPlan Job Failed: ${job?.id}`, err);
-});
+menuPlanWorker.on("error", err => console.error("worker error:", err));
+menuPlanWorker.on("failed", err => console.error("worker failed:", err));
+menuPlanWorker.on("closed", () => console.log("worker closed"));
+menuPlanWorker.on("active", job => console.log("active:", job.id));
+menuPlanWorker.on("completed", job => console.log("completed:", job.id));
