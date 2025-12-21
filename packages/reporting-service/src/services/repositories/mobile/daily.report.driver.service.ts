@@ -27,6 +27,7 @@ function restructureAgenda(rawAgenda: any[]) {
 
         if (!stepMap[step.stepKey]) {
           stepMap[step.stepKey] = {
+            id: step.id,
             stepKey: step.stepKey,
             stepName: step.stepName,
             stepOrder: step.stepOrder,
@@ -194,6 +195,8 @@ export async function getDriverDeliveriesV2(params: {
 
     return acc;
   }, {} as Record<string, Map<string, any>>);
+
+
 
   /* =========================
      BUILD AGENDA (RAW)

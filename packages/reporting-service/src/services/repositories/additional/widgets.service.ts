@@ -86,6 +86,8 @@ export async function getHomeWidgets(params: {
                 'name', t.name,
                 'reportType', t.report_type,
                 'date', t.date,
+                'createdAt', t.created_at,
+                'updatedAt', t.updated_at,
                 'location', t.location,
                 'description', t.description
               )
