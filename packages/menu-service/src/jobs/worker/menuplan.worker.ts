@@ -3,7 +3,8 @@ import { Worker } from "bullmq";
 import { redisBull } from "@/constants/redis";
 import { MENU_PLAN_QUEUE } from "../queue/menuplan.queue";
 import { menuPlanJobSchema } from "@/jobs/types/menuplan.type";
-import { createMenuPlan, updateMenuPlan } from "@/services/repositories/menu.plan.service";
+import { updateMenuPlan } from "@/services/repositories/menu.plan.service";
+import { createMenuPlan } from "@/services/repositories/web/v2/menu-plan/menu.plan.v2.service";
 
 export const menuPlanWorker = new Worker(
   MENU_PLAN_QUEUE,
@@ -21,7 +22,7 @@ export const menuPlanWorker = new Worker(
         case "create":
           await createMenuPlan(
             input.data,
-            input.kitchenId,
+            input.kitchenId!,
             input.foodItemsIds,
             [input.dates]
           );

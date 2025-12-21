@@ -4,11 +4,12 @@ import attachBeneficiaries from "./helpers/attachBeneficiaries";
 import createKitchenDailyReport from "./helpers/createKitchenDailyReport";
 import createBeneficiaryDailyReports from "./helpers/createBeneficiaryDailyReports";
 
-import { CreateMenuPlanInput } from "../v2/types";
 import { db } from "@/db";
 import { and, eq } from "drizzle-orm";
 import { beneficiaries as beneficiariesTable } from "@/db/schemas";
 import { Beneficiary, DailyReport, MenuPlan } from "./types/domain";
+import { CreateMenuPlanInput } from "./types";
+import { createAutoDelivery } from "../delivery/delivery.auto.v2.service";
 
 export async function createMenuPlan(
   data: CreateMenuPlanInput,
@@ -41,6 +42,12 @@ export async function createMenuPlan(
 
       const beneficiaryDaily = await createBeneficiaryDailyReports(trx, plan, beneficiaries);
       reports.push(...beneficiaryDaily);
+
+      createAutoDelivery({
+        kitchenId: plan.kitchenId,
+        menuPlanId: plan.id,
+        createdBy: plan.createdBy
+      }, trx);
     }
 
     return { dailyReports: reports };

@@ -12,12 +12,15 @@ import {
 import {
   listMenuPlansHandler,
   getMenuPlanByIdHandler,
+  simulationDelivery,
 } from '@/controllers/public/mobile/menu.plan.controller';
 import z from 'zod';
 
 const app = new Hono();
 
 app.use(checkAccessToken);
+
+app.post("/simulation", simulationDelivery);
 
 app.get(
   '/:entity',
