@@ -1,0 +1,1 @@
+ALTER TABLE "deliveries" ADD COLUMN "delivery_order" integer DEFAULT 0 NOT NULL;

@@ -26,6 +26,7 @@ export const deliveries = pgTable('deliveries', {
   deliveredPortion: integer("delivered_portion").default(0).notNull(),
   takenTray: integer("taken_tray").default(0).notNull(),
   type: text("type").default("DROPOFF").notNull(),
+  deliveryOrder: integer("delivery_order").default(0).notNull(),
   storageId: uuid("storage_id").references(() => storage.id, {
     onDelete: "set null",
   }),
