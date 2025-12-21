@@ -344,6 +344,10 @@ export async function createMenuPlan(
                         menuPlanId: newPlan.id,
                         createdAt: newPlan.createdAt,
                         createdBy: newPlan.createdBy,
+                        largeDeliveryTime: beneficiary.largeDeliveryTime,
+                        smallDeliveryTime: beneficiary.smallDeliveryTime,
+                        largePortion: beneficiary.largePortion,
+                        smallPortion: beneficiary.smallPortion
                     }))
                 );
             }
