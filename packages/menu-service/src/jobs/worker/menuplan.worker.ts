@@ -41,6 +41,9 @@ export const menuPlanWorker = new Worker(
           console.warn("⚠ Unknown menu plan job type:", input.type);
       }
     } catch (error: any) {
+      if (job.attemptsMade < job.opts.attempts!) {
+        throw error;
+      }
       if (error?.code === "23505" || error?.message?.includes("duplicate key")) {
         return { skipped: true };
       }
