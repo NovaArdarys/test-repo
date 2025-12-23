@@ -21,13 +21,13 @@ async function handleStepCommit(data: z.infer<typeof dropoffJobSchema>) {
   if (parsed.entityType === "kitchen" && parsed.allStepCompleted) {
     console.log("🪅 Masuk:", parsed);
 
-    await deliveryQueue.add("dropoff-creation", parsed, {
-      jobId: `delivery|${parsed.entityId}|${parsed.menuPlanId}|${format(new Date(), "yyyyMMdd_HHmmss")}`,
-      attempts: 3,
-      backoff: { type: "exponential", delay: 3000 },
-      removeOnComplete: true,
-      removeOnFail: false,
-    });
+    // await deliveryQueue.add("dropoff-creation", parsed, {
+    //   jobId: `delivery|${parsed.entityId}|${parsed.menuPlanId}|${format(new Date(), "yyyyMMdd_HHmmss")}`,
+    //   attempts: 3,
+    //   backoff: { type: "exponential", delay: 3000 },
+    //   removeOnComplete: true,
+    //   removeOnFail: false,
+    // });
 
     console.log(`[DELIVERY EVENT] ✅ Auto delivery created for kitchen ${parsed.entityId}`);
   } else {
