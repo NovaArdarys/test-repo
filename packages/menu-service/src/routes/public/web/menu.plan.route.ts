@@ -30,6 +30,7 @@ import {
   assignPlanDistributionHandler,
   unassignPlanDistributionHandler
 } from '@/controllers/public/menu.plan.controller';
+import { distributeMenuPlanHandler } from '@/controllers/public/web/distribute.route.controller';
 
 const app = new Hono();
 
@@ -48,6 +49,11 @@ app.post(
   validate({ body: createMenuPlanSchema }),
   createMenuPlanHandler
 );
+
+app.post("/:id/distribute",
+  validate(idParamSchema, "param"),
+  distributeMenuPlanHandler);
+
 
 app.get(
   '/:id',

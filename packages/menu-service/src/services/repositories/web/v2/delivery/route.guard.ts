@@ -1,9 +1,10 @@
 import { and, eq, inArray, lte } from "drizzle-orm";
-import { deliveries, menuPlans } from "@/db/schemas";
+import { deliveries, menuPlans, deliveryBeneficiaries } from "@/db/schemas";
 import { Trx } from "./types/domain";
 import { purgeRoutingByMenuPlan } from "./purge.delivery.service";
 import { createAutoDelivery } from "./delivery.auto.v2.service";
 import { driverRoutingSensitiveDiff } from "./lib/driverDiff";
+import { db } from "@/db";
 
 export interface RegenerateRoutingInput {
   trx: Trx;
@@ -15,55 +16,64 @@ export interface RegenerateRoutingInput {
   | "MANUAL_TRIGGER";
 }
 
-export async function safeRegenerateRouting({
-  trx,
-  menuPlanId,
-}: RegenerateRoutingInput) {
-  const [menuPlan] = await trx
-    .select()
-    .from(menuPlans)
-    .where(eq(menuPlans.id, menuPlanId));
+export async function safeRegenerateRouting(
+  args: {
+    trx?: Trx;
+    menuPlanId: string;
+    reason: string;
+    force?: boolean;
+  }
+) {
+  const exec = async (trx: Trx) => {
 
-  if (!menuPlan) {
-    throw new Error("Menu plan not found");
+    const [plan] = await trx
+      .select()
+      .from(menuPlans)
+      .where(eq(menuPlans.id, args.menuPlanId))
+      .for("update");
+
+    if (!plan) return;
+
+    const today = new Date().toISOString().slice(0, 10);
+
+
+    if (!args.force && plan.planStartDate <= today) {
+      return;
+    }
+
+    const hasRouting = await trx
+      .select({ id: deliveryBeneficiaries.id })
+      .from(deliveryBeneficiaries)
+      .where(eq(deliveryBeneficiaries.menuPlanId, plan.id))
+      .limit(1);
+
+    // if (hasRouting.length && !args.force) {
+    //   return;
+    // }
+    console.log(plan, "=====plan 2=====", hasRouting);
+
+    if (hasRouting.length) {
+      await purgeRoutingByMenuPlan(trx, plan.id);
+    }
+
+    await createAutoDelivery(
+      {
+        kitchenId: plan.kitchenId!,
+        menuPlanId: plan.id,
+        createdBy: plan.createdBy,
+      },
+      trx
+    );
+  };
+
+  if (args.trx) {
+    await exec(args.trx);
+    return;
   }
 
-  const today = new Date().toISOString().slice(0, 10);
-
-  if (menuPlan.planStartDate <= today) {
-    throw new Error(
-      `Routing regenerate blocked: menu plan already active (${menuPlan.planStartDate})`
-    );
-  }
-
-  const activeDeliveries = await trx
-    .select({ id: deliveries.id })
-    .from(deliveries)
-    .where(
-      and(
-        eq(deliveries.isDeleted, false),
-        inArray(deliveries.status, [
-          "IN_PROGRESS",
-          "DELIVERED",
-        ])
-      )
-    );
-
-  if (activeDeliveries.length > 0) {
-    throw new Error(
-      "Routing regenerate blocked: active deliveries exist"
-    );
-  }
-
-  await purgeRoutingByMenuPlan(trx, menuPlanId);
-
-  await createAutoDelivery({
-    menuPlanId,
-    kitchenId: menuPlan.kitchenId!,
-    createdBy: menuPlan.createdBy,
-  }, trx);
-
+  await db.transaction(exec);
 }
+
 
 export async function handleDriverChange(
   trx: Trx,
