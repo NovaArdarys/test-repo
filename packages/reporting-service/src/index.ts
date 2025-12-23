@@ -14,7 +14,7 @@ import { checkDatabase } from '@/db';
 import { initializeConsumers } from './messaging/consumers';
 import { eventMonitorRoute } from './routes/event.monitor.route';
 import { swaggerUI } from '@hono/swagger-ui';
-import { applyTimezoneIterative } from './middleware/timezone.middleware';
+import { applyTimezoneOptimized } from './middleware/timezone.middleware';
 
 type Variables = JwtVariables;
 
@@ -49,7 +49,7 @@ const app = new Hono<{ Variables: Variables; }>()
     const payload = c.get("jwtPayload");
     const tz = "Asia/Jakarta";
 
-    const converted = applyTimezoneIterative(body, tz);
+    const converted = applyTimezoneOptimized(body, tz);
 
     c.res = new Response(JSON.stringify(converted), {
       status: res.status,

@@ -2,31 +2,37 @@ import { toZonedTime, format } from "date-fns-tz";
 
 const DEFAULT_TZ = "Asia/Jakarta";
 
-/**
- * Paksa semua string date → UTC lalu convert
- */
-function tryConvertDate(value: any, tz: string) {
-  if (typeof value !== "string") return value;
+// FIELD YANG BOLEH DI-CONVERT
+const DATE_KEYS = new Set([
+  "createdAt",
+  "updatedAt",
+  "deletedAt",
+  "startAt",
+  "endAt",
+  "timestamp"
+]);
 
-  const d = new Date(value);
-  if (isNaN(d.getTime())) return value;
+// cache formatter per timezone
+const formatterCache = new Map<string, (d: Date) => string>();
 
-  return format(
-    toZonedTime(d, tz),
-    "yyyy-MM-dd'T'HH:mm:ss.SSS"
-  );
+function getFormatter(tz: string) {
+  if (formatterCache.has(tz)) return formatterCache.get(tz)!;
+
+  const fn = (d: Date) =>
+    format(toZonedTime(d, tz), "yyyy-MM-dd'T'HH:mm:ss.SSS");
+
+  formatterCache.set(tz, fn);
+  return fn;
 }
 
-export function applyTimezoneIterative<T>(
+export function applyTimezoneOptimized<T>(
   input: T,
   tz = DEFAULT_TZ
 ): T {
-  // primitive langsung
-  if (input === null || typeof input !== "object") {
-    return tryConvertDate(input, tz) as T;
-  }
+  if (!input || typeof input !== "object") return input;
 
-  // root clone
+  const formatDate = getFormatter(tz);
+
   const root = Array.isArray(input) ? [] : {};
   const stack: Array<{ src: any; target: any; }> = [
     { src: input, target: root }
@@ -38,13 +44,14 @@ export function applyTimezoneIterative<T>(
     for (const key of Object.keys(src)) {
       const val = src[key];
 
-      // STRING DATE
-      if (typeof val === "string") {
-        target[key] = tryConvertDate(val, tz);
+      // 🎯 HANYA FIELD TANGGAL
+      if (DATE_KEYS.has(key) && typeof val === "string") {
+        const d = new Date(val);
+        target[key] = isNaN(d.getTime()) ? val : formatDate(d);
         continue;
       }
 
-      // ARRAY / OBJECT
+      // OBJECT / ARRAY
       if (val && typeof val === "object") {
         const child = Array.isArray(val) ? [] : {};
         target[key] = child;
