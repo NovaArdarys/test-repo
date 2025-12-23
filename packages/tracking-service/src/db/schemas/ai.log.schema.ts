@@ -25,7 +25,7 @@ export const aiAnalysisLogs = pgTable(
     createdAtIdx: index('idx_ai_created_at').on(table.createdAt),
     storageIdIdx: index("idx_ai_storage_id").on(table.storageId),
     entityAnalysisUnique: unique('uq_ai_entity_analysis')
-      .on(table.entityId, table.analysisType),
+      .on(table.entityId, table.analysisType, table.storageId),
   })
 );
 

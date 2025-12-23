@@ -274,6 +274,13 @@
       "when": 1766331469995,
       "tag": "0038_shallow_calypso",
       "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1766462818471,
+      "tag": "0039_slippery_micromacro",
+      "breakpoints": true
     }
   ]
 }
