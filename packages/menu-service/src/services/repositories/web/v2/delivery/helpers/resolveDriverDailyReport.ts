@@ -22,7 +22,7 @@ export default async function resolveDriverDailyReport(
       .insert(dailyReports)
       .values({
         date: format(new Date(), "yyyy-MM-dd"),
-        entityId: insertedBeneficiary.id,
+        entityId: args.driver.id,
         entityType: "driver",
         menuPlanId: unit.menuPlanId,
         portionType,
