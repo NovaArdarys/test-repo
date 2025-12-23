@@ -20,25 +20,33 @@ export const checkAccessToken = async (c: Context, next: Next) => {
       accessToken
     ) as tokenParams;
 
-    if (!isEmpty(data?.beneficiary?.beneficiaryIds) || !isEmpty(data?.kitchen?.kitchenIds) || !isEmpty(data?.driver?.driverIds) || !isEmpty(data?.driver?.kitchenId)) {
+    const isAppManager = data?.domain === "app_manager";
 
-      c.set('userId', id);
-      c.set('roleId', roleId);
-      c.set('beneficiaryId', data?.beneficiary?.beneficiaryIds || []);
-      c.set('kitchenId', data?.kitchen?.kitchenIds || []);
-      c.set('driverId', data?.driver?.driverIds || []);
-      c.set('driverKitchenId', data?.driver?.kitchenId || []);
-      c.set('domain', data?.domain || "");
-      c.set('subDomain', data?.subDomain);
-      c.set('userEmail', email);
-      c.set('isAppManager', data?.domain === "app_manager");
+    const hasScope =
+      !isEmpty(data?.beneficiary?.beneficiaryIds) ||
+      !isEmpty(data?.kitchen?.kitchenIds) ||
+      !isEmpty(data?.driver?.driverIds) ||
+      !isEmpty(data?.driver?.kitchenId);
 
-      await next();
+    if (!isAppManager && !hasScope) {
+      return c.json(
+        { success: false, error: HttpStatus.default['401_MESSAGE'] },
+        HttpStatus.default.UNAUTHORIZED
+      );
     }
-    return c.json({
-      success: false,
-      error: HttpStatus.default['401_MESSAGE']
-    }, HttpStatus.default.UNAUTHORIZED);
+
+    c.set('userId', id);
+    c.set('roleId', roleId);
+    c.set('beneficiaryId', data?.beneficiary?.beneficiaryIds || []);
+    c.set('kitchenId', data?.kitchen?.kitchenIds || []);
+    c.set('driverId', data?.driver?.driverIds || []);
+    c.set('driverKitchenId', data?.driver?.kitchenId || []);
+    c.set('domain', data?.domain || "");
+    c.set('subDomain', data?.subDomain);
+    c.set('userEmail', email);
+    c.set('isAppManager', data?.domain === "app_manager");
+
+    return await next();
 
   } catch (error) {
     let errorMessage = 'Invalid or expired Access Token';
