@@ -78,7 +78,7 @@ export const createSupplierHandler = catchAsync(async (c: Context) => {
 
   const data = await createSupplier({
     ...body,
-    kitchenId: body.kitchenId || kitchenByUser,
+    kitchenId: kitchenByUser,
     createdBy: audit.createdBy,
     createdAt: audit.createdAt,
     updatedAt: audit.updatedAt,
