@@ -68,7 +68,7 @@ export const deliveryStepReports = pgTable(
         onDelete: "restrict",
       }),
 
-    createdAt: timestamp("created_at").defaultNow().notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     createdBy: uuid("created_by")
       .notNull()
       .references(() => users.id, {

@@ -24,11 +24,11 @@ export const dailyReports = pgTable(
     menuPlanId: uuid("menu_plan_id")
       .notNull()
       .references(() => menuPlans.id, { onDelete: "cascade" }),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     createdBy: uuid("created_by")
       .notNull()
       .references(() => users.id, { onDelete: "restrict" }),
-    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
     updatedBy: uuid("updated_by").references(() => users.id, {
       onDelete: "set null",
     }),
@@ -58,11 +58,11 @@ export const stepReports = pgTable("step_reports", {
   isCompleted: boolean("is_completed").default(false),
   storageId: uuid('storage_id').references(() => storage.id),
   imageURL: text('image_url'),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   createdBy: uuid("created_by")
     .notNull()
     .references(() => users.id, { onDelete: "restrict" }),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   updatedBy: uuid("updated_by").references(() => users.id, {
     onDelete: "set null",
   }),
@@ -80,11 +80,11 @@ export const eventReports = pgTable("event_reports", {
   entityId: uuid("entity_id"),
   domain: text("domain"),
   domainId: uuid("domain_id"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   createdBy: uuid("created_by")
     .notNull()
     .references(() => users.id, { onDelete: "restrict" }),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   updatedBy: uuid("updated_by").references(() => users.id, {
     onDelete: "set null",
   }),

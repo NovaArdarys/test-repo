@@ -30,7 +30,7 @@ export const userKitchens = pgTable(
     userId: uuid("user_id").notNull(),
     kitchenId: uuid("kitchen_id").notNull(),
     isDeleted: boolean("is_deleted").default(false).notNull(),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     createdBy: uuid("created_by"),
   },
   (table) => {

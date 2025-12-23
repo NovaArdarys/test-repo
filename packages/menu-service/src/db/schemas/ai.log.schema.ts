@@ -43,7 +43,7 @@ export const servingDetections = pgTable("serving_detections", {
   overridden: boolean("overridden").default(false),
   overrideValue: boolean("override_value"),
 
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => ({
   idxStepReport: index("idx_serv_step_report").on(table.stepReportId),
   idxFoodItem: index("idx_serv_food_item").on(table.foodItemId),
@@ -63,7 +63,7 @@ export const apdDetections = pgTable("apd_detections", {
 
   confidence: numeric("confidence", { precision: 6, scale: 4 }),
 
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => ({
   idxStep: index("idx_apd_step").on(table.stepReportId),
   idxAI: index("idx_apd_ai").on(table.aiLogId),
@@ -76,7 +76,7 @@ export const apdMasterItems = pgTable("apd_master_items", {
   label: text("label").notNull(),
   isRequired: boolean("is_required").default(true).notNull(),
 
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
 export const cleanlinessResults = pgTable("cleanliness_results", {
@@ -89,7 +89,7 @@ export const cleanlinessResults = pgTable("cleanliness_results", {
   finalStatus: text("final_status").notNull(),        // Clean / Dirty
   scoreThreshold: numeric("score_threshold", { precision: 5, scale: 2 }),
 
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => ({
   uniqueStepAi: unique("uq_cleanliness_step_ai")
     .on(table.stepReportId, table.aiLogId),

@@ -281,6 +281,13 @@
       "when": 1766462818471,
       "tag": "0039_slippery_micromacro",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1766504371969,
+      "tag": "0040_silly_junta",
+      "breakpoints": true
     }
   ]
 }

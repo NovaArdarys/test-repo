@@ -17,7 +17,7 @@ export const storage = pgTable(
     size: varchar("size", { length: 50 }),
     entityType: text("entity_type").notNull(),
     entityId: uuid("entity_id"),
-    createdAt: timestamp("created_at").defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
     createdBy: uuid("created_by"),
   },
   (table) => {

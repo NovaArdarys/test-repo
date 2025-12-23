@@ -14,6 +14,7 @@ import { checkDatabase } from '@/db';
 import { initializeConsumers } from './messaging/consumers';
 import { eventMonitorRoute } from './routes/event.monitor.route';
 import { swaggerUI } from '@hono/swagger-ui';
+import { applyTimezoneIterative } from './middleware/timezone.middleware';
 
 type Variables = JwtVariables;
 
@@ -33,6 +34,28 @@ const app = new Hono<{ Variables: Variables; }>()
       credentials: true,
     })
   )
+  .use("/api/*", async (c, next) => {
+    await next();
+
+    const res = c.res;
+    if (!res) return;
+
+    const cloned = res.clone();
+    if (!cloned.headers.get("content-type")?.includes("application/json")) return;
+
+    const body = await cloned.json().catch(() => null);
+    if (!body) return;
+
+    const payload = c.get("jwtPayload");
+    const tz = "Asia/Jakarta";
+
+    const converted = applyTimezoneIterative(body, tz);
+
+    c.res = new Response(JSON.stringify(converted), {
+      status: res.status,
+      headers: res.headers,
+    });
+  })
   .use(
     '/auth/*',
     jwt({
@@ -75,7 +98,6 @@ const app = new Hono<{ Variables: Variables; }>()
   .route("/api/events", eventMonitorRoute)
   .route('/api/mobile', routesMobile)
   .route('/api', routes)
-
   .onError(errorHandler);
 
 async function bootstrap() {

@@ -42,9 +42,9 @@ export const beneficiaries = pgTable("beneficiaries", {
   largeDeliveryTime: time("large_delivery_time").default(sql`time '09:00'`),
   status: varchar("status", { length: 20 }).default("ACTIVE"),
 
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   createdBy: uuid("created_by").notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   updatedBy: uuid("updated_by"),
 });
 
@@ -54,7 +54,7 @@ export const userBeneficiaries = pgTable(
     userId: uuid("user_id").notNull(),
     beneficiaryId: uuid("beneficiary_id").notNull(),
     isDeleted: boolean("is_deleted").default(false).notNull(),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     createdBy: uuid("created_by"),
   },
   (table) => ({
@@ -82,7 +82,7 @@ export const beneficiaryPortions = pgTable(
     }),
     portionType: varchar("portion_type", { length: 50 }),
     isDeleted: boolean("is_deleted").default(false).notNull(),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     createdBy: uuid("created_by"),
   },
   (table) => ({
@@ -118,9 +118,9 @@ export const beneficiaryFoodAllergies = pgTable("beneficiary_food_allergies", {
 
   description: text("description"),
 
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   createdBy: uuid("created_by").notNull(),
 
-  updatedAt: timestamp("updated_at"),
+  updatedAt: timestamp("updated_at", { withTimezone: true }),
   updatedBy: uuid("updated_by"),
 });

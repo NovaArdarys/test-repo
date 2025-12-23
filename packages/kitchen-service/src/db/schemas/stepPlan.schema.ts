@@ -8,7 +8,7 @@ export const masterSteps = pgTable("master_steps", {
   stepKey: stepKeyEnum("step_key").notNull(),
   stepName: varchar("step_name", { length: 100 }).notNull(),
   stepOrder: integer("step_order").notNull(),
-  createdAt: timestamp("created_at").defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
   subDomains: text('sub_domains').array().default([]),
   analysisType: analysisTypeEnum("analysis_type"),
   isDeleted: boolean("is_deleted").notNull().default(false),
