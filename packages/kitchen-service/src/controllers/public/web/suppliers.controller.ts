@@ -8,6 +8,9 @@ import {
   deleteSupplier,
 } from "@/services/repositories/suppliers.service";
 import { CreateSupplierSchemaType, ItemsQuerySchemaType } from "@/validator/supplier.validator";
+import { isEmpty } from "lodash";
+import { resolveKitchenId } from "@/services/repositories/additional/get.kitchen.by.user.service";
+import { resolveEntityId } from "@/utils/resolveEntity";
 
 
 const getAuditFields = (c: Context) => ({
@@ -25,24 +28,21 @@ const getAuditFields = (c: Context) => ({
   isAppManager: c.get("isAppManager") as boolean,
 });
 
-
-
-
 export const listSuppliersHandler = catchAsync(async (c: Context) => {
   const query = c.req.query() as unknown as ItemsQuerySchemaType;
 
   const page = parseInt(String(query.page || 1));
   const limit = parseInt(String(query.limit || 10));
   const search = query.search;
+  const createdByKitchen = query.createdByKitchen ?? true;
   const audit = getAuditFields(c);
-
-  console.log(audit.kitchenId, '-----audit.kitchenId-----');
 
   const data = await getSuppliers({
     kitchenIds: audit.kitchenId,
     limit,
     page,
-    search
+    search,
+    createdByKitchen
   });
 
   return c.json({ ...data }, 200);
@@ -56,17 +56,33 @@ export const getSupplierHandler = catchAsync(async (c: Context) => {
 
 export const createSupplierHandler = catchAsync(async (c: Context) => {
   const body = await c.req.parseBody() as unknown as CreateSupplierSchemaType;
-  const audit = getAuditFields(c);
+  const { domain: actorDomain, driverId, kitchenId, beneficiaryId, ...audit } = getAuditFields(c);
 
   const foodIdArray = body.foodIds as unknown as string[] || (body as any)["foodIds[]"] || [];
 
+  const entityId = resolveEntityId({
+    actorDomain,
+    kitchenId,
+    beneficiaryId,
+    driverId,
+  });
+
+  if (isEmpty(entityId)) {
+    return c.json({ message: "User belum punya lokasi penempatan" }, 400);
+  }
+
+  const kitchenByUser = await resolveKitchenId({
+    entityType: actorDomain,
+    entityId: entityId || "",
+  });
+
   const data = await createSupplier({
     ...body,
-    kitchenId: body.kitchenId || "",
+    kitchenId: body.kitchenId || kitchenByUser,
     createdBy: audit.createdBy,
     createdAt: audit.createdAt,
     updatedAt: audit.updatedAt,
-    updatedBy: audit.updatedBy
+    updatedBy: audit.updatedBy,
   }, foodIdArray);
   return c.json({ data }, 201);
 });
