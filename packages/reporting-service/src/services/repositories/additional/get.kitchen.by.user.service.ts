@@ -54,8 +54,9 @@ export async function getKitchenIdFromKitchen(
 }
 
 export async function getKitchenDetailByUsers(
-  userIds: string[],
+  kitchenIds: string[],
 ) {
+
   const rows = await db
     .select({
       id: kitchens.id,
@@ -69,7 +70,7 @@ export async function getKitchenDetailByUsers(
     .from(kitchens)
     .innerJoin(userKitchens, eq(userKitchens.kitchenId, kitchens.id))
     .where(
-      inArray(userKitchens.userId, userIds)
+      inArray(userKitchens.kitchenId, kitchenIds)
     );
 
   if (!rows.length) {

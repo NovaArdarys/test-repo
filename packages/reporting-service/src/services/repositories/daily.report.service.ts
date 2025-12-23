@@ -465,7 +465,7 @@ export async function getDailyReportsList(params?: {
                 'stepName', ms.step_name,
                 'stepOrder', ms.step_order,
                 'imageURL', st.file_url,
-                'createdAt', sr.updated_at
+                'createdAt', st.created_at
               )
               ORDER BY ms.step_order
             )
@@ -491,7 +491,7 @@ export async function getDailyReportsList(params?: {
                 'stepName', ms.step_name,
                 'stepOrder', ms.step_order,
                 'imageURL', st.file_url,
-                'createdAt', sr.updated_at
+                'createdAt', st.created_at
               )
               ORDER BY ms.step_order
             )
