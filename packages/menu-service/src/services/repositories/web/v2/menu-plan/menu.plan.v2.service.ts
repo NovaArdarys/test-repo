@@ -55,7 +55,7 @@ export async function createMenuPlan(
       reports.push(...beneficiaryDaily);
 
       const delivery = await createAutoDelivery({
-        kitchenId: plan.kitchenId,
+        kitchenId: plan.kitchenId!,
         menuPlanId: plan.id,
         createdBy: plan.createdBy
       }, trx);

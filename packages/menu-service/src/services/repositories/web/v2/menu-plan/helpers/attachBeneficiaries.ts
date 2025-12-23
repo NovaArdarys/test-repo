@@ -18,6 +18,8 @@ export default async function attachBeneficiaries(
       largePortion: b.largePortion ?? 0,
       smallDeliveryTime: b.smallDeliveryTime ?? null,
       largeDeliveryTime: b.largeDeliveryTime ?? null,
+      lon: b.lon,
+      lat: b.lat
     }))
   );
 }

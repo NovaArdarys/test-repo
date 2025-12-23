@@ -1,3 +1,6 @@
+import { beneficiaries, menuPlans } from "@/db/schemas";
+import { InferSelectModel } from "drizzle-orm";
+
 export interface Trx {
   insert: Function;
   select: Function;
@@ -6,21 +9,10 @@ export interface Trx {
   [key: string]: any;
 }
 
-export interface MenuPlan {
-  id: string;
-  kitchenId: string;
-  createdAt: string;
-  createdBy: string;
-  planStartDate: string;
-}
+export type MenuPlan = InferSelectModel<typeof menuPlans>;
 
-export interface Beneficiary {
-  id: string;
-  smallPortion?: number | null;
-  largePortion?: number | null;
-  smallDeliveryTime?: string | null;
-  largeDeliveryTime?: string | null;
-}
+
+export type Beneficiary = InferSelectModel<typeof beneficiaries>;
 
 export interface DailyReport {
   id: string;
