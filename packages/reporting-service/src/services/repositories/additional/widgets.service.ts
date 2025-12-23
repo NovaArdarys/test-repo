@@ -21,7 +21,7 @@ export async function getHomeWidgets(params: {
     subDomains,
   } = params;
 
-  console.log(kitchenIds, "=====kitchenIds====");
+  console.log(kitchenIds, "=====kitchenIds====", domain);
 
   const toISO = (d: Date) => d.toISOString().split("T")[0];
   const tomorrow = toISO(addDays(new Date(endDate), 1));
@@ -107,8 +107,8 @@ export async function getHomeWidgets(params: {
           }
                 ${domain === "kitchen" && kitchenIds.length > 0
             ? sql`
-                        AND er.entity_type = 'kitchen'
-                        AND er.entity_id = ANY(${uuidArray(kitchenIds)})
+                        AND er.domain = ${domain}
+                        AND er.domain_id = ANY(${uuidArray(kitchenIds)})
                       `
             : sql``
           }
