@@ -2,6 +2,7 @@ import { db } from "@/db";
 import { eventReports, storage, userDetails, users } from "@/db/schemas";
 import { eq, and, desc, sql, gte, lte, getTableColumns, or, inArray } from "drizzle-orm";
 import type { InferInsertModel, InferSelectModel } from "drizzle-orm";
+import { buildDomainFilter } from "./web/utils/event.report.domain.filter.service";
 
 export type EventReport = InferSelectModel<typeof eventReports>;
 export type NewEventReport = Omit<
@@ -78,7 +79,7 @@ export async function getEventReports(options?: {
   beneficiaryIds: string[];
   driversIds: string[];
   subDomains: string[];
-  entityType?: string;
+  domain?: string;
 }) {
   const page = options?.page ?? 1;
   const limit = options?.limit ?? 10;
@@ -89,12 +90,7 @@ export async function getEventReports(options?: {
     options?.startDate ? gte(eventReports.date, options.startDate) : undefined,
     options?.endDate ? lte(eventReports.date, options.endDate) : undefined,
     options?.reportType ? eq(eventReports.reportType, options.reportType) : undefined,
-    options?.kitchenIds && options.kitchenIds.length > 0
-      ? inArray(eventReports.entityId, options.kitchenIds)
-      : undefined,);
-
-  console.log(options, "=====options=====", options?.startDate);
-
+    buildDomainFilter(options));
 
   const rows = await db
     .select({
@@ -108,7 +104,6 @@ export async function getEventReports(options?: {
       storage,
       and(
         eq(storage.entityId, eventReports.id),
-        inArray(storage.entityType, ["other"] as any)
       )
     )
     .leftJoin(users, eq(users.id, eventReports.createdBy))

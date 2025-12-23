@@ -16,6 +16,7 @@ import {
 import { publishEventReportCommit } from "@/messaging/publishers/reporting.publisher";
 import { isEmpty } from "lodash";
 import { resolveKitchenId } from "@/services/repositories/additional/get.kitchen.by.user.service";
+import { resolveEntityId } from "@/utils/resolveEntity";
 
 const getAuditFields = (c: Context) => ({
   createdBy: c.get('userId'),
@@ -45,19 +46,17 @@ export const listEventReportsHandler = catchAsync(async (c: Context) => {
 
   const { kitchenId, driverId, beneficiaryId, userId, subDomain, domain } = getAuditFields(c);
 
-  console.log(driverId, "=====driverId=====");
-
   const reports = await getEventReports({
     page,
     limit,
     reportType,
     startDate,
     endDate,
-    entityType: !isEmpty(driverId) ? "driver" : domain ?? "",
     driversIds: driverId ?? [],
     kitchenIds: kitchenId ?? [],
     beneficiaryIds: beneficiaryId ?? [],
-    subDomains: subDomain
+    subDomains: subDomain,
+    domain: domain
   });
 
   return c.json({ data: reports.data, meta: reports.meta }, 200);
@@ -67,20 +66,25 @@ export const createEventReportHandler = catchAsync(async (c: Context) => {
   const body = await c.get("validatedData").body as CreateEventReportSchemaType;
   const { createdBy, domain: actorDomain, driverId, kitchenId, beneficiaryId } = getAuditFields(c);
 
-  const entityId = actorDomain === "kitchen" ? !isEmpty(driverId) ? driverId?.[0] ?? null : kitchenId?.[0] ?? null : actorDomain === "beneficiary" ? beneficiaryId?.[0] ?? null : null;
+  const entityId = resolveEntityId({
+    actorDomain,
+    kitchenId,
+    beneficiaryId,
+    driverId,
+  });
 
   if (isEmpty(entityId)) {
     return c.json({ message: "User belum punya lokasi penempatan" }, 400);
   }
 
   const kitchenByUser = await resolveKitchenId({
-    entityType: isEmpty(driverId) ? actorDomain : "driver",
+    entityType: actorDomain,
     entityId: entityId || "",
   });
 
   const newReport = await createEventReport({
     ...body,
-    entityType: isEmpty(driverId) ? actorDomain : "driver",
+    entityType: actorDomain,
     domain: "kitchen",
     domainId: kitchenByUser,
     entityId: entityId,
@@ -104,10 +108,17 @@ export const updateEventReportHandler = catchAsync(async (c: Context) => {
   const body = await c.get("validatedData").body as unknown as UpdateEventReportSchemaType;
   const { updatedBy, domain, driverId, kitchenId, beneficiaryId } = getAuditFields(c);
 
+  const entityId = resolveEntityId({
+    actorDomain: domain,
+    kitchenId,
+    beneficiaryId,
+    driverId,
+  });
+
   const updatedReport = await updateEventReport(id, {
     ...body,
-    entityId: domain === "kitchen" ? !isEmpty(driverId) ? driverId?.[0] ?? null : kitchenId?.[0] ?? null : domain === "beneficiary" ? beneficiaryId?.[0] ?? null : null,
-    reportType: body.reportType ? body.reportType : !isEmpty(driverId) ? "driver" : domain,
+    entityId: entityId,
+    reportType: body.reportType ? body.reportType : domain,
     updatedBy,
   });
 

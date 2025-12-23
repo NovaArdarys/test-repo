@@ -309,7 +309,7 @@ export async function getDailyReportWithoutMaskById(id: string) {
 }
 
 export async function getDailyReportsList(params?: {
-  entityType?: string;
+  domain?: string;
   entityId?: string;
   status?: string;
   startDate?: string;
@@ -326,7 +326,7 @@ export async function getDailyReportsList(params?: {
   const today = new Date().toISOString().slice(0, 10);
 
   const {
-    entityType,
+    domain,
     entityId,
     status,
     startDate = today,
@@ -340,7 +340,6 @@ export async function getDailyReportsList(params?: {
     view,
     menuPlanName,
   } = params ?? {};
-  console.log(entityType, "=====entityType=====", schoolIds);
 
   // const toISO = (d: Date) => d.toISOString().split("T")[0];
   // const tomorrow = toISO(addDays(new Date(endDate), 1));
@@ -353,20 +352,20 @@ export async function getDailyReportsList(params?: {
     table: dailyReports,
     tableName: "daily_reports",
     base: {
-      entityType,
+      entityType: domain,
       entityId,
       status,
       date: { gte: startDate, lte: endDate },
     },
     extra: [
-      driversIds.length && entityType === "driver"
+      driversIds.length && domain === "driver"
         ? sql`${dailyReports.entityId} = ANY(${uuidArray(driversIds)})`
         : undefined,
-      kitchenIds.length && entityType === "kitchen"
+      kitchenIds.length && domain === "kitchen"
         ? sql`${dailyReports.entityId} = ANY(${uuidArray(kitchenIds)})`
         : undefined,
       schoolIds.length &&
-        (entityType === "school" || entityType === "beneficiary")
+        (domain === "school" || domain === "beneficiary")
         ? sql`${dailyReports.entityId} = ANY(${uuidArray(schoolIds)})`
         : undefined,
       menuPlanName
@@ -603,7 +602,7 @@ export async function getDailyReportsList(params?: {
 
   const widgets = await getHomeWidgets({
     view,
-    entityType,
+    domain,
     endDate,
     kitchenIds,
     schoolIds,

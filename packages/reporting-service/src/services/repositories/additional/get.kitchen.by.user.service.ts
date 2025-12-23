@@ -37,10 +37,10 @@ export async function getKitchenIdFromBeneficiary(
 }
 
 export async function getKitchenIdFromKitchen(
-  userId: string,
+  kitchenId: string,
 ): Promise<string> {
   const row = await db.query.userKitchens.findFirst({
-    where: (b, { eq }) => eq(b.userId, userId),
+    where: (b, { eq }) => eq(b.kitchenId, kitchenId),
     columns: {
       kitchenId: true,
     },

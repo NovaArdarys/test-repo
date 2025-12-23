@@ -4,7 +4,7 @@ import { db } from "@/db";
 
 export async function getHomeWidgets(params: {
   view?: "home" | "calendar" | "delivery" | "report" | "profile";
-  entityType?: string;
+  domain?: string;
   endDate: string;
   kitchenIds: string[];
   schoolIds: string[];
@@ -13,13 +13,15 @@ export async function getHomeWidgets(params: {
 }) {
   const {
     view,
-    entityType,
+    domain,
     endDate,
     kitchenIds,
     schoolIds,
     driversIds,
     subDomains,
   } = params;
+
+  console.log(kitchenIds, "=====kitchenIds====");
 
   const toISO = (d: Date) => d.toISOString().split("T")[0];
   const tomorrow = toISO(addDays(new Date(endDate), 1));
@@ -28,7 +30,7 @@ export async function getHomeWidgets(params: {
   const uuidArray = (ids: string[]) =>
     sql.raw(`ARRAY[${ids.map((id) => `'${id}'`).join(",")}]::uuid[]`);
 
-  const filterSubDomain =
+  const subDomainFilter =
     subDomains.length > 0
       ? sql`sr.sub_domains = ANY(${sql.raw(
         `ARRAY[${subDomains.map((d) => `'${d}'`).join(",")}]::text[]`
@@ -51,7 +53,7 @@ export async function getHomeWidgets(params: {
             SELECT mp.id, mp.name, mp.plan_start_date
             FROM menu_plans mp
             WHERE mp.is_deleted = false
-              ${entityType === "driver" && driversIds.length > 0
+              ${domain === "driver" && driversIds.length > 0
             ? sql`AND mp.kitchen_id IN (
                     SELECT uk.kitchen_id
                     FROM user_kitchens uk
@@ -59,10 +61,10 @@ export async function getHomeWidgets(params: {
                       AND uk.is_deleted = false
                   )`
             : sql``}
-              ${entityType === "kitchen" && kitchenIds.length > 0
+              ${domain === "kitchen" && kitchenIds.length > 0
             ? sql`AND mp.kitchen_id = ANY(${uuidArray(kitchenIds)})`
             : sql``}
-              ${(entityType === "school" || entityType === "beneficiary") &&
+              ${(domain === "school" || domain === "beneficiary") &&
             schoolIds.length > 0
             ? sql`AND mp.id IN (
                     SELECT mps.menu_plan_id
@@ -96,24 +98,24 @@ export async function getHomeWidgets(params: {
               SELECT er.*
               FROM event_reports er
               WHERE er.is_deleted = false
-                ${entityType === "driver" && driversIds.length > 0
+                ${domain === "driver" && driversIds.length > 0
             ? sql`
                         AND er.entity_type = 'driver'
                         AND er.entity_id = ANY(${uuidArray(driversIds)})
                       `
             : sql``
           }
-                ${entityType === "kitchen" && kitchenIds.length > 0
+                ${domain === "kitchen" && kitchenIds.length > 0
             ? sql`
                         AND er.entity_type = 'kitchen'
                         AND er.entity_id = ANY(${uuidArray(kitchenIds)})
                       `
             : sql``
           }
-                ${(entityType === "school" || entityType === "beneficiary") &&
+                ${(domain === "school" || domain === "beneficiary") &&
             schoolIds.length > 0
             ? sql`
-                        AND er.entity_type = ${entityType}
+                        AND er.entity_type = ${domain}
                         AND er.entity_id = ANY(${uuidArray(schoolIds)})
                       `
             : sql``
@@ -161,25 +163,30 @@ export async function getHomeWidgets(params: {
       `,
 
         stepTomorrow: sql`
-        COALESCE((
-          SELECT jsonb_agg(
-            jsonb_build_object(
-              'id', sr.id,
-              'stepKey', ms.step_key,
-              'stepName', ms.step_name,
-              'stepOrder', ms.step_order,
-              'isCompleted', sr.is_completed,
-              'notes', sr.notes
-            )
-          )
-          FROM step_reports sr
-          JOIN master_steps ms ON ms.id = sr.step_id
-          JOIN daily_reports dr ON dr.id = sr.daily_report_id
-          WHERE dr.date = ${tomorrow}
-            AND ${filterSubDomain}
-            AND dr.entity_id = ANY(${uuidArray(kitchenIds)})
-        ), '[]'::jsonb)
-      `,
+          COALESCE((
+            SELECT jsonb_agg(t ORDER BY s.step_order)
+            FROM (
+              SELECT DISTINCT ON (ms.step_order)
+                jsonb_build_object(
+                  'id', sr.id,
+                  'subDomain', sr.sub_domains,
+                  'stepKey', ms.step_key,
+                  'stepName', ms.step_name,
+                  'stepOrder', ms.step_order,
+                  'isCompleted', sr.is_completed,
+                  'notes', sr.notes
+                ) AS t,
+                ms.step_order
+              FROM step_reports sr
+              JOIN master_steps ms ON ms.id = sr.step_id
+              JOIN daily_reports dr ON dr.id = sr.daily_report_id
+              WHERE dr.date = ${tomorrow}
+                AND ${subDomainFilter}
+                AND dr.entity_id = ANY(${uuidArray(kitchenIds)})
+              ORDER BY ms.step_order, sr.created_at DESC
+            ) s
+          ), '[]'::jsonb)
+          `
       })
       .from(sql`(SELECT 1) _`);
 
@@ -227,7 +234,7 @@ export async function getHomeWidgets(params: {
         JOIN master_steps ms ON ms.id = sr.step_id
         JOIN daily_reports dr ON dr.id = sr.daily_report_id
         WHERE dr.date = ${tomorrow}
-          AND ${filterSubDomain}
+          AND ${subDomainFilter}
       ), '[]'::jsonb)
     `,
     })

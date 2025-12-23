@@ -60,7 +60,7 @@ function restructureAgenda(rawAgenda: any[]) {
 
 
 export async function getDriverDeliveriesV2(params: {
-  entityType?: string;
+  domain?: string;
   driverId: string;
   startDate?: string;
   endDate?: string;
@@ -85,12 +85,12 @@ export async function getDriverDeliveriesV2(params: {
     page = 1,
     limit = 10,
     view,
-    entityType = "driver",
+    domain = "driver",
   } = params;
 
   const widgets = await getHomeWidgets({
     view,
-    entityType,
+    domain,
     endDate,
     kitchenIds,
     schoolIds,

@@ -193,7 +193,7 @@ export async function getDailyReportsListSPPG(params?: {
           FROM event_reports er
           WHERE er.is_deleted = false
           ${entityIdsForEvents.length > 0
-          ? sql`AND er.entity_id = ANY(${sql.raw(
+          ? sql`AND er.domain_id = ANY(${sql.raw(
             `ARRAY[${entityIdsForEvents.map(id => `'${id}'`).join(",")}]::uuid[]`
           )})`
           : sql``}
@@ -253,7 +253,7 @@ export async function getDailyReportsListSPPG(params?: {
           WHERE dr.date >= ${graphReportStartDate}
             AND dr.date <= ${today}
             ${entityIdsForEvents.length > 0
-            ? sql`AND dr.entity_id = ANY(${sql.raw(
+            ? sql`AND dr.domain_id = ANY(${sql.raw(
               `ARRAY[${entityIdsForEvents.map(id => `'${id}'`).join(",")}]::uuid[]`
             )})`
             : sql``}

@@ -50,7 +50,7 @@ export const listDailyReportsHandler = catchAsync(async (c: Context) => {
   if (entity === "driver") {
     const data = await getDriverDeliveriesV2({
       driversIds: audit.driverId,
-      entityType: entity,
+      domain: entity,
       kitchenIds: audit.kitchenId ?? [entityId],
       schoolIds: audit.beneficiaryId,
       subDomains: audit.subDomain,
@@ -86,7 +86,7 @@ export const listDailyReportsHandler = catchAsync(async (c: Context) => {
   }
 
   const data = await getDailyReportsList({
-    entityType: entity,
+    domain: entity,
     entityId: query.entityId,
     status: query.status,
     startDate: query.startDate,

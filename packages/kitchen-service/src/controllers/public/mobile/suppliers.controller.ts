@@ -10,6 +10,7 @@ import {
 import { CreateSupplierSchemaType, ItemsQuerySchemaType } from "@/validator/supplier.validator";
 import { isEmpty } from "lodash";
 import { resolveKitchenId } from "@/services/repositories/additional/get.kitchen.by.user.service";
+import { resolveEntityId } from "@/utils/resolveEntity";
 
 
 const getAuditFields = (c: Context) => ({
@@ -26,9 +27,6 @@ const getAuditFields = (c: Context) => ({
   createdAt: new Date(),
   isAppManager: c.get("isAppManager") as boolean,
 });
-
-
-
 
 export const listSuppliersHandler = catchAsync(async (c: Context) => {
   const query = c.req.query() as unknown as ItemsQuerySchemaType;
@@ -62,7 +60,12 @@ export const createSupplierHandler = catchAsync(async (c: Context) => {
 
   const foodIdArray = body.foodIds as unknown as string[] || (body as any)["foodIds[]"] || [];
 
-  const entityId = actorDomain === "kitchen" ? !isEmpty(driverId) ? driverId?.[0] ?? null : kitchenId?.[0] ?? null : actorDomain === "beneficiary" ? beneficiaryId?.[0] ?? null : null;
+  const entityId = resolveEntityId({
+    actorDomain,
+    kitchenId,
+    beneficiaryId,
+    driverId,
+  });
 
   if (isEmpty(entityId)) {
     return c.json({ message: "User belum punya lokasi penempatan" }, 400);
