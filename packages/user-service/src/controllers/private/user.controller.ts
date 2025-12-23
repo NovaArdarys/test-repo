@@ -74,6 +74,7 @@ export const registerHandler = catchAsync(async (c) => {
       });
     }
 
+
     if (role?.domain === "driver" && domainId) {
       await publishAssignProfileDriver({
         kitchenId: domainId,
