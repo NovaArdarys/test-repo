@@ -288,6 +288,13 @@
       "when": 1766504371969,
       "tag": "0040_silly_junta",
       "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1766522007313,
+      "tag": "0041_petite_ben_parker",
+      "breakpoints": true
     }
   ]
 }
