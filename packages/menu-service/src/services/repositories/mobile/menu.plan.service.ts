@@ -34,6 +34,7 @@ export async function getMenuPlansList({
     entityType?: string;
     menuPlanName?: string;
 }) {
+
     const { where, meta } = await buildPaginatedWhere({
         table: menuPlans,
         tableName: "menu_plans",
@@ -54,12 +55,12 @@ export async function getMenuPlansList({
             // 🔹 DRIVER
             entityType === "driver" && !isEmpty(driverIds)
                 ? sql`${menuPlans.kitchenId} IN (
-            SELECT uk.kitchen_id
-            FROM user_kitchens uk
-            WHERE uk.user_id = ANY(ARRAY[${sql.raw(
+            SELECT dv.kitchen_id
+            FROM drivers dv
+            WHERE dv.id = ANY(ARRAY[${sql.raw(
                     driverIds.map((id) => `'${id}'`).join(",")
                 )}]::uuid[])
-              AND uk.is_deleted = false
+              AND dv.is_deleted = false
           )`
                 : undefined,
 

@@ -40,7 +40,7 @@ export const listMenuPlansHandler = catchAsync(async (c: Context) => {
   const limit = parseInt(String(query.limit || '10'));
   const startDate = query.startDate || null;
   const endDate = query.endDate || null;
-  const entityType = param.entityType || null;
+  const entityType = param.entity || null;
   const search = query.search || null;
 
   const audit = getAuditFields(c);
@@ -52,6 +52,7 @@ export const listMenuPlansHandler = catchAsync(async (c: Context) => {
     endDate,
     kitchenIds: audit.kitchenId,
     schoolIds: audit.beneficiaryId,
+    driverIds: audit.driverId,
     entityType,
     menuPlanName: search || ''
   });
