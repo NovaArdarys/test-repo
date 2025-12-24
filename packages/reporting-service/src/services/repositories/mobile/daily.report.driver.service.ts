@@ -17,7 +17,6 @@ function restructureAgenda(rawAgenda: any[]) {
   return rawAgenda.map((agenda) => {
     const stepMap: Record<string, any> = {};
 
-    console.log(agenda.deliveries);
 
     for (const delivery of agenda.deliveries) {
       for (const step of delivery.steps ?? []) {
@@ -133,8 +132,6 @@ export async function getDriverDeliveriesV2(params: {
     .orderBy(desc(menuPlans.planStartDate))
     .limit(limit)
     .offset((page - 1) * limit);
-
-  console.log(deliveriesRows, "=====deliveriesRows=====", driverId);
 
   if (deliveriesRows.length === 0) {
     return {

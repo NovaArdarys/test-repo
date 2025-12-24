@@ -21,11 +21,11 @@ export async function getHomeWidgets(params: {
     subDomains,
   } = params;
 
-  console.log(kitchenIds, "=====kitchenIds====", domain);
 
   const toISO = (d: Date) => d.toISOString().split("T")[0];
   const tomorrow = toISO(addDays(new Date(endDate), 1));
   const threeDaysAfterTomorrow = toISO(addDays(new Date(endDate), 3));
+  console.log(tomorrow, "=====kitchenIds====", threeDaysAfterTomorrow);
 
   const uuidArray = (ids: string[]) =>
     sql.raw(`ARRAY[${ids.map((id) => `'${id}'`).join(",")}]::uuid[]`);
@@ -55,10 +55,10 @@ export async function getHomeWidgets(params: {
             WHERE mp.is_deleted = false
               ${domain === "driver" && driversIds.length > 0
             ? sql`AND mp.kitchen_id IN (
-                    SELECT uk.kitchen_id
-                    FROM user_kitchens uk
-                    WHERE uk.user_id = ANY(${uuidArray(driversIds)})
-                      AND uk.is_deleted = false
+                    SELECT dv.kitchen_id
+                    FROM drivers dv
+                    WHERE dv.id = ANY(${uuidArray(driversIds)})
+                      AND dv.is_deleted = false
                   )`
             : sql``}
               ${domain === "kitchen" && kitchenIds.length > 0
