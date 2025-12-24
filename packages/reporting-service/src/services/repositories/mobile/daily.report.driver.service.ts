@@ -9,7 +9,7 @@ import {
   stepReports,
   storage,
 } from "@/db/schemas";
-import { eq, desc, sql, inArray } from "drizzle-orm";
+import { eq, desc, sql, inArray, and, gte, lte } from "drizzle-orm";
 import { getHomeWidgets } from "../additional/widgets.service";
 
 
@@ -21,8 +21,6 @@ function restructureAgenda(rawAgenda: any[]) {
 
     for (const delivery of agenda.deliveries) {
       for (const step of delivery.steps ?? []) {
-
-
         if (!stepMap[step.stepKey]) {
           stepMap[step.stepKey] = {
             id: step.id,
@@ -125,10 +123,18 @@ export async function getDriverDeliveriesV2(params: {
       beneficiaries,
       eq(deliveryBeneficiaries.beneficiaryId, beneficiaries.id),
     )
-    .where(eq(deliveries.driverId, driverId))
+    .where(
+      and(
+        eq(deliveries.driverId, driverId),
+        gte(menuPlans.planStartDate, startDate),
+        lte(menuPlans.planStartDate, endDate),
+      )
+    )
     .orderBy(desc(menuPlans.planStartDate))
     .limit(limit)
     .offset((page - 1) * limit);
+
+  console.log(deliveriesRows, "=====deliveriesRows=====", driverId);
 
   if (deliveriesRows.length === 0) {
     return {
