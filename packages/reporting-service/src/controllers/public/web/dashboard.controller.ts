@@ -1,7 +1,7 @@
 // src/controllers/dashboard.controller.ts
 import { Context } from "hono";
 import { catchAsync } from "@/utils/catchAsync";
-import { getDashboardData } from "@/services/repositories/web/v1/summary/dashboard.service";
+import { getDashboardData, RegionLevel } from "@/services/repositories/web/v1/summary/dashboard.service";
 
 const getAuditFields = (c: Context) => ({
   userId: c.get("userId"),
@@ -26,6 +26,7 @@ export const getDashboardHandler = catchAsync(async (c: Context) => {
     districtId: query.districtId,
     villageId: query.villageId,
     status: query.status,
+    regionLevel: query.regionLevel as RegionLevel ?? "district",
     page,
     limit,
     audit,
