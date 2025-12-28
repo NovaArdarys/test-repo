@@ -32,6 +32,7 @@ export async function safeRegenerateRouting(
       .where(eq(menuPlans.id, args.menuPlanId))
       .for("update");
 
+
     if (!plan) return;
 
     const today = new Date().toISOString().slice(0, 10);

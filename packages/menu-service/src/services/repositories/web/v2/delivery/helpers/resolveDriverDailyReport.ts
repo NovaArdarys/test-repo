@@ -4,7 +4,7 @@ import { format } from "date-fns";
 export default async function resolveDriverDailyReport(
   trx: any,
   args: any,
-  insertedBeneficiary: any,
+  driver: any,
   unit: any,
   dailyReportMap: Record<string, Record<string, string>>
 ): Promise<string> {
@@ -22,7 +22,7 @@ export default async function resolveDriverDailyReport(
       .insert(dailyReports)
       .values({
         date: format(new Date(), "yyyy-MM-dd"),
-        entityId: insertedBeneficiary.id,
+        entityId: driver.id,
         entityType: "driver",
         menuPlanId: unit.menuPlanId,
         portionType,

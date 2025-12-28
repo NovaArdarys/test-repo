@@ -23,7 +23,7 @@ export const distributeMenuPlanHandler = catchAsync(
   async (c: Context) => {
     const { id: menuPlanId } = c.req.param();
     const body =
-      (await c.req.parseBody()) as unknown as DistributeMenuPlanSchemaType;
+      (await c.req.json()) as unknown as DistributeMenuPlanSchemaType;
 
     const audit = getAuditFields(c);
 

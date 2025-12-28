@@ -63,25 +63,22 @@ export default async function processSingleDriver(
     await insertDeliveryStepReports(trx, beneficiaryDropOffRecord.id, args.data.createdBy);
 
     //
-    // ETA APPLY
+    // ETA
     //
     await trx.update(deliveries)
       .set({ estimatedDeliveryTime: unit.eta })
       .where(eq(deliveries.id, delivery.id));
 
-    //
-    // DAILY REPORT: DROP-OFF ONLY
-    //
-    const dailyReportId = await resolveDriverDailyReport(
-      trx,
-      args,
-      beneficiaryDropOffRecord,
-      unit,
-      dailyReportMap
-    );
+    // Driver dengan 1 unit → 1 daily report + 1 step report
 
-    await insertDriverStepReports(trx, args, dailyReportId);
+    // Driver dengan >1 unit, tapi same portionType → 1 daily report + 1 step report
 
+    // Driver dengan >1 unit, beda portionType → 1 daily report per portionType
+
+    if (!dailyReportMap[args.driver.id]?.[unit.type]) {
+      const dailyReportId = await resolveDriverDailyReport(trx, args, args.driver, unit, dailyReportMap);
+      await insertDriverStepReports(trx, args, dailyReportId);
+    }
     //
     // RETURN RESULT
     //

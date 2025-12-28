@@ -39,6 +39,8 @@ async function executeAutoDelivery(
   const beneficiaries = await fetchBeneficiaries(trx, data.menuPlanId);
   const drivers = await fetchDrivers(trx, data.kitchenId);
 
+  console.log({ kitchen, menuPlan, beneficiaries, drivers });
+
   const units = expandUnits(beneficiaries, kitchen, menuPlan);
 
   const clustered = clusterUnits(units, 5);
