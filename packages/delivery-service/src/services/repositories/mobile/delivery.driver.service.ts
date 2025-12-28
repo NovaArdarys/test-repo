@@ -104,6 +104,7 @@ export async function getDeliveriesListDriver({
       d.status,
       d.created_at AS "createdAt",
       d.type AS "type",
+      d.delivery_order AS "deliveryOrder",
       json_build_object(
         'id', k.id,
         'name', k.name,
@@ -165,7 +166,7 @@ export async function getDeliveriesListDriver({
     LEFT JOIN drivers dr ON d.driver_id = dr.id
     LEFT JOIN user_details ud ON dr.user_id = ud.user_id
     ${whereSql}
-    ORDER BY d.start_time DESC
+    ORDER BY d.delivery_order ASC
     LIMIT ${limit}
     OFFSET ${offset};
   `;

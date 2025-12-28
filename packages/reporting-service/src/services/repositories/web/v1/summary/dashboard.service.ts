@@ -11,7 +11,10 @@ import {
   districts,
   villages,
   provinces,
+  menuPlanBeneficiaries,
+  menuPlans,
 } from "@/db/schemas";
+import { format } from "date-fns";
 import { and, eq, gte, lte, sql, desc, asc, inArray } from "drizzle-orm";
 
 export type RegionLevel = "province" | "regency" | "district" | "village";
@@ -45,6 +48,32 @@ const scopeOrAll = <T>(
     : undefined;
 };
 
+function regionScope(params: {
+  provinceId?: string;
+  regencyId?: string;
+  districtId?: string;
+  villageId?: string;
+}) {
+  if (params.villageId) {
+    return eq(villages.id, params.villageId);
+  }
+
+  if (params.districtId) {
+    return eq(districts.id, params.districtId);
+  }
+
+  if (params.regencyId) {
+    return eq(regencies.id, params.regencyId);
+  }
+
+  if (params.provinceId) {
+    return eq(provinces.id, params.provinceId);
+  }
+
+  return undefined;
+}
+
+
 export async function getDashboardData(params: DashboardParams) {
   const {
     startDate,
@@ -52,9 +81,20 @@ export async function getDashboardData(params: DashboardParams) {
     page,
     limit,
     audit,
+    provinceId,
+    regencyId,
+    districtId,
+    villageId
   } = params;
 
-  console.log(audit, "=====audit=====");
+  const activeRegionScope = regionScope({
+    provinceId,
+    regencyId,
+    districtId,
+    villageId,
+  });
+
+  console.log(audit, "=====audit=====", params);
 
   const offset = (page - 1) * limit;
 
@@ -73,68 +113,151 @@ export async function getDashboardData(params: DashboardParams) {
     audit.kitchenId
   );
 
+  const today = format(new Date(), "yyyy-MM-dd");
+
   const [summary] = await db
     .select({
       totalPorsi: sql<number>`
-        COALESCE(SUM(${deliveries.deliveredPortion}), 0)
-      `,
+      COALESCE(
+        SUM(
+          COALESCE(${menuPlanBeneficiaries.smallPortion}, 0)
+        + COALESCE(${menuPlanBeneficiaries.largePortion}, 0)
+        ),
+        0
+      )
+    `,
       totalPenerima: sql<number>`
-        COUNT(DISTINCT ${beneficiaries.id})
-      `,
+      COUNT(DISTINCT ${menuPlanBeneficiaries.beneficiaryId})
+    `,
       totalLaporan: sql<number>`
-        COUNT(DISTINCT ${eventReports.id})
-      `,
+      COUNT(DISTINCT ${eventReports.id})
+    `,
     })
-    .from(deliveries)
+    .from(menuPlanBeneficiaries)
+    .leftJoin(
+      menuPlans,
+      eq(menuPlans.id, menuPlanBeneficiaries.menuPlanId)
+    )
     .leftJoin(
       beneficiaries,
-      eq(beneficiaries.kitchenId, deliveries.kitchenId)
+      eq(beneficiaries.id, menuPlanBeneficiaries.beneficiaryId)
     )
     .leftJoin(
       eventReports,
       eq(eventReports.entityId, beneficiaries.id)
     )
-    .leftJoin(
-      kitchens,
-      eq(kitchens.id, deliveries.kitchenId)
-    )
     .where(
       and(
-        eq(deliveries.status, "DELIVERED"),
-        startDate ? gte(deliveries.deliveryDate, startDate) : undefined,
-        endDate ? lte(deliveries.deliveryDate, endDate) : undefined,
-        deliveryKitchenScope
+        eq(menuPlanBeneficiaries.isDeleted, false),
+        eq(menuPlans.isDeleted, false),
+
+        lte(menuPlans.planStartDate, today),
+        lte(menuPlans.planEndDate, today),
+
+        scopeOrAll(menuPlans.kitchenId, audit.kitchenId),
+        startDate ? gte(menuPlans.planStartDate, startDate) : undefined,
+        endDate ? lte(menuPlans.planEndDate, endDate) : undefined,
       )
     );
 
+
   const portionTrend = await db
     .select({
-      date: deliveries.deliveryDate,
+      date: menuPlans.planStartDate,
       total: sql<number>`
-        COALESCE(SUM(${deliveries.deliveredPortion}), 0)
-      `,
+      COALESCE(
+        SUM(
+          COALESCE(${menuPlanBeneficiaries.smallPortion}, 0)
+        + COALESCE(${menuPlanBeneficiaries.largePortion}, 0)
+        ),
+        0
+      )
+    `,
     })
-    .from(deliveries)
+    .from(menuPlanBeneficiaries)
     .leftJoin(
-      kitchens,
-      eq(kitchens.id, deliveries.kitchenId)
+      menuPlans,
+      eq(menuPlans.id, menuPlanBeneficiaries.menuPlanId)
     )
     .where(
       and(
-        eq(deliveries.status, "DELIVERED"),
-        startDate ? gte(deliveries.deliveryDate, startDate) : undefined,
-        endDate ? lte(deliveries.deliveryDate, endDate) : undefined,
-        deliveryKitchenScope
+        eq(menuPlanBeneficiaries.isDeleted, false),
+        eq(menuPlans.isDeleted, false),
+
+        lte(menuPlans.planStartDate, today),
+        lte(menuPlans.planEndDate, today),
+
+        startDate ? gte(menuPlans.planStartDate, startDate) : undefined,
+        endDate ? lte(menuPlans.planStartDate, endDate) : undefined,
+        scopeOrAll(menuPlans.kitchenId, audit.kitchenId)
       )
     )
-    .groupBy(deliveries.deliveryDate)
-    .orderBy(asc(deliveries.deliveryDate));
+    .groupBy(menuPlans.planStartDate)
+    .orderBy(asc(menuPlans.planStartDate));
+
+  // const [summary] = await db
+  //   .select({
+  //     totalPorsi: sql<number>`
+  //       COALESCE(SUM(${deliveries.deliveredPortion}), 0)
+  //     `,
+  //     totalPenerima: sql<number>`
+  //       COUNT(DISTINCT ${beneficiaries.id})
+  //     `,
+  //     totalLaporan: sql<number>`
+  //       COUNT(DISTINCT ${eventReports.id})
+  //     `,
+  //   })
+  //   .from(deliveries)
+  //   .leftJoin(
+  //     beneficiaries,
+  //     eq(beneficiaries.kitchenId, deliveries.kitchenId)
+  //   )
+  //   .leftJoin(
+  //     eventReports,
+  //     eq(eventReports.entityId, beneficiaries.id)
+  //   )
+  //   .leftJoin(
+  //     kitchens,
+  //     eq(kitchens.id, deliveries.kitchenId)
+  //   )
+  //   .where(
+  //     and(
+  //       eq(deliveries.status, "DELIVERED"),
+  //       startDate ? gte(deliveries.deliveryDate, startDate) : undefined,
+  //       endDate ? lte(deliveries.deliveryDate, endDate) : undefined,
+  //       deliveryKitchenScope
+  //     )
+  //   );
+
+  // const portionTrend = await db
+  //   .select({
+  //     date: deliveries.deliveryDate,
+  //     total: sql<number>`
+  //       COALESCE(SUM(${deliveries.deliveredPortion}), 0)
+  //     `,
+  //   })
+  //   .from(deliveries)
+  //   .leftJoin(
+  //     kitchens,
+  //     eq(kitchens.id, deliveries.kitchenId)
+  //   )
+  //   .where(
+  //     and(
+  //       eq(deliveries.status, "DELIVERED"),
+  //       startDate ? gte(deliveries.deliveryDate, startDate) : undefined,
+  //       endDate ? lte(deliveries.deliveryDate, endDate) : undefined,
+  //       deliveryKitchenScope
+  //     )
+  //   )
+  //   .groupBy(deliveries.deliveryDate)
+  //   .orderBy(asc(deliveries.deliveryDate));
 
   const level: RegionLevel = params.regionLevel ?? "regency";
 
   let regionRaw: {
     regionId: string | null;
     regionName: string | null;
+    parentRegionId: string | null;
     level: string;
     total: number;
   }[] = [];
@@ -144,8 +267,9 @@ export async function getDashboardData(params: DashboardParams) {
       .select({
         regionId: provinces.id,
         regionName: provinces.name,
+        parentRegionId: provinces.id,
         level: sql<string>`'province'`,
-        total: sql<number>`COUNT(${beneficiaries.id})`,
+        total: sql<number>`COUNT(DISTINCT ${beneficiaries.id})`,
       })
       .from(beneficiaries)
       .leftJoin(
@@ -154,7 +278,7 @@ export async function getDashboardData(params: DashboardParams) {
       )
       .leftJoin(
         regencies,
-        eq(regencies.id, kitchens.regencyId)
+        eq(regencies.id, beneficiaries.regencyId)
       )
       .leftJoin(
         provinces,
@@ -163,7 +287,8 @@ export async function getDashboardData(params: DashboardParams) {
       .where(
         and(
           eq(beneficiaries.isDeleted, false),
-          beneficiaryKitchenScope
+          beneficiaryKitchenScope,
+          activeRegionScope
         )
       )
       .groupBy(provinces.id, provinces.name);
@@ -174,8 +299,9 @@ export async function getDashboardData(params: DashboardParams) {
       .select({
         regionId: regencies.id,
         regionName: regencies.name,
+        parentRegionId: regencies.provinceId,
         level: sql<string>`'regency'`,
-        total: sql<number>`COUNT(${beneficiaries.id})`,
+        total: sql<number>`COUNT(DISTINCT ${beneficiaries.id})`,
       })
       .from(beneficiaries)
       .leftJoin(
@@ -184,12 +310,13 @@ export async function getDashboardData(params: DashboardParams) {
       )
       .leftJoin(
         regencies,
-        eq(regencies.id, kitchens.regencyId)
+        eq(regencies.id, beneficiaries.regencyId)
       )
       .where(
         and(
           eq(beneficiaries.isDeleted, false),
-          beneficiaryKitchenScope
+          beneficiaryKitchenScope,
+          activeRegionScope
         )
       )
       .groupBy(regencies.id, regencies.name);
@@ -200,8 +327,9 @@ export async function getDashboardData(params: DashboardParams) {
       .select({
         regionId: districts.id,
         regionName: districts.name,
+        parentRegionId: districts.regencyId,
         level: sql<string>`'district'`,
-        total: sql<number>`COUNT(${beneficiaries.id})`,
+        total: sql<number>`COUNT(DISTINCT ${beneficiaries.id})`,
       })
       .from(beneficiaries)
       .leftJoin(
@@ -209,17 +337,14 @@ export async function getDashboardData(params: DashboardParams) {
         eq(kitchens.id, beneficiaries.kitchenId)
       )
       .leftJoin(
-        regencies,
-        eq(regencies.id, kitchens.regencyId)
-      )
-      .leftJoin(
         districts,
-        eq(districts.regencyId, regencies.id)
+        eq(districts.id, beneficiaries.districtId)
       )
       .where(
         and(
           eq(beneficiaries.isDeleted, false),
-          beneficiaryKitchenScope
+          beneficiaryKitchenScope,
+          activeRegionScope
         )
       )
       .groupBy(districts.id, districts.name);
@@ -230,8 +355,9 @@ export async function getDashboardData(params: DashboardParams) {
       .select({
         regionId: villages.id,
         regionName: villages.name,
+        parentRegionId: villages.districtId,
         level: sql<string>`'village'`,
-        total: sql<number>`COUNT(${beneficiaries.id})`,
+        total: sql<number>`COUNT(DISTINCT ${beneficiaries.id})`,
       })
       .from(beneficiaries)
       .leftJoin(
@@ -239,21 +365,14 @@ export async function getDashboardData(params: DashboardParams) {
         eq(kitchens.id, beneficiaries.kitchenId)
       )
       .leftJoin(
-        regencies,
-        eq(regencies.id, kitchens.regencyId)
-      )
-      .leftJoin(
-        districts,
-        eq(districts.regencyId, regencies.id)
-      )
-      .leftJoin(
         villages,
-        eq(villages.districtId, districts.id)
+        eq(villages.id, beneficiaries.villageId)
       )
       .where(
         and(
           eq(beneficiaries.isDeleted, false),
-          beneficiaryKitchenScope
+          beneficiaryKitchenScope,
+          activeRegionScope
         )
       )
       .groupBy(villages.id, villages.name);
@@ -267,12 +386,13 @@ export async function getDashboardData(params: DashboardParams) {
   const distribution = regionRaw.map((r) => ({
     regionId: r.regionId,
     regionName: r.regionName ?? "Tidak Diketahui",
+    parentRegionId: r.parentRegionId ?? "Tidak Diketahui",
     percentage: totalRegion
       ? Math.round((Number(r.total) / totalRegion) * 100)
       : 0,
   }));
 
-  const events = await db
+  const latestEvents = await db
     .select({
       id: eventReports.id,
       title: eventReports.name,
@@ -283,14 +403,6 @@ export async function getDashboardData(params: DashboardParams) {
     })
     .from(eventReports)
     .leftJoin(
-      beneficiaries,
-      eq(beneficiaries.id, eventReports.entityId)
-    )
-    .leftJoin(
-      kitchens,
-      eq(kitchens.id, beneficiaries.kitchenId)
-    )
-    .leftJoin(
       users,
       eq(users.id, eventReports.createdBy)
     )
@@ -299,12 +411,11 @@ export async function getDashboardData(params: DashboardParams) {
         eq(eventReports.isDeleted, false),
         startDate ? gte(eventReports.date, startDate) : undefined,
         endDate ? lte(eventReports.date, endDate) : undefined,
-        beneficiaryKitchenScope
+        scopeOrAll(eventReports.domainId, audit.kitchenId) // 🔥 kitchen scope
       )
     )
     .orderBy(desc(eventReports.createdAt))
-    .limit(limit)
-    .offset(offset);
+    .limit(5);
 
   const supplierRows = await db
     .select({
@@ -326,7 +437,9 @@ export async function getDashboardData(params: DashboardParams) {
         scopeOrAll(suppliers.kitchenId, audit.kitchenId)
       )
     )
-    .orderBy(asc(suppliers.name));
+    .orderBy(desc(suppliers.createdAt))
+    .limit(5);
+
 
   return {
     summary: {
@@ -339,7 +452,7 @@ export async function getDashboardData(params: DashboardParams) {
       distribution,
     },
     tables: {
-      events,
+      events: latestEvents,
       suppliers: supplierRows,
     },
   };
