@@ -44,7 +44,9 @@ async function executeAutoDelivery(
   const units = expandUnits(beneficiaries, kitchen, menuPlan);
 
   const clustered = clusterUnits(units, 5);
+
   const flattenedCluster = clustered.flat();
+
 
   const assignments = assignDriverUnitsWithRefill(flattenedCluster, drivers);
 
