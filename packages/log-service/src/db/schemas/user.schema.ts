@@ -69,6 +69,9 @@ export const roles = pgTable('roles', {
   createdBy: uuid('created_by').notNull(),
   updatedAt: timestamp('updated_at').notNull(),
   updatedBy: uuid('updated_by'),
+  level: integer('level')
+    .default(0)
+    .notNull(),
 });
 
 

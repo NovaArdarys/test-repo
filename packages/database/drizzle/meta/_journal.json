@@ -302,6 +302,13 @@
       "when": 1766564793865,
       "tag": "0042_kind_killmonger",
       "breakpoints": true
+    },
+    {
+      "idx": 43,
+      "version": "7",
+      "when": 1766920760617,
+      "tag": "0043_closed_riptide",
+      "breakpoints": true
     }
   ]
 }

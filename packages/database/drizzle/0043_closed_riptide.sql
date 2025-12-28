@@ -1,0 +1,1 @@
+ALTER TABLE "roles" ADD COLUMN "level" integer DEFAULT 0 NOT NULL;

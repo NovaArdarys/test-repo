@@ -28,8 +28,8 @@ export const listRolesHandler = catchAsync(async (c) => {
   const query = c.req.query();
   const page = parseInt(query.page || '1');
   const limit = parseInt(query.limit || '10');
-
-  const data = await AuthManagementService.getRolesList({ page, limit });
+  const audit = getAuditFields(c);
+  const data = await AuthManagementService.getRolesList({ page, limit, userId: audit.userId });
   return c.json({ data: data.data, meta: data.meta }, 200);
 });
 

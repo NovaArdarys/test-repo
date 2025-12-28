@@ -17,12 +17,15 @@ import {
   inArray,
   notInArray,
   exists,
-  asc
+  asc,
+  gte,
+  gt
 } from "drizzle-orm";
 import { db } from "@/db";
 import { APIPagination } from "@/types/paginations.type"; // Import tipe yang Anda definisikan
 import ApiError from "@/utils/ApiError";
 import * as HttpStatus from "http-status";
+import { getCurrentUserLevel } from "./get.user.level.service";
 export type EntityType = (typeof entityTypeEnum.enumValues)[number];
 
 type RoleRead = {
@@ -43,13 +46,19 @@ type PermissionRead = {
   updatedAt: Date;
 };
 
-export async function getRolesList({ page, limit }: {
+export async function getRolesList({ page, limit, userId }: {
   page: number;
   limit: number;
+  userId?: string;
 }) {
   const offset = (page - 1) * limit;
 
-  const whereCondition = eq(roles.isDeleted, false);
+  const currentUserLevel = await getCurrentUserLevel(userId || "");
+
+  const whereCondition = and(
+    eq(roles.isDeleted, false),
+    gt(roles.level, currentUserLevel)
+  );
 
   const dataPromise = db
     .select({
