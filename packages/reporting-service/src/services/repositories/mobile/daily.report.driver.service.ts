@@ -5,6 +5,7 @@ import {
   deliveries,
   deliveryBeneficiaries,
   masterSteps,
+  menuPlanBeneficiaries,
   menuPlans,
   stepReports,
   storage,
@@ -41,6 +42,7 @@ function restructureAgenda(rawAgenda: any[]) {
           receivedPortion: delivery.receivedPortion,
           takenTray: delivery.takenTray,
           type: delivery.type,
+          deliverySchedule: delivery.deliverySchedule,
         });
       }
     }
@@ -108,6 +110,22 @@ export async function getDriverDeliveriesV2(params: {
       receivedPortion: deliveries.receivedPortion,
       takenTray: deliveries.takenTray,
       type: deliveries.type,
+      deliverySchedule: sql`
+      (
+        SELECT
+          CASE
+            WHEN ${deliveries.portionType} = 'SMALL'
+              THEN mpb.small_delivery_time
+            WHEN ${deliveries.portionType} = 'LARGE'
+              THEN mpb.large_delivery_time
+          END
+        FROM ${menuPlanBeneficiaries} mpb
+        WHERE mpb.menu_plan_id = ${menuPlans.id}
+          AND mpb.beneficiary_id = ${beneficiaries.id}
+          AND mpb.is_deleted = false
+        LIMIT 1
+      )
+      `
     })
     .from(deliveries)
     .leftJoin(deliveryBeneficiaries, eq(deliveries.id, deliveryBeneficiaries.deliveryId))
@@ -222,7 +240,7 @@ export async function getDriverDeliveriesV2(params: {
       dailyReportId && stepsMap[dailyReportId]
         ? Array.from(stepsMap[dailyReportId].values()).sort(
           (a, b) => a.stepOrder - b.stepOrder
-        ).map(step => ({ ...step, portionType: row.portionType })) // attach portionType
+        ).map(step => ({ ...step, portionType: row.portionType }))
         : [];
 
     agendaMap[row.menuPlanId].deliveries.push({
@@ -235,6 +253,7 @@ export async function getDriverDeliveriesV2(params: {
       receivedPortion: row.receivedPortion,
       takenTray: row.takenTray,
       type: row.type,
+      deliverySchedule: row.deliverySchedule,
       steps,
     });
 

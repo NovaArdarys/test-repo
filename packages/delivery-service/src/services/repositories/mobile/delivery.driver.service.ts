@@ -105,6 +105,22 @@ export async function getDeliveriesListDriver({
       d.created_at AS "createdAt",
       d.type AS "type",
       d.delivery_order AS "deliveryOrder",
+      (
+        SELECT
+          CASE
+            WHEN d.portion_type = 'SMALL'
+              THEN mpb.small_delivery_time
+            WHEN d.portion_type = 'LARGE'
+              THEN mpb.large_delivery_time
+            ELSE NULL
+          END
+        FROM delivery_beneficiaries db2
+        JOIN menu_plan_beneficiaries mpb
+          ON mpb.beneficiary_id = db2.beneficiary_id
+        WHERE db2.delivery_id = d.id
+          AND mpb.is_deleted = false
+        LIMIT 1
+      ) AS "deliverySchedule",
       json_build_object(
         'id', k.id,
         'name', k.name,
