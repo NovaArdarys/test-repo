@@ -1,5 +1,7 @@
+import { emailQueue } from "@/jobs/queue/email.queue";
 import { createUserServiceClient } from "@/services/clients/user.service";
 import { catchAsync } from "@/utils/catchAsync";
+import { generateResetToken } from "@/utils/jwt";
 import { RegisterSchemaType } from "@/validator/auth.validator";
 import { Context } from "hono";
 
@@ -42,6 +44,21 @@ export const registerHandler = catchAsync(async (c) => {
     createdBy: audit.createdBy,
     updatedAt: new Date(),
   });
+  const resetToken = await generateResetToken({ email: email, id: result.id });
+  const resetLink = `${process.env.FRONTEND_URL}/auth/reset-password/${resetToken}`;
+
+  await emailQueue.add(
+    "send-email", {
+    type: "forgot-password",
+    to: email,
+    data: {
+      resetLink: resetLink
+    },
+  },
+    {
+      jobId: `email:${"forgot-password"}:${email}`
+    }
+  );
 
   return c.json({ data: result });
 });
