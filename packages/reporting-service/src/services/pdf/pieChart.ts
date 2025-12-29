@@ -1,15 +1,17 @@
-import { ChartJSNodeCanvas } from "chartjs-node-canvas";
+import { createCanvas } from "@napi-rs/canvas";
+import Chart from "chart.js/auto";
 
 const width = 600;
 const height = 300;
-
-const canvas = new ChartJSNodeCanvas({ width, height });
 
 export async function renderPieChart(
   labels: string[],
   values: number[]
 ): Promise<Buffer> {
-  return canvas.renderToBuffer({
+  const canvas = createCanvas(width, height);
+  const ctx = canvas.getContext("2d");
+
+  new Chart(ctx as any, {
     type: "doughnut",
     data: {
       labels,
@@ -17,11 +19,17 @@ export async function renderPieChart(
         {
           data: values,
           backgroundColor: ["#2dd4bf", "#fb923c", "#60a5fa"],
+          borderWidth: 0,
         },
       ],
     },
     options: {
-      plugins: { legend: { display: false } },
+      responsive: false,
+      plugins: {
+        legend: { display: false },
+      },
     },
   });
+
+  return canvas.toBuffer("image/png");
 }

@@ -1,15 +1,17 @@
-import { ChartJSNodeCanvas } from "chartjs-node-canvas";
+import { createCanvas } from "@napi-rs/canvas";
+import Chart from "chart.js/auto";
 
 const width = 600;
 const height = 300;
-
-const canvas = new ChartJSNodeCanvas({ width, height });
 
 export async function renderLineChart(
   labels: string[],
   values: number[]
 ): Promise<Buffer> {
-  return canvas.renderToBuffer({
+  const canvas = createCanvas(width, height);
+  const ctx = canvas.getContext("2d");
+
+  new Chart(ctx as any, {
     type: "line",
     data: {
       labels,
@@ -25,10 +27,15 @@ export async function renderLineChart(
       ],
     },
     options: {
-      plugins: { legend: { display: false } },
+      responsive: false,
+      plugins: {
+        legend: { display: false },
+      },
       scales: {
         y: { beginAtZero: true },
       },
     },
   });
+
+  return canvas.toBuffer("image/png");
 }

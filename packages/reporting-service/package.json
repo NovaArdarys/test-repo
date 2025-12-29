@@ -6,11 +6,11 @@
   "dependencies": {
     "@hono/standard-validator": "^0.1.5",
     "@hono/swagger-ui": "^0.5.2",
+    "@napi-rs/canvas": "^0.1.88",
     "@types/pdfkit": "^0.17.4",
     "amqplib": "^0.10.9",
     "axios": "^1.12.2",
     "chart.js": "^4.5.1",
-    "chartjs-node-canvas": "^5.0.0",
     "date-fns": "^4.1.0",
     "date-fns-tz": "^3.2.0",
     "drizzle-kit": "^0.31.4",
