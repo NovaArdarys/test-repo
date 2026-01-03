@@ -1,7 +1,6 @@
 import { db } from "@/db";
 import { dailyReports } from "@/db/schemas";
 import { buildUIReport, calculateStatus } from "@/utils/aiPharser";
-import { groupStepsBySubDomain } from "@/utils/transformSteps";
 import { and, desc, eq, inArray, sql, gte, lte } from "drizzle-orm";
 
 export async function getAllDailyReports({
@@ -91,17 +90,29 @@ export async function getAllDailyReports({
               'phoneNumber', ud.phone_number,
               'imageURL', ud.image_url
             ),
-            'ai', (
-              SELECT json_agg(
+           'aiResult', COALESCE(
+              (
+                SELECT json_agg(
+                  json_build_object(
+                    'type', al.analysis_type,
+                    'thumbnail', al.output_image_url,
+                    'threshold', al.threshold,
+                    'output', al.output,
+                    'storageId', al.storage_id
+                  )
+                )
+                FROM ai_analysis_logs al
+                WHERE al.entity_id = sr.id
+              ),
+              json_build_array(
                 json_build_object(
-                  'type', al.analysis_type,
-                  'output', al.output,
-                  'thumbnail', al.output_image_url,
-                  'storageId', al.storage_id
+                  'type', 'none',
+                  'thumbnail', null,
+                  'threshold', null,
+                  'output', null,
+                  'storageId', null
                 )
               )
-              FROM ai_analysis_logs al
-              WHERE al.entity_id = sr.id
             )
           )
         )
@@ -133,7 +144,7 @@ export async function getAllDailyReports({
       date: row.date,
       menuPlan: row.menuPlan,
       status: calculateStatus(steps),
-      steps,
+      domain: steps,
     };
   });
 

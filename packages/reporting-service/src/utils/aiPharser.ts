@@ -6,7 +6,7 @@ export function buildUIReport(rawSteps: any[], menuItems: any[] = []) {
   const grouped = groupBySubDomain(rawSteps);
 
   return grouped.map((domain: any) => ({
-    subDomain: domain.subDomain,
+    name: domain.subDomain,
     steps: domain.steps.map((step: any) =>
       buildUIStepFromStepLevel(step, menuItems)
     ),
@@ -56,7 +56,9 @@ export function groupBySubDomain(steps: any[]) {
 // ========================================================
 
 export function buildUIStepFromStepLevel(step: any, menuItems: any[]) {
-  const ai = step.ai ?? [];
+  const ai = step.aiResult ?? [];
+
+  console.log(step, "=======s=======", step.aiResult);
 
   if (step.stepName === "APD") {
     return buildAPDStep(step, ai);
@@ -110,7 +112,7 @@ function buildAPDStep(step: any, ai: any[]) {
     storageMeta: normalizeMeta(step.storageMeta),
     storageCreatedBy: step.storageCreatedBy,
     storageCreatedAt: step.storageCreatedAt,
-    items: buildAPDItems(persons, found.length > 0),
+    aiResult: buildAPDItems(persons, found.length > 0),
   };
 }
 
@@ -163,11 +165,13 @@ function buildCleanlinessStep(step: any, ai: any[], pos: "before" | "after") {
     storageMeta: normalizeMeta(step.storageMeta),
     storageCreatedBy: step.storageCreatedBy,
     storageCreatedAt: step.storageCreatedAt,
-    status, score,
-    scoreLabel:
-      score > 80 ? "Baik" :
-        score > 50 ? "Cukup" :
-          "Buruk",
+    aiResult: {
+      status, score,
+      scoreLabel:
+        score > 80 ? "Baik" :
+          score > 50 ? "Cukup" :
+            "Buruk",
+    }
   };
 }
 
@@ -217,11 +221,12 @@ function buildServingStep(step: any, ai: any[], menuItems: any[]) {
     storageCreatedBy: step.storageCreatedBy,
     storageCreatedAt: step.storageCreatedAt,
     status,
-
-    planned: menu,
-    detected: aiDetectedRaw,
-    missing: notMatched,
-    extra: extraDetected,
+    aiResult: {
+      planned: menu,
+      detected: aiDetectedRaw,
+      missing: notMatched,
+      extra: extraDetected,
+    }
   };
 }
 

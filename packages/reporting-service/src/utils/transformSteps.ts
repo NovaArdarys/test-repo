@@ -103,7 +103,8 @@ export function groupStepsByDomain(rawSteps: any[]) {
       id: step.id,
       name: step.stepName,
       status,
-      storages: stepImages,
+      storages: stepImages?.[0],
+      aiResult: step.aiResult
     };
 
     if (!domainMap.has(domain)) {
@@ -121,10 +122,10 @@ export function groupStepsByDomain(rawSteps: any[]) {
       .filter((x: any) => x.imageURL);
 
     return {
-      domain,
+      name: domain,
       status: domainStatus,
       steps,
-      storages: domainImages,
+      storages: domainImages?.[0],
     };
   });
 }
@@ -149,7 +150,7 @@ export function groupStepsBySubDomain(steps: any[]) {
       imageURL: step.imageURL,
       storageId: step.storageId,
       createdAt: step.createdAt,
-      ai: step.ai
+      aiResult: step.aiResult
     });
   }
 

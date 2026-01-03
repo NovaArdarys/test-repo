@@ -18,6 +18,7 @@ import { getReportTypeDate } from "@/utils/reportType";
 import { getBeneficiariesAndDriversByKitchenIds } from "./daily.reference.ids.service";
 import { getKitchenDetailByUsers } from "./additional/get.kitchen.by.user.service";
 import { groupStepsByDomain } from "@/utils/transformSteps";
+import { buildUIReport, buildUIStepFromStepLevel } from "@/utils/aiPharser";
 
 export type DailyReport = InferSelectModel<typeof dailyReports>;
 export type DailyReportInsert = InferInsertModel<typeof dailyReports>;
@@ -415,27 +416,38 @@ export async function getDailyReportsListSPPG(params?: {
       SELECT json_agg(
         json_build_object(
           'id', sr.id,
+          'subDomain', sr.sub_domains,
           'isCompleted', sr.is_completed,
           'notes', sr.notes,
           'stepKey', ms.step_key,
           'stepName', ms.step_name,
           'stepOrder', ms.step_order,
-          'subDomain', sr.sub_domains,
           'imageURL', st.file_url,
           'createdAt', sr.updated_at,
           'storageId', sr.storage_id,
-          'ai', (
-            SELECT json_agg(
+          'aiResult', COALESCE(
+            (
+              SELECT json_agg(
+                json_build_object(
+                  'type', al.analysis_type,
+                  'thumbnail', al.output_image_url,
+                  'threshold', al.threshold,
+                  'output', al.output,
+                  'storageId', al.storage_id
+                )
+              )
+              FROM ai_analysis_logs al
+              WHERE al.entity_id = sr.id
+            ),
+            json_build_array(
               json_build_object(
-                'type', al.analysis_type,
-                'thumbnail', al.output_image_url,
-                'threshold', al.threshold,
-                'output', al.output,
-                'storageId', al.storage_id
+                'type', 'none',
+                'thumbnail', null,
+                'threshold', null,
+                'output', null,
+                'storageId', null
               )
             )
-            FROM ai_analysis_logs al
-            WHERE al.entity_id = sr.id
           )
         )
         ORDER BY ms.step_order
@@ -472,7 +484,10 @@ export async function getDailyReportsListSPPG(params?: {
         menuPlan: row.menuPlan
           ? { ...row.menuPlan, _foodItemMap: new Map() }
           : null,
-        steps: row.steps ?? [],
+        steps: (row.steps ?? []).map((s: any) => ({
+          ...s,
+          aiResult: s.aiResult,
+        })),
       });
     }
 
@@ -522,7 +537,8 @@ export async function getDailyReportsListSPPG(params?: {
       report.menuPlan = { date: planStartDate, ...rest };
     }
 
-    report.steps = groupStepsByDomain(report.steps);
+    report.domain = buildUIReport(report.steps as [] ?? [], (report?.menuPlan as any)?.items as [] ?? []);
+
 
     const {
       entityId,
@@ -534,6 +550,7 @@ export async function getDailyReportsListSPPG(params?: {
       date,
       entityType,
       status,
+      steps,
       ...finalReport
     } = report;
 
