@@ -58,8 +58,6 @@ export function groupBySubDomain(steps: any[]) {
 export function buildUIStepFromStepLevel(step: any, menuItems: any[]) {
   const ai = step.aiResult ?? [];
 
-  console.log(step, "=======s=======", step.aiResult);
-
   if (step.stepName === "APD") {
     return buildAPDStep(step, ai);
   }
@@ -165,8 +163,10 @@ function buildCleanlinessStep(step: any, ai: any[], pos: "before" | "after") {
     storageMeta: normalizeMeta(step.storageMeta),
     storageCreatedBy: step.storageCreatedBy,
     storageCreatedAt: step.storageCreatedAt,
+    status,
     aiResult: {
-      status, score,
+      status,
+      score,
       scoreLabel:
         score > 80 ? "Baik" :
           score > 50 ? "Cukup" :

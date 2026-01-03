@@ -375,7 +375,6 @@ export async function getDailyReportsListSPPG(params?: {
         )
       `.as("targetPortion"),
       },
-
       suppliers: sql`
         COALESCE(
           (
@@ -528,7 +527,7 @@ export async function getDailyReportsListSPPG(params?: {
 
   const finalGroupedData = Array.from(reportMap.values()).map((report) => {
     if (report.menuPlan) {
-      report.menuPlan.foodItems = Array.from(
+      report.menuPlan.items = Array.from(
         report.menuPlan._foodItemMap.values()
       );
       delete report.menuPlan._foodItemMap;
@@ -536,6 +535,8 @@ export async function getDailyReportsListSPPG(params?: {
       const { planEndDate, planStartDate, ...rest } = report.menuPlan;
       report.menuPlan = { date: planStartDate, ...rest };
     }
+
+    console.log(report?.menuPlan, "=====report?.menuPlan=====");
 
     report.domain = buildUIReport(report.steps as [] ?? [], (report?.menuPlan as any)?.items as [] ?? []);
 
