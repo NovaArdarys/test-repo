@@ -95,3 +95,26 @@ export const foodConsumptionItems = pgTable("food_consumption_items", {
   updatedBy: uuid("updated_by"),
 });
 
+export const foodConsumptionNotes = pgTable("food_consumption_notes", {
+  id: uuid("id").primaryKey().defaultRandom(),
+
+  menuPlanId: uuid("menu_plan_id")
+    .notNull()
+    .references(() => menuPlans.id, {
+      onDelete: "cascade",
+      onUpdate: "cascade",
+    }),
+
+  note: text("note"),
+
+  reason: varchar("reason", { length: 100 }),
+
+  isDeleted: boolean("is_deleted").default(false).notNull(),
+
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  createdBy: uuid("created_by").notNull(),
+  updatedAt: timestamp("updated_at"),
+  updatedBy: uuid("updated_by"),
+});
+
+

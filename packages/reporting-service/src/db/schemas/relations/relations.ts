@@ -25,6 +25,7 @@ import {
   menuPlans,
   menuPlanBeneficiaries,
   foodConsumptionItems,
+  foodConsumptionNotes,
 } from "../food.schema";
 import { suppliers, suppliersFoodItems, suppliersProducts } from "../supplier.schema";
 import { deliveries, deliveryBeneficiaries, deliveryStepReports } from "../delivery.schema";
@@ -524,6 +525,10 @@ export const foodConsumptionRelation = relations(foodConsumptionItems, ({ many, 
   menuPlan: one(menuPlans, { fields: [foodConsumptionItems.menuPlanId], references: [menuPlans.id] }),
 }));
 
+export const foodConsumptionNoteRelation = relations(foodConsumptionNotes, ({ many, one }) => ({
+  menuPlan: one(menuPlans, { fields: [foodConsumptionNotes.menuPlanId], references: [menuPlans.id] }),
+}));
+
 /**
  * Suppliers
  */
@@ -574,6 +579,7 @@ export const menuPlansRelations = relations(menuPlans, ({ one, many }) => ({
   village: one(villages, { fields: [menuPlans.villageId], references: [villages.id] }),
   menuFoodItem: many(menuFoodItem),
   dailyReports: many(dailyReports),
+  consumptionNote: one(foodConsumptionNotes),
   foodConsumtions: many(foodConsumptionItems),
   beneficiaryClassRoom: many(beneficiaryPortions),
   menuPlanBeneficiaries: many(menuPlanBeneficiaries),

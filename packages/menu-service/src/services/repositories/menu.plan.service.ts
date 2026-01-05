@@ -93,6 +93,12 @@ export async function getMenuPlansList({
             planStartDate: true,
         },
         with: {
+            consumptionNote: {
+                columns: {
+                    note: true,
+                    reason: true,
+                },
+            },
             menuFoodItem: {
                 with: {
                     foodConsumtions: {
@@ -158,9 +164,16 @@ export async function getMenuPlansList({
         report.menuFoodItem.forEach((sfi) => {
             const foodItem = { ...sfi.foodItem, id: sfi.id, foodId: sfi.foodItem.id };
             const supplier = sfi.foodItem.suppliers;
-            const foodWaste = sfi.foodConsumtions?.[0] || {
+            const foodWaste = sfi.foodConsumtions?.[0] ? {
+                quantity: sfi.foodConsumtions?.[0].quantity,
+                unit: sfi.foodConsumtions?.[0].unit,
+                note: report.consumptionNote?.note,
+                reason: report.consumptionNote?.reason,
+            } : {
                 quantity: "0",
-                unit: ""
+                unit: "",
+                note: "",
+                reason: "",
             };
             if (!foodItem) return;
 
@@ -206,6 +219,12 @@ export async function getMenuPlanById(
             planStartDate: true,
         },
         with: {
+            consumptionNote: {
+                columns: {
+                    note: true,
+                    reason: true,
+                },
+            },
             menuFoodItem: {
                 with: {
                     foodConsumtions: {
@@ -271,9 +290,16 @@ export async function getMenuPlanById(
     data.menuFoodItem.forEach((sfi) => {
         const foodItem = { ...sfi.foodItem, id: sfi.id, foodId: sfi.foodItem.id };
         const supplier = sfi.foodItem.suppliers;
-        const foodWaste = sfi.foodConsumtions?.[0] || {
+        const foodWaste = sfi.foodConsumtions?.[0] ? {
+            quantity: sfi.foodConsumtions?.[0].quantity,
+            unit: sfi.foodConsumtions?.[0].unit,
+            note: data.consumptionNote?.note,
+            reason: data.consumptionNote?.reason,
+        } : {
             quantity: "0",
-            unit: ""
+            unit: "",
+            note: "",
+            reason: "",
         };
         if (!foodItem) return;
 
