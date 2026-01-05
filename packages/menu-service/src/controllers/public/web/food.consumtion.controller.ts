@@ -1,6 +1,6 @@
 import { Context } from "hono";
 import { catchAsync } from "@/utils/catchAsync";
-import { getFoodConsumptionItems, createFoodConsumptionItem, getFoodConsumptionItemById, softDeleteFoodConsumptionItem, updateFoodConsumptionItem } from "@/services/repositories/web/food.consumption.service";
+import { getFoodConsumptionItems, getFoodConsumptionItemById, softDeleteFoodConsumptionItem, upsertFoodConsumptionItems, createFoodConsumptionItems } from "@/services/repositories/web/food.consumption.service";
 import {
   CreateFoodConsumptionSchemaType,
   UpdateFoodConsumptionSchemaType,
@@ -31,8 +31,9 @@ export const createFoodConsumptionHandler = catchAsync(
       (await c.get("validatedData").body) as CreateFoodConsumptionSchemaType;
     const { userId } = getAuditFields(c);
 
-    const row = await createFoodConsumptionItem({
-      ...body,
+    const row = await createFoodConsumptionItems({
+      items: body.items,
+      menuPlanId: body.menuPlanId,
       createdBy: userId,
     });
 
@@ -64,9 +65,10 @@ export const updateFoodConsumptionHandler = catchAsync(
       (await c.get("validatedData").body) as UpdateFoodConsumptionSchemaType;
     const { userId } = getAuditFields(c);
 
-    const row = await updateFoodConsumptionItem(id, {
-      ...body,
-      updatedBy: userId,
+    const row = await upsertFoodConsumptionItems({
+      items: body.items,
+      menuPlanId: body.menuPlanId,
+      userId: userId,
     });
 
     return c.json(
