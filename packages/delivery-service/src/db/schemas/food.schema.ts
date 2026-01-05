@@ -69,7 +69,7 @@ export const menuPlanBeneficiaries = pgTable('menu_plan_beneficiaries', {
 
 export const foodConsumptionItems = pgTable("food_consumption_items", {
   id: uuid("id").primaryKey().defaultRandom(),
-  menuPlanId: uuid("record_id")
+  menuPlanId: uuid("menu_plan_id")
     .notNull()
     .references(() => menuPlans.id, { onDelete: "cascade" }),
 

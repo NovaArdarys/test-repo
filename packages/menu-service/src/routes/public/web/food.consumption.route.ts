@@ -24,28 +24,24 @@ app.use(checkAccessToken);
 
 app.get(
   "/",
-  permission(),
   validate(ListFoodConsumptionQuerySchema, "query"),
   listFoodConsumptionHandler,
 );
 
 app.post(
   "/",
-  permission(),
   validate(CreateFoodConsumptionSchema),
   createFoodConsumptionHandler,
 );
 
 app.get(
   "/:id",
-  permission(),
   validate(idParamSchema, "param"),
   getFoodConsumptionByIdHandler,
 );
 
 app.put(
   "/:id",
-  permission(),
   validate(idParamSchema, "param"),
   validate(UpdateFoodConsumptionSchema),
   updateFoodConsumptionHandler,
@@ -53,7 +49,6 @@ app.put(
 
 app.delete(
   "/:id",
-  permission(),
   validate(idParamSchema, "param"),
   deleteFoodConsumptionHandler,
 );
