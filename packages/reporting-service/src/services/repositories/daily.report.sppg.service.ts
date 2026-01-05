@@ -38,7 +38,7 @@ export async function getDailyReportsListSPPG(params?: {
   limit: number;
   menuPlanName?: string;
   view?: "home" | "calendar" | "delivery" | "report" | "profile";
-  typeOfReport?: "" | "7d" | "1m" | "3m" | "6m";
+  typeOfReport?: "" | "7d" | "1mo" | "3mo" | "6mo";
 }) {
   const today = new Date().toISOString().slice(0, 10);
   const {
@@ -54,6 +54,7 @@ export async function getDailyReportsListSPPG(params?: {
     typeOfReport
   } = params ?? {};
 
+
   const uuidArray = (ids: string[]) =>
     sql.raw(`ARRAY[${ids.map((id) => `'${id}'`).join(",")}]::uuid[]`);
   const toISO = (d: Date) => d.toISOString().split("T")[0];
@@ -66,10 +67,6 @@ export async function getDailyReportsListSPPG(params?: {
     ...kitchenIds,
     ...driversIds,
     ...schoolIds
-  ].filter(Boolean);
-
-  const entityIdsForEvents = [
-    ...kitchenIds,
   ].filter(Boolean);
 
   let computedEndDate = endDate;
@@ -193,13 +190,13 @@ export async function getDailyReportsListSPPG(params?: {
           SELECT er.*
           FROM event_reports er
           WHERE er.is_deleted = false
-          ${entityIdsForEvents.length > 0
+          ${ORentityIds.length > 0
           ? sql`AND er.domain_id = ANY(${sql.raw(
-            `ARRAY[${entityIdsForEvents.map(id => `'${id}'`).join(",")}]::uuid[]`
+            `ARRAY[${ORentityIds.map(id => `'${id}'`).join(",")}]::uuid[]`
           )})`
           : sql``}
-            AND er.date::date >= ${endDate}
-            AND er.date::date <= ${computedEndDate}
+            AND er.date::date >= ${graphReportStartDate}
+            AND er.date::date <= ${today}
           ORDER BY er.date DESC
           LIMIT 3
         ) inner_er
@@ -253,14 +250,50 @@ export async function getDailyReportsListSPPG(params?: {
           FROM event_reports dr
           WHERE dr.date >= ${graphReportStartDate}
             AND dr.date <= ${today}
-            ${entityIdsForEvents.length > 0
+            ${ORentityIds.length > 0
             ? sql`AND dr.domain_id = ANY(${sql.raw(
-              `ARRAY[${entityIdsForEvents.map(id => `'${id}'`).join(",")}]::uuid[]`
+              `ARRAY[${ORentityIds.map(id => `'${id}'`).join(",")}]::uuid[]`
             )})`
             : sql``}
           GROUP BY dr.date
           ORDER BY dr.date ASC
         `),
+        // db.execute(sql`
+        //   SELECT
+        //     mp.plan_start_date::text AS date,
+
+        //     COALESCE(
+        //       SUM(
+        //         COALESCE(mpb.small_portion, 0) +
+        //         COALESCE(mpb.large_portion, 0)
+        //       ),
+        //       0
+        //     ) AS target_portion,
+
+        //     0 AS received_portion,
+        //     0 AS taken_tray
+
+        //   FROM menu_plans mp
+        //   JOIN menu_plan_beneficiaries mpb
+        //     ON mpb.menu_plan_id = mp.id
+        //     AND mpb.is_deleted = false
+
+        //   WHERE mp.is_deleted = false
+        //     AND mp.plan_start_date >= ${graphReportStartDate}
+        //     AND mp.plan_start_date <= ${today}
+
+        //     ${
+        //       kitchenIds.length > 0
+        //         ? sql`AND mp.kitchen_id = ANY(${sql.raw(
+        //             `ARRAY[${kitchenIds.map(id => `'${id}'`).join(",")}]::uuid[]`
+        //           )})`
+        //         : sql``
+        //     }
+
+        //   GROUP BY mp.plan_start_date
+        //   ORDER BY mp.plan_start_date ASC
+        // `),
+
         db.execute(sql`
           SELECT d.delivery_date::text AS date,
             COALESCE(SUM(d.target_portion), 0) AS target_portion,
@@ -268,6 +301,7 @@ export async function getDailyReportsListSPPG(params?: {
             COALESCE(SUM(d.taken_tray), 0) AS taken_tray
           FROM deliveries d
           WHERE d.is_deleted = false
+            AND d.type = 'DROPOFF'
             AND d.delivery_date >= ${graphReportStartDate}
             AND d.delivery_date <= ${today}
             ${kitchenIds.length > 0
