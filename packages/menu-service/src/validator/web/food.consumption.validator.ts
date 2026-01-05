@@ -9,6 +9,8 @@ export const FoodConsumptionItemSchema = z.object({
 
 
 export const CreateFoodConsumptionSchema = z.object({
+  note: z.string().optional(),
+  reason: z.string().optional(),
   menuPlanId: z.string().uuid(),
   items: z
     .array(FoodConsumptionItemSchema)
@@ -19,6 +21,8 @@ export type CreateFoodConsumptionSchemaType =
   z.infer<typeof CreateFoodConsumptionSchema>;
 
 export const UpdateFoodConsumptionSchema = z.object({
+  note: z.string().optional(),
+  reason: z.string().optional(),
   menuPlanId: z.string().uuid(),
   items: z
     .array(

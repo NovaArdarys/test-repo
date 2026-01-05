@@ -32,6 +32,8 @@ export const createFoodConsumptionHandler = catchAsync(
     const { userId } = getAuditFields(c);
 
     const row = await createFoodConsumptionItems({
+      note: body.note,
+      reason: body.reason,
       items: body.items,
       menuPlanId: body.menuPlanId,
       createdBy: userId,
@@ -66,6 +68,8 @@ export const updateFoodConsumptionHandler = catchAsync(
     const { userId } = getAuditFields(c);
 
     const row = await upsertFoodConsumptionItems({
+      note: body.note,
+      reason: body.reason,
       items: body.items,
       menuPlanId: body.menuPlanId,
       userId: userId,

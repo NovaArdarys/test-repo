@@ -1,8 +1,10 @@
 import { db } from "@/db";
-import { foodConsumptionItems } from "@/db/schemas";
+import { foodConsumptionItems, foodConsumptionNotes } from "@/db/schemas";
 import { eq, and, sql } from "drizzle-orm";
 
 export async function createFoodConsumptionItems(data: {
+  note?: string,
+  reason?: string,
   menuPlanId: string;
   items: {
     foodItemId: string;
@@ -30,6 +32,17 @@ export async function createFoodConsumptionItems(data: {
     )
     .returning();
 
+  if (data.reason || data.note) {
+    await db.insert(foodConsumptionNotes).values({
+      menuPlanId: data.menuPlanId,
+      reason: data.reason || null,
+      note: data.note || null,
+      createdBy: data.createdBy,
+      createdAt: now,
+      updatedAt: now,
+      updatedBy: data.createdBy,
+    });
+  }
   return rows;
 }
 
@@ -56,6 +69,8 @@ export async function getFoodConsumptionItemById(id: string) {
 
 export async function upsertFoodConsumptionItems(data: {
   menuPlanId: string;
+  note?: string,
+  reason?: string,
   items: {
     foodItemId: string;
     quantity?: string;
@@ -75,7 +90,23 @@ export async function upsertFoodConsumptionItems(data: {
       })
       .where(eq(foodConsumptionItems.menuPlanId, data.menuPlanId));
 
+    await tx
+      .delete(foodConsumptionItems)
+      .where(eq(foodConsumptionItems.menuPlanId, data.menuPlanId));
+
     if (data.items.length === 0) return [];
+
+    if (data.reason || data.note) {
+      await tx.insert(foodConsumptionNotes).values({
+        menuPlanId: data.menuPlanId,
+        reason: data.reason || null,
+        note: data.note || null,
+        createdBy: data.userId,
+        createdAt: now,
+        updatedAt: now,
+        updatedBy: data.userId,
+      });
+    }
 
     return tx
       .insert(foodConsumptionItems)
@@ -105,5 +136,5 @@ export async function softDeleteFoodConsumptionItem(
       updatedBy,
       updatedAt: new Date(),
     })
-    .where(eq(foodConsumptionItems.id, id));
+    .where(eq(foodConsumptionItems.menuPlanId, id));
 }
