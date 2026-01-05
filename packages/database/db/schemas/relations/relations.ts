@@ -24,6 +24,7 @@ import {
   menuFoodItem,
   menuPlans,
   menuPlanBeneficiaries,
+  foodConsumptionItems,
 } from "../food.schema";
 import { suppliers, suppliersFoodItems, suppliersProducts } from "../supplier.schema";
 import { deliveries, deliveryBeneficiaries, deliveryStepReports } from "../delivery.schema";
@@ -512,11 +513,15 @@ export const villagesRelations = relations(villages, ({ one, many }) => ({
  */
 export const foodItemsRelations = relations(foodItems, ({ many, one }) => ({
   menuFoodItem: many(menuFoodItem),
-  menuFoodProducts: many(foodItems),
   suppliersFoodItems: many(suppliersFoodItems),
   suppliers: many(suppliersFoodItems),
   createdBy: one(users, { fields: [foodItems.createdBy], references: [users.id], relationName: "created_by" }),
   updatedBy: one(users, { fields: [foodItems.updatedBy], references: [users.id], relationName: "updated_by" }),
+}));
+
+export const foodConsumptionRelation = relations(foodConsumptionItems, ({ many, one }) => ({
+  menuFoodItem: one(menuFoodItem, { fields: [foodConsumptionItems.menuFoodItemId], references: [menuFoodItem.id] }),
+  menuPlan: one(menuPlans, { fields: [foodConsumptionItems.menuPlanId], references: [menuPlans.id] }),
 }));
 
 /**
@@ -555,8 +560,9 @@ export const suppliersFoodItemsRelations = relations(suppliersFoodItems, ({ one 
 /**
  * MenuFood relations
  */
-export const menusFoodRelations = relations(menuFoodItem, ({ one }) => ({
+export const menusFoodRelations = relations(menuFoodItem, ({ one, many }) => ({
   foodItem: one(foodItems, { fields: [menuFoodItem.foodItemId], references: [foodItems.id] }),
+  foodConsumtions: many(foodConsumptionItems),
   menuPlan: one(menuPlans, { fields: [menuFoodItem.menuFoodPlanId], references: [menuPlans.id] }),
   createdBy: one(users, { fields: [menuFoodItem.createdBy], references: [users.id], relationName: "created_by" }),
 }));
@@ -568,6 +574,7 @@ export const menuPlansRelations = relations(menuPlans, ({ one, many }) => ({
   village: one(villages, { fields: [menuPlans.villageId], references: [villages.id] }),
   menuFoodItem: many(menuFoodItem),
   dailyReports: many(dailyReports),
+  foodConsumtions: many(foodConsumptionItems),
   beneficiaryClassRoom: many(beneficiaryPortions),
   menuPlanBeneficiaries: many(menuPlanBeneficiaries),
   deliveryBeneficiaries: many(deliveryBeneficiaries),

@@ -35,7 +35,6 @@ const getAuditFields = (c: Context) => ({
 
 export const listMenuPlansHandler = catchAsync(async (c: Context) => {
   const query = c.req.query() as unknown as ListMenuPlansQuerySchemaType;
-  console.log("===== ok =====");
 
   const page = parseInt(String(query.page || '1'));
   const limit = parseInt(String(query.limit || '10'));

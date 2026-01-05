@@ -20,7 +20,7 @@ export async function createFoodConsumptionItems(data: {
     .values(
       data.items.map((item) => ({
         menuPlanId: data.menuPlanId,
-        foodItemId: item.foodItemId,
+        menuFoodItemId: item.foodItemId,
         quantity: item?.quantity?.trim() || "0",
         unit: item?.unit?.trim() || "g",
         createdBy: data.createdBy,
@@ -82,7 +82,7 @@ export async function upsertFoodConsumptionItems(data: {
       .values(
         data.items.map((item) => ({
           menuPlanId: data.menuPlanId,
-          foodItemId: item.foodItemId,
+          menuFoodItemId: item.foodItemId,
           quantity: item.quantity?.trim() || "0",
           unit: item.unit?.trim() || "g",
           createdBy: data.userId,

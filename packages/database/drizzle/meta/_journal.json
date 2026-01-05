@@ -309,6 +309,20 @@
       "when": 1766920760617,
       "tag": "0043_closed_riptide",
       "breakpoints": true
+    },
+    {
+      "idx": 44,
+      "version": "7",
+      "when": 1767589938591,
+      "tag": "0044_natural_spyke",
+      "breakpoints": true
+    },
+    {
+      "idx": 45,
+      "version": "7",
+      "when": 1767593941941,
+      "tag": "0045_glamorous_wallow",
+      "breakpoints": true
     }
   ]
 }

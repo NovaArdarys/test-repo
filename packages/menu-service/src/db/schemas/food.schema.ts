@@ -69,20 +69,28 @@ export const menuPlanBeneficiaries = pgTable('menu_plan_beneficiaries', {
 
 export const foodConsumptionItems = pgTable("food_consumption_items", {
   id: uuid("id").primaryKey().defaultRandom(),
+
   menuPlanId: uuid("menu_plan_id")
     .notNull()
-    .references(() => menuPlans.id, { onDelete: "cascade" }),
+    .references(() => menuPlans.id, {
+      onDelete: "cascade",
+      onUpdate: "cascade",
+    }),
 
-  foodItemId: uuid("food_item_id")
+  menuFoodItemId: uuid("menu_food_item_id")
     .notNull()
-    .references(() => foodItems.id),
+    .references(() => menuFoodItem.id, {
+      onDelete: "cascade",
+      onUpdate: "cascade",
+    }),
 
   quantity: decimal("quantity", { precision: 10, scale: 2 }).notNull(),
   unit: varchar("unit", { length: 100 }).notNull(),
 
   isDeleted: boolean("is_deleted").default(false).notNull(),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  createdBy: uuid('created_by').notNull(),
-  updatedAt: timestamp('updated_at').notNull(),
-  updatedBy: uuid('updated_by'),
+
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  createdBy: uuid("created_by").notNull(),
+  updatedAt: timestamp("updated_at").notNull(),
+  updatedBy: uuid("updated_by"),
 });

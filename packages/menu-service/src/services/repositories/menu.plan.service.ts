@@ -1,6 +1,6 @@
 import { db } from "@/db";
 import { foodItems, kitchens, menuPlans, menuPlanBeneficiaries, menuFoodItem, beneficiaries, dailyReports, stepReports, drivers, masterSteps, suppliersFoodItems } from "@/db/schemas";
-import { eq, and, sql, desc, InferSelectModel, InferInsertModel } from "drizzle-orm";
+import { eq, and, sql, desc, InferSelectModel, InferInsertModel, inArray } from "drizzle-orm";
 import { FoodItem } from "./food.item.service";
 import { isEmpty } from "lodash";
 import { buildPaginatedWhere } from "@/utils/pagination";
@@ -93,23 +93,44 @@ export async function getMenuPlansList({
             planStartDate: true,
         },
         with: {
-            suppliersFoodItems: {
+            menuFoodItem: {
                 with: {
+                    foodConsumtions: {
+                        columns: {
+                            quantity: true,
+                            unit: true
+                        },
+                        where: (fields, { and, eq }) =>
+                            and(
+                                eq(fields.isDeleted, false),
+                            ),
+                    },
                     foodItem: {
+                        with: {
+                            suppliers: {
+                                where: (sfi, { and, eq }) =>
+                                    and(
+                                        eq(sfi.isDeleted, false),
+                                        eq(sfi.menuPlanId, menuPlans.id)
+                                    ),
+                                with: {
+                                    supplier: {
+                                        columns: {
+                                            id: true,
+                                            address: true,
+                                            name: true,
+                                            description: true,
+                                            phoneNumber: true,
+                                        },
+                                    },
+                                },
+                            },
+                        },
                         columns: {
                             id: true,
                             description: true,
                             name: true,
                             type: true
-                        }
-                    },
-                    supplier: {
-                        columns: {
-                            id: true,
-                            address: true,
-                            name: true,
-                            description: true,
-                            phoneNumber: true
                         }
                     },
                 }
@@ -132,16 +153,20 @@ export async function getMenuPlansList({
         offset: (page - 1) * limit,
         limit,
     });
-
     const groupedData = data.map((report) => {
         const foodItemMap = new Map<string, any>();
-        report.suppliersFoodItems.forEach((sfi) => {
+        report.menuFoodItem.forEach((sfi) => {
             const foodItem = { ...sfi.foodItem, id: sfi.id, foodId: sfi.foodItem.id };
-            const supplier = sfi.supplier;
+            const supplier = sfi.foodItem.suppliers;
+            const foodWaste = sfi.foodConsumtions?.[0] || {
+                quantity: "0",
+                unit: ""
+            };
             if (!foodItem) return;
 
-            const fi = foodItemMap.get(foodItem.id) ?? { ...foodItem, suppliers: [] };
-            if (supplier) fi.suppliers.push(supplier);
+            const fi = foodItemMap.get(foodItem.id) ?? { ...foodItem, suppliers: [], foodWaste: {} };
+            if (supplier) fi.suppliers = supplier;
+            if (foodWaste) fi.foodWaste = foodWaste;
             foodItemMap.set(foodItem.id, fi);
         });
 
@@ -150,7 +175,7 @@ export async function getMenuPlansList({
             if (mpsk.beneficiary?.id) beneficiaryMap.set(mpsk.beneficiary.id, { ...mpsk.beneficiary, portion: 0 });
         });
 
-        const { menuPlanBeneficiaries, suppliersFoodItems, planEndDate, planStartDate, ...menuPlan } = report;
+        const { menuPlanBeneficiaries, menuFoodItem, planEndDate, planStartDate, ...menuPlan } = report;
 
         return {
             ...menuPlan,
@@ -181,9 +206,34 @@ export async function getMenuPlanById(
             planStartDate: true,
         },
         with: {
-            suppliersFoodItems: {
+            menuFoodItem: {
                 with: {
+                    foodConsumtions: {
+                        columns: {
+                            quantity: true,
+                            unit: true
+                        },
+                        where: (fields, { and, eq }) =>
+                            and(
+                                eq(fields.isDeleted, false),
+                            ),
+                    },
                     foodItem: {
+                        with: {
+                            suppliers: {
+                                with: {
+                                    supplier: {
+                                        columns: {
+                                            id: true,
+                                            address: true,
+                                            name: true,
+                                            description: true,
+                                            phoneNumber: true
+                                        }
+                                    }
+                                }
+                            }
+                        },
                         columns: {
                             id: true,
                             description: true,
@@ -191,15 +241,6 @@ export async function getMenuPlanById(
                             type: true
                         }
                     },
-                    supplier: {
-                        columns: {
-                            id: true,
-                            address: true,
-                            name: true,
-                            description: true,
-                            phoneNumber: true
-                        }
-                    }
                 }
             },
             menuPlankitchen: true,
@@ -227,13 +268,18 @@ export async function getMenuPlanById(
     }
 
     const foodItemMap = new Map<string, any>();
-    data.suppliersFoodItems.forEach((sfi) => {
+    data.menuFoodItem.forEach((sfi) => {
         const foodItem = { ...sfi.foodItem, id: sfi.id, foodId: sfi.foodItem.id };
-        const supplier = sfi.supplier;
+        const supplier = sfi.foodItem.suppliers;
+        const foodWaste = sfi.foodConsumtions?.[0] || {
+            quantity: "0",
+            unit: ""
+        };
         if (!foodItem) return;
 
-        const fi = foodItemMap.get(foodItem.id) ?? { ...foodItem, suppliers: [] };
-        if (supplier) fi.suppliers.push(supplier);
+        const fi = foodItemMap.get(foodItem.id) ?? { ...foodItem, suppliers: [], foodWaste: {} };
+        if (supplier) fi.suppliers = supplier;
+        if (foodWaste) fi.foodWaste = foodWaste;
         foodItemMap.set(foodItem.id, fi);
     });
 
@@ -246,7 +292,7 @@ export async function getMenuPlanById(
             });
     });
 
-    const { menuPlanBeneficiaries, suppliersFoodItems, planEndDate, planStartDate, ...menuPlan } = data;
+    const { menuPlanBeneficiaries, menuFoodItem, planEndDate, planStartDate, ...menuPlan } = data;
 
     const formattedData = {
         ...menuPlan,
