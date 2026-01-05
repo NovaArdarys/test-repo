@@ -526,9 +526,7 @@ export async function getDailyReportsListSPPG(params?: {
 
     const report = reportMap.get(reportId);
 
-    //
-    //  NEW: supplier aggregation happens here
-    //
+
     if (row.suppliers && report.menuPlan) {
       row.suppliers.forEach((sup: any) => {
         const foodKey = sup.foodId;
@@ -546,7 +544,6 @@ export async function getDailyReportsListSPPG(params?: {
           report.menuPlan._foodItemMap.set(foodKey, foodRow);
         }
 
-        // FILTER: supplier null jangan masuk ke array
         if (sup.supplierId) {
           if (!foodRow.suppliers.some((s: any) => s.id === sup.supplierId)) {
             foodRow.suppliers.push({
@@ -569,8 +566,6 @@ export async function getDailyReportsListSPPG(params?: {
       const { planEndDate, planStartDate, ...rest } = report.menuPlan;
       report.menuPlan = { date: planStartDate, ...rest };
     }
-
-    console.log(report?.menuPlan, "=====report?.menuPlan=====");
 
     report.domain = buildUIReport(report.steps as [] ?? [], (report?.menuPlan as any)?.items as [] ?? []);
 
