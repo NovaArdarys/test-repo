@@ -77,7 +77,7 @@ export const registerHandler = catchAsync(async (c) => {
         kitchenId: domainId,
         userId: result.userId,
         createdBy: createdBy || "",
-        driverCapacity: Number(driverCapacity) ?? 0
+        driverCapacity: driverCapacity ?? 0
       });
     }
 

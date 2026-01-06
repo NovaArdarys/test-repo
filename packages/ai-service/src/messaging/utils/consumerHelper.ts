@@ -60,9 +60,16 @@ export function safeConsume<T extends Record<string, any>>(
       const retryCount = getRetryCount(msg);
 
       if (retryCount >= MAX_RETRY) {
-        console.log(`[SAFE CONSUME] Max retry reached. DROP.`);
-        return channel.nack(msg, false, false);
+        console.error(
+          `[SAFE CONSUME] Max retry reached (${retryCount}). ACK & DROP.`,
+          parsed
+        );
+
+        await redis.del(lockKey);
+        channel.ack(msg);
+        return;
       }
+
 
       console.log(`[SAFE CONSUME] Retry (${retryCount + 1}/${MAX_RETRY})`);
       return channel.nack(msg, false, false);
