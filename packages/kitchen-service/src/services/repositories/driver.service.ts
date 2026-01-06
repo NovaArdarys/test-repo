@@ -120,12 +120,14 @@ export async function isUserAssignedToKitchen(userId: string, kitchenId: string)
 
 
 export async function createDriver(data: NewDriver): Promise<Driver> {
+  console.log(data, "=====data=====");
+
   const [newDriver] = await db.insert(drivers)
     .values({
       ...data,
+      portionCapacity: Number(data?.portionCapacity ?? 0),
       updatedAt: new Date(),
       updatedBy: data.createdBy,
-      portionCapacity: 5000
     })
     .returning();
 

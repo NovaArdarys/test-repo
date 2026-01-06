@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { Channel } from "amqplib";
 import { EXCHANGES } from "../events/exchanges";
-import { safeConsume } from "../utils/consumerHelper";
+import { resetQueuesIfDev, safeConsume } from "../utils/consumerHelper";
 import { aiStatusSchema } from "@/validator/aiStatus.validator";
 import { sendSseToChannel } from "@/controllers/public/notification.controller";
 
@@ -20,12 +20,42 @@ async function handleAiStatusEvent(data: unknown) {
   console.log(`[NOTIFICATION] SSE sent to ${parsed.channel}: ${eventName}`);
 }
 
-export async function setupNotificationConsumers(channel: Channel) {
+export async function setupConsumer(channel: Channel) {
+  await resetQueuesIfDev(channel, [
+    AI_STATUS_QUEUE,
+    `${AI_STATUS_QUEUE}.retry`,
+  ]);
+  const RETRY_EXCHANGE = `${EXCHANGES.AI}.retry`;
+
   await channel.assertExchange(EXCHANGES.AI, "topic", { durable: true });
+  await channel.assertExchange(RETRY_EXCHANGE, "topic", { durable: true });
 
-  const queue = await channel.assertQueue(AI_STATUS_QUEUE, { durable: true });
+  const queue = await channel.assertQueue(AI_STATUS_QUEUE, {
+    durable: true,
+    arguments: {
+      "x-dead-letter-exchange": RETRY_EXCHANGE,
+    },
+  });
 
-  await channel.bindQueue(queue.queue, EXCHANGES.AI, AI_STATUS_ROUTING_KEY);
+  await channel.assertQueue(`${AI_STATUS_QUEUE}.retry`, {
+    durable: true,
+    arguments: {
+      "x-message-ttl": 5000, // 5s retry delay
+      "x-dead-letter-exchange": EXCHANGES.AI,
+    },
+  });
+
+  await channel.bindQueue(
+    queue.queue,
+    EXCHANGES.AI,
+    AI_STATUS_ROUTING_KEY
+  );
+
+  await channel.bindQueue(
+    `${AI_STATUS_QUEUE}.retry`,
+    RETRY_EXCHANGE,
+    AI_STATUS_ROUTING_KEY
+  );
 
   channel.prefetch(20);
 
@@ -35,5 +65,7 @@ export async function setupNotificationConsumers(channel: Channel) {
     { noAck: false }
   );
 
-  console.log(`[*] Notification Service listening for AI status events in ${queue.queue}`);
+  console.log(
+    `[*] Notification Service listening for AI status events in ${queue.queue}`
+  );
 }

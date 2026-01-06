@@ -3,7 +3,7 @@ import { Channel } from "amqplib";
 import { EXCHANGES } from "../events/exchanges";
 import { entityTypeEnum } from "@/db/schemas";
 import { updateStepReport } from "@/services/repositories/daily.report.service";
-import { safeConsume } from "../utils/consumerHelper";
+import { resetQueuesIfDev, safeConsume } from "../utils/consumerHelper";
 
 // ===== VALIDATORS =====
 const entityTypeValidator = z.enum(entityTypeEnum.enumValues);
@@ -53,12 +53,53 @@ async function handleLogEvent(data: any) {
 
 }
 
-export async function setupReportServiceConsumers(channel: Channel) {
-  // STORAGE
+export async function setupConsumer(channel: Channel) {
+  await resetQueuesIfDev(channel, [
+    STORAGE_QUEUE_NAME,
+    `${STORAGE_QUEUE_NAME}.retry`,
+  ]);
+
+  const RETRY_EXCHANGE = `${EXCHANGES.STORAGE}.retry`;
+
   await channel.assertExchange(EXCHANGES.STORAGE, "topic", { durable: true });
-  const storageQueue = await channel.assertQueue(STORAGE_QUEUE_NAME, { durable: true });
-  await channel.bindQueue(storageQueue.queue, EXCHANGES.STORAGE, STORAGE_ROUTING_KEY);
+  await channel.assertExchange(RETRY_EXCHANGE, "topic", { durable: true });
+
+  const storageQueue = await channel.assertQueue(STORAGE_QUEUE_NAME, {
+    durable: true,
+    arguments: {
+      "x-dead-letter-exchange": RETRY_EXCHANGE,
+    },
+  });
+
+  await channel.assertQueue(`${STORAGE_QUEUE_NAME}.retry`, {
+    durable: true,
+    arguments: {
+      "x-message-ttl": 5000, // delay retry 5 detik
+      "x-dead-letter-exchange": EXCHANGES.STORAGE,
+    },
+  });
+
+  await channel.bindQueue(
+    storageQueue.queue,
+    EXCHANGES.STORAGE,
+    STORAGE_ROUTING_KEY
+  );
+
+  await channel.bindQueue(
+    `${STORAGE_QUEUE_NAME}.retry`,
+    RETRY_EXCHANGE,
+    STORAGE_ROUTING_KEY
+  );
+
   channel.prefetch(10);
-  channel.consume(storageQueue.queue, safeConsume(handleStorageEvent, channel), { noAck: false });
-  console.log(`[*] Report Service listening for STORAGE events in ${storageQueue.queue}`);
+
+  channel.consume(
+    storageQueue.queue,
+    safeConsume(handleStorageEvent, channel),
+    { noAck: false }
+  );
+
+  console.log(
+    `[*] Report Service listening for STORAGE events in ${storageQueue.queue}`
+  );
 }

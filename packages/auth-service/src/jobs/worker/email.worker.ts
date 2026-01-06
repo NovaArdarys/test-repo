@@ -15,8 +15,6 @@ export const emailWorker = new Worker(
 
       const result = await sendEmail(input);
 
-      console.log(result, "=====result=====");
-
       return { status: "sent", result };
 
     } catch (err: any) {

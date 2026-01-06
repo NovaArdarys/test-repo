@@ -109,7 +109,7 @@ export const validateRefreshTokenServiceClient = (refreshToken: string) => {
   );
 };
 
-export const createUserServiceClient = (data: { domainId: string, isActive: boolean, email: string; password: string; roleId: string; updatedAt: Date; address: string, dateOfBirth: Date, firstName: string, lastName: string, phoneNumber: string, createdBy: string; }) => {
+export const createUserServiceClient = (data: { driverCapacity: number, domainId: string, isActive: boolean, email: string; password: string; roleId: string; updatedAt: Date; address: string, dateOfBirth: Date, firstName: string, lastName: string, phoneNumber: string, createdBy: string; }) => {
   return requestWithRetry(
     "createUserServiceClient",
     "createUserServiceClient",

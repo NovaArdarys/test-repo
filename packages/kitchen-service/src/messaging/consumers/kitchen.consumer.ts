@@ -4,7 +4,7 @@ import { EXCHANGES } from "../events/exchanges";
 import { entityTypeEnum } from "@/db/schemas";
 import { updateKitchen } from "@/services/repositories/kitchen.service";
 import { updateSupplier } from "@/services/repositories/suppliers.service";
-import { safeConsume } from "../utils/consumerHelper";
+import { resetQueuesIfDev, safeConsume } from "../utils/consumerHelper";
 import { assignUserToKitchen, isUserAssignedToKitchen } from "@/services/repositories/user.kitchen.service";
 import { createDriver, isUserAlreadyHaveDriverRole } from "@/services/repositories/driver.service";
 
@@ -21,6 +21,7 @@ const baseUserKitchen = z.object({
   kitchenId: z.string(),
   userId: z.string(),
   createdBy: z.string().optional(),
+  driverCapacity: z.number().optional(),
 });
 
 // ===== QUEUES =====
@@ -32,9 +33,6 @@ const USER_ASSIGN_KITCHEN_ROUTING_KEY = "kitchen.assign.commit";
 
 const USER_DRIVER_ASSIGN_KITCHEN_QUEUE_NAME = "driver_assign_user_queue";
 const USER_DRIVER_ASSIGN_KITCHEN_ROUTING_KEY = "driver.assign.commit";
-
-const LOG_QUEUE_NAME = "kitchen_service_log_queue";
-const LOG_ROUTING_KEY = "log.#";
 
 // ================= HANDLERS =================
 
@@ -90,6 +88,7 @@ async function handleAssignProfileDriver(data: z.infer<typeof baseUserKitchen>) 
       kitchenId: parsed.kitchenId,
       userId: parsed.userId,
       createdBy: parsed.createdBy || "11111111-1111-1111-1111-111111111111",
+      portionCapacity: parsed.driverCapacity
     });
   }
 
@@ -97,29 +96,148 @@ async function handleAssignProfileDriver(data: z.infer<typeof baseUserKitchen>) 
 }
 
 // ================= SETUP =================
-export async function setupKitchenServiceConsumers(channel: Channel) {
+export async function setupConsumer(channel: Channel) {
+  await resetQueuesIfDev(channel, [
+    STORAGE_QUEUE_NAME,
+    `${STORAGE_QUEUE_NAME}.retry`,
 
-  // Storage
-  await channel.assertExchange(EXCHANGES.STORAGE, "topic", { durable: true });
-  const storageQueue = await channel.assertQueue(STORAGE_QUEUE_NAME, { durable: true });
-  await channel.bindQueue(storageQueue.queue, EXCHANGES.STORAGE, STORAGE_ROUTING_KEY);
-  channel.prefetch(10);
-  channel.consume(storageQueue.queue, safeConsume(handleStorageEvent, channel), { noAck: false });
-  console.log(`[*] Listening for STORAGE events on ${storageQueue.queue}`);
+    USER_ASSIGN_KITCHEN_QUEUE_NAME,
+    `${USER_ASSIGN_KITCHEN_QUEUE_NAME}.retry`,
 
-  // User
-  await channel.assertExchange(EXCHANGES.USER, "topic", { durable: true });
-  const userQueue = await channel.assertQueue(USER_ASSIGN_KITCHEN_QUEUE_NAME, { durable: true });
-  await channel.bindQueue(userQueue.queue, EXCHANGES.USER, USER_ASSIGN_KITCHEN_ROUTING_KEY);
+    USER_DRIVER_ASSIGN_KITCHEN_QUEUE_NAME,
+    `${USER_DRIVER_ASSIGN_KITCHEN_QUEUE_NAME}.retry`,
+  ]);
   channel.prefetch(10);
-  channel.consume(userQueue.queue, safeConsume(handleAssignToKitchen, channel), { noAck: false });
-  console.log(`[*] Listening for USER events on ${userQueue.queue}`);
 
-  // Driver
-  await channel.assertExchange(EXCHANGES.USER, "topic", { durable: true });
-  const userDriverQueue = await channel.assertQueue(USER_DRIVER_ASSIGN_KITCHEN_QUEUE_NAME, { durable: true });
-  await channel.bindQueue(userDriverQueue.queue, EXCHANGES.USER, USER_DRIVER_ASSIGN_KITCHEN_ROUTING_KEY);
-  channel.prefetch(10);
-  channel.consume(userDriverQueue.queue, safeConsume(handleAssignProfileDriver, channel), { noAck: false });
-  console.log(`[*] Listening for USER Driver events on ${userDriverQueue.queue}`);
+  // STORAGE EVENTS
+  {
+    const RETRY_EXCHANGE = `${EXCHANGES.STORAGE}.retry`;
+
+    await channel.assertExchange(EXCHANGES.STORAGE, "topic", { durable: true });
+    await channel.assertExchange(RETRY_EXCHANGE, "topic", { durable: true });
+
+    const storageQueue = await channel.assertQueue(STORAGE_QUEUE_NAME, {
+      durable: true,
+      arguments: {
+        "x-dead-letter-exchange": RETRY_EXCHANGE,
+      },
+    });
+
+    await channel.assertQueue(`${STORAGE_QUEUE_NAME}.retry`, {
+      durable: true,
+      arguments: {
+        "x-message-ttl": 5000,
+        "x-dead-letter-exchange": EXCHANGES.STORAGE,
+      },
+    });
+
+    await channel.bindQueue(
+      storageQueue.queue,
+      EXCHANGES.STORAGE,
+      STORAGE_ROUTING_KEY
+    );
+
+    await channel.bindQueue(
+      `${STORAGE_QUEUE_NAME}.retry`,
+      RETRY_EXCHANGE,
+      STORAGE_ROUTING_KEY
+    );
+
+    channel.consume(
+      storageQueue.queue,
+      safeConsume(handleStorageEvent, channel),
+      { noAck: false }
+    );
+
+    console.log(`[*] Kitchen listening STORAGE on ${storageQueue.queue}`);
+  }
+
+  // USER ASSIGN KITCHEN
+  {
+    const RETRY_EXCHANGE = `${EXCHANGES.USER}.retry`;
+
+    await channel.assertExchange(EXCHANGES.USER, "topic", { durable: true });
+    await channel.assertExchange(RETRY_EXCHANGE, "topic", { durable: true });
+
+    const userQueue = await channel.assertQueue(USER_ASSIGN_KITCHEN_QUEUE_NAME, {
+      durable: true,
+      arguments: {
+        "x-dead-letter-exchange": RETRY_EXCHANGE,
+      },
+    });
+
+    await channel.assertQueue(`${USER_ASSIGN_KITCHEN_QUEUE_NAME}.retry`, {
+      durable: true,
+      arguments: {
+        "x-message-ttl": 5000,
+        "x-dead-letter-exchange": EXCHANGES.USER,
+      },
+    });
+
+    await channel.bindQueue(
+      userQueue.queue,
+      EXCHANGES.USER,
+      USER_ASSIGN_KITCHEN_ROUTING_KEY
+    );
+
+    await channel.bindQueue(
+      `${USER_ASSIGN_KITCHEN_QUEUE_NAME}.retry`,
+      RETRY_EXCHANGE,
+      USER_ASSIGN_KITCHEN_ROUTING_KEY
+    );
+
+    channel.consume(
+      userQueue.queue,
+      safeConsume(handleAssignToKitchen, channel),
+      { noAck: false }
+    );
+
+    console.log(`[*] Kitchen listening USER on ${userQueue.queue}`);
+  }
+
+  // USER DRIVER ASSIGN
+  {
+    const RETRY_EXCHANGE = `${EXCHANGES.USER}.retry`;
+
+    const userDriverQueue = await channel.assertQueue(
+      USER_DRIVER_ASSIGN_KITCHEN_QUEUE_NAME,
+      {
+        durable: true,
+        arguments: {
+          "x-dead-letter-exchange": RETRY_EXCHANGE,
+        },
+      }
+    );
+
+    await channel.assertQueue(
+      `${USER_DRIVER_ASSIGN_KITCHEN_QUEUE_NAME}.retry`,
+      {
+        durable: true,
+        arguments: {
+          "x-message-ttl": 5000,
+          "x-dead-letter-exchange": EXCHANGES.USER,
+        },
+      }
+    );
+
+    await channel.bindQueue(
+      userDriverQueue.queue,
+      EXCHANGES.USER,
+      USER_DRIVER_ASSIGN_KITCHEN_ROUTING_KEY
+    );
+
+    await channel.bindQueue(
+      `${USER_DRIVER_ASSIGN_KITCHEN_QUEUE_NAME}.retry`,
+      RETRY_EXCHANGE,
+      USER_DRIVER_ASSIGN_KITCHEN_ROUTING_KEY
+    );
+
+    channel.consume(
+      userDriverQueue.queue,
+      safeConsume(handleAssignProfileDriver, channel),
+      { noAck: false }
+    );
+
+    console.log(`[*] Kitchen listening USER DRIVER on ${userDriverQueue.queue}`);
+  }
 }

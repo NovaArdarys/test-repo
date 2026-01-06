@@ -78,7 +78,8 @@ export const registerSchema = userDetailSchema.safeExtend({
   roleId: z.string().optional(),
   domainId: z.string().optional(),
   isActive: z.coerce.boolean().optional(),
-  createdBy: z.string().optional()
+  createdBy: z.string().optional(),
+  driverCapacity: z.coerce.number().optional(),
 });
 
 export type registerSchemaType = z.infer<typeof registerSchema>;

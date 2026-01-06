@@ -3,7 +3,7 @@ import { Channel } from "amqplib";
 import { EXCHANGES } from "../events/exchanges";
 import { updateOrCreateUserDetails } from "@/services/repositories/user.detail.service";
 import { entityTypeEnum } from "@/db/schemas";
-import { safeConsume } from "../utils/consumerHelper";
+import { resetQueuesIfDev, safeConsume } from "../utils/consumerHelper";
 
 // ===== VALIDATORS =====
 const entityTypeValidator = z.enum(entityTypeEnum.enumValues);
@@ -40,14 +40,53 @@ async function handleStorageEvent(data: z.infer<typeof storageCommittedSchema>) 
   }
 }
 
-export async function setupUserServiceConsumers(channel: Channel) {
-
-
-  // STORAGE
-  await channel.assertExchange(EXCHANGES.STORAGE, "topic", { durable: true });
-  const storageQueue = await channel.assertQueue(STORAGE_QUEUE_NAME, { durable: true });
-  await channel.bindQueue(storageQueue.queue, EXCHANGES.STORAGE, STORAGE_ROUTING_KEY);
+export async function setupConsumer(channel: Channel) {
+  await resetQueuesIfDev(channel, [
+    STORAGE_QUEUE_NAME,
+    `${STORAGE_QUEUE_NAME}.retry`,
+  ]);
   channel.prefetch(10);
-  channel.consume(storageQueue.queue, safeConsume(handleStorageEvent, channel), { noAck: false });
-  console.log(`[*] User Service listening for STORAGE events in ${storageQueue.queue}`);
+
+  const RETRY_EXCHANGE = `${EXCHANGES.STORAGE}.retry`;
+
+  await channel.assertExchange(EXCHANGES.STORAGE, "topic", { durable: true });
+  await channel.assertExchange(RETRY_EXCHANGE, "topic", { durable: true });
+
+  const storageQueue = await channel.assertQueue(STORAGE_QUEUE_NAME, {
+    durable: true,
+    arguments: {
+      "x-dead-letter-exchange": RETRY_EXCHANGE,
+    },
+  });
+
+  await channel.assertQueue(`${STORAGE_QUEUE_NAME}.retry`, {
+    durable: true,
+    arguments: {
+      "x-message-ttl": 5000, // 5s retry delay
+      "x-dead-letter-exchange": EXCHANGES.STORAGE,
+    },
+  });
+
+  await channel.bindQueue(
+    storageQueue.queue,
+    EXCHANGES.STORAGE,
+    STORAGE_ROUTING_KEY
+  );
+
+  await channel.bindQueue(
+    `${STORAGE_QUEUE_NAME}.retry`,
+    RETRY_EXCHANGE,
+    STORAGE_ROUTING_KEY
+  );
+
+  channel.consume(
+    storageQueue.queue,
+    safeConsume(handleStorageEvent, channel),
+    { noAck: false }
+  );
+
+  console.log(
+    `[*] User Service listening for STORAGE events in ${storageQueue.queue}`
+  );
 }
+

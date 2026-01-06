@@ -11,6 +11,7 @@ import redis from "@/constants/redis";
  * @param {Channel} channel
  * @return {*} 
  */
+const MAX_RETRY = 3;
 export function safeConsume<T extends Record<string, any>>(
   handler: (data: T, msg: ConsumeMessage, channel: Channel) => Promise<void> | void,
   channel: Channel
@@ -18,98 +19,85 @@ export function safeConsume<T extends Record<string, any>>(
   return async (msg: ConsumeMessage | null) => {
     if (!msg) return;
 
+    let parsed: any;
     try {
-      const parsed = JSON.parse(msg.content.toString());
-      const eventId = parsed._meta?.eventId;
-      if (!eventId) return channel.nack(msg, false, false);
+      parsed = JSON.parse(msg.content.toString());
+    } catch {
+      console.log("[SAFE CONSUME] Invalid JSON. DROP.");
+      return channel.nack(msg, false, false);
+    }
 
-      const redisKey = `processed:${eventId}`;
-      const alreadyProcessed = await redis.get(redisKey);
-      if (alreadyProcessed) {
-        console.log(`[SAFE CONSUME] Skip duplicate: ${eventId} - EXCHANGE: ${parsed?._meta?.exchange} - ROUTING KEY: ${parsed?._meta?.routingKey}`);
+    const eventId = parsed._meta?.eventId;
+    if (!eventId) return channel.nack(msg, false, false);
+
+    const processedKey = `processed:${eventId}`;
+    const lockKey = `processing:${eventId}`;
+
+    try {
+      if (await redis.get(processedKey)) {
+        console.log(`[SAFE CONSUME] Skip duplicate: ${eventId}`);
         return channel.ack(msg);
       }
 
-      await handler(parsed, msg, channel);
-      await redis.set(redisKey, "done", "EX", 60 * 60 * 24);
+      const locked = await redis.setnx(lockKey, "1");
+      if (!locked) {
+        console.log(`[SAFE CONSUME] Already processing: ${eventId}`);
+        return channel.ack(msg);
+      }
 
-      await redis.hset(`eventlog:${eventId}`, {
-        consumedBy: process.env.SERVICE_NAME || "kitchen_service",
-        consumedAt: new Date().toISOString(),
-        status: "consumed",
-      });
+      await redis.expire(lockKey, 60);
+
+      await handler(parsed, msg, channel);
+
+      await redis.set(processedKey, "done", "EX", 60 * 60 * 24);
+
+      await redis.del(lockKey);
 
       channel.ack(msg);
     } catch (err: any) {
-      console.error("[SAFE CONSUME ERROR]", err);
-      const msgText = msg.content.toString();
-      console.error("[PAYLOAD]", msgText);
+      await redis.del(lockKey);
 
-      const msgStr = err?.message?.toLowerCase() || "";
+      const retryCount = getRetryCount(msg);
 
-      // ============================================================
-      // 1. UNIQUE / DUPLICATE (Postgres + Drizzle)
-      // ============================================================
-      const pgError = err.originalError || err.cause || err;
-
-      if (
-        pgError?.code === "23505" ||
-        pgError?.detail?.includes("already exists") ||
-        pgError?.message?.toLowerCase().includes("duplicate key") ||
-        pgError?.constraint?.includes("unique")
-      ) {
-        console.log("[SAFE CONSUME] Duplicate/Conflict. STOP RETRY.");
+      if (retryCount >= MAX_RETRY) {
+        console.log(`[SAFE CONSUME] Max retry reached. DROP.`);
         return channel.nack(msg, false, false);
       }
 
-      // ============================================================
-      // 2. INVALID INPUT (UUID error, cast error)
-      // ============================================================
-      if (
-        msgStr.includes("invalid input syntax for type uuid") ||
-        msgStr.includes("invalid input syntax") ||
-        msgStr.includes("invalid uuid")
-      ) {
-        console.log("[SAFE CONSUME] Invalid input. STOP RETRY.");
-        return channel.nack(msg, false, false);
-      }
-
-      // ============================================================
-      // 3. NOT NULL CONSTRAINT (Drizzle or Postgres)
-      // ============================================================
-      if (
-        msgStr.includes("null value in column") ||
-        msgStr.includes("violates not-null constraint")
-      ) {
-        console.log("[SAFE CONSUME] NOT NULL violation. STOP RETRY.");
-        return channel.nack(msg, false, false);
-      }
-
-      // ============================================================
-      // 4. FOREIGN KEY CONSTRAINT
-      // ============================================================
-      if (
-        msgStr.includes("violates foreign key constraint") ||
-        msgStr.includes("foreign key")
-      ) {
-        console.log("[SAFE CONSUME] FK error. STOP RETRY.");
-        return channel.nack(msg, false, false);
-      }
-
-      // ============================================================
-      // 5. BUSINESS LOGIC ERROR (Custom)
-      // ============================================================
-      if (err?.isBusinessError || err?.statusCode === 400) {
-        console.log("[SAFE CONSUME] Business error. ACK and skip.");
-        return channel.ack(msg);
-      }
-
-      // ============================================================
-      // 6. OTHER ERRORS → RETRY (network/timeout/db down)
-      // ============================================================
-      console.log("[SAFE CONSUME] Retrying message...");
-      return channel.nack(msg, false, true);
+      console.log(`[SAFE CONSUME] Retry (${retryCount + 1}/${MAX_RETRY})`);
+      return channel.nack(msg, false, false);
     }
 
   };
+}
+
+function getRetryCount(msg: ConsumeMessage): number {
+  const deaths = (msg.properties.headers?.["x-death"] as any[]) || [];
+  if (!Array.isArray(deaths)) return 0;
+
+  return deaths.reduce((sum, d) => sum + (d.count || 0), 0);
+}
+
+export async function resetQueuesIfDev(
+  channel: Channel,
+  queues: string[]
+) {
+  if (process.env.NODE_ENV !== "DEVELOPMENT") {
+    return;
+  }
+
+  console.log("[RABBITMQ] DEV MODE → Reset queues");
+
+  for (const q of queues) {
+    try {
+      await channel.deleteQueue(q);
+      console.log(`   Deleted queue: ${q}`);
+    } catch (err: any) {
+      if (err?.code === 404) {
+        console.log(`  Queue not found (skip): ${q}`);
+      } else {
+        console.error(`  Failed deleting queue ${q}`, err);
+      }
+    }
+  }
 }

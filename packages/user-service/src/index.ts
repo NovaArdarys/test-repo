@@ -61,11 +61,11 @@ const app = new Hono<{ Variables: Variables; }>()
     }
   }))
   .get('/swagger/mobile', swaggerUI({
-    url: process.env.ENVIRONMENT === 'DEVELOPMENT'
+    url: process.env.NODE_ENV === 'DEVELOPMENT'
       ? '/api/mobile/openapi.json' : '/user/api/mobile/openapi.json'
   }))
   .get('/swagger', swaggerUI({
-    url: process.env.ENVIRONMENT === 'DEVELOPMENT'
+    url: process.env.NODE_ENV === 'DEVELOPMENT'
       ? '/api/openapi.json' : '/user/api/openapi.json'
   })).get('/api/health', async (c) => {
     const dbStatus = await checkDatabase();

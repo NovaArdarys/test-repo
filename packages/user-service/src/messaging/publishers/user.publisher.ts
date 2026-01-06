@@ -25,7 +25,7 @@ export async function publishAssignUserToBeneficiary(data: { userId: string; ben
   }
 }
 
-export async function publishAssignProfileDriver(data: { userId: string; kitchenId: string; createdBy: string; }) {
+export async function publishAssignProfileDriver(data: { userId: string; kitchenId: string; createdBy: string; driverCapacity: number; }) {
   try {
     await safePublish(EXCHANGES.USER, "driver.assign.commit", data);
   } catch (error) {

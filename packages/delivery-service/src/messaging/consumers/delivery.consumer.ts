@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { Channel } from "amqplib";
 import { EXCHANGES } from "../events/exchanges";
-import { safeConsume } from "../utils/consumerHelper";
+import { resetQueuesIfDev, safeConsume } from "../utils/consumerHelper";
 import { dropoffJobSchema } from "@/types/delivery.type";
 import { deliveryQueue } from "@/jobs/queue/delivery.queue";
 import { format } from "date-fns";
@@ -10,16 +10,11 @@ import { format } from "date-fns";
 const STEP_QUEUE_NAME = "report_service_step_queue";
 const STEP_ROUTING_KEY = "report.step.commit";
 
-const LOG_QUEUE_NAME = "delivery_service_log_queue";
-const LOG_ROUTING_KEY = "log.#";
-
 // ================= HANDLERS =================
 async function handleStepCommit(data: z.infer<typeof dropoffJobSchema>) {
   const parsed = dropoffJobSchema.parse(data);
-  console.log("🪅 [DELIVERY EVENT IN] Parsed:", parsed);
 
   if (parsed.entityType === "kitchen" && parsed.allStepCompleted) {
-    console.log("🪅 Masuk:", parsed);
 
     // await deliveryQueue.add("dropoff-creation", parsed, {
     //   jobId: `delivery|${parsed.entityId}|${parsed.menuPlanId}|${format(new Date(), "yyyyMMdd_HHmmss")}`,
@@ -35,13 +30,53 @@ async function handleStepCommit(data: z.infer<typeof dropoffJobSchema>) {
   }
 }
 
-export async function setupDeliveryServiceConsumers(channel: Channel) {
+export async function setupConsumer(channel: Channel) {
+  await resetQueuesIfDev(channel, [
+    STEP_QUEUE_NAME,
+    `${STEP_QUEUE_NAME}.retry`,
+  ]);
+  const RETRY_EXCHANGE = `${EXCHANGES.REPORT}.retry`;
 
-  // STEP Listener (delivery.step.commit)
   await channel.assertExchange(EXCHANGES.REPORT, "topic", { durable: true });
-  const stepQueue = await channel.assertQueue(STEP_QUEUE_NAME, { durable: true });
-  await channel.bindQueue(stepQueue.queue, EXCHANGES.REPORT, STEP_ROUTING_KEY);
+  await channel.assertExchange(RETRY_EXCHANGE, "topic", { durable: true });
+
+  const stepQueue = await channel.assertQueue(STEP_QUEUE_NAME, {
+    durable: true,
+    arguments: {
+      "x-dead-letter-exchange": RETRY_EXCHANGE,
+    },
+  });
+
+  await channel.assertQueue(`${STEP_QUEUE_NAME}.retry`, {
+    durable: true,
+    arguments: {
+      "x-message-ttl": 5000, // 5 detik
+      "x-dead-letter-exchange": EXCHANGES.REPORT,
+    },
+  });
+
+  await channel.bindQueue(
+    stepQueue.queue,
+    EXCHANGES.REPORT,
+    STEP_ROUTING_KEY
+  );
+
+  await channel.bindQueue(
+    `${STEP_QUEUE_NAME}.retry`,
+    RETRY_EXCHANGE,
+    STEP_ROUTING_KEY
+  );
+
   channel.prefetch(10);
-  channel.consume(stepQueue.queue, safeConsume(handleStepCommit, channel), { noAck: false });
-  console.log(`[*] Delivery Service listening for STEP COMMIT events in ${stepQueue.queue}`);
+
+  channel.consume(
+    stepQueue.queue,
+    safeConsume(handleStepCommit, channel),
+    { noAck: false }
+  );
+
+  console.log(
+    `[*] Delivery Service listening for STEP COMMIT events in ${stepQueue.queue}`
+  );
 }
+

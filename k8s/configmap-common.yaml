@@ -31,7 +31,7 @@ data:
   EMAIL_HOST: 'smtp.office365.com'
   EMAIL_PORT: '587'
   EMAIL_SECURE: 'false'
-
+  NODE_ENV: 'DEVELOPMENT'
   # minio
   # MINIO_ENDPOINT_SERVER: 'minio'
   # MINIO_PORT: '9000'

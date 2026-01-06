@@ -16,7 +16,6 @@ export const userInfoHandler = catchAsync(async (c) => {
     throw new ApiError(HttpStatus.default.UNAUTHORIZED, { message: "Unauthorized" });
   }
 
-
   return c.json({
     data: findUser,
   });
@@ -24,7 +23,6 @@ export const userInfoHandler = catchAsync(async (c) => {
 
 export const userSaveTokenHandler = catchAsync(async (c) => {
   const { expiresAt, token, userId, deviceInfo, ipAddress }: SaveTokenType = await c.req.parseBody() as unknown as SaveTokenType;
-
 
   const result = await saveRefreshToken(userId, token, expiresAt, deviceInfo, ipAddress);
 
@@ -36,7 +34,7 @@ export const userSaveTokenHandler = catchAsync(async (c) => {
 
 export const registerHandler = catchAsync(async (c) => {
 
-  const { email, password, address, dateOfBirth, firstName, lastName, phoneNumber, roleId, isActive, domainId, createdBy } = await c.req.parseBody() as unknown as registerSchemaType;
+  const { email, password, address, dateOfBirth, firstName, lastName, phoneNumber, roleId, isActive, domainId, createdBy, driverCapacity } = await c.req.parseBody() as unknown as registerSchemaType;
 
   const result = await createUser({
     email,
@@ -74,12 +72,12 @@ export const registerHandler = catchAsync(async (c) => {
       });
     }
 
-
     if (role?.domain === "driver" && domainId) {
       await publishAssignProfileDriver({
         kitchenId: domainId,
         userId: result.userId,
-        createdBy: createdBy || ""
+        createdBy: createdBy || "",
+        driverCapacity: Number(driverCapacity) ?? 0
       });
     }
 

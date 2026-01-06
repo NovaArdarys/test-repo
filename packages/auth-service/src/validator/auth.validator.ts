@@ -28,6 +28,7 @@ export const RegisterSchema = z.object({
   file: uploadFileSchema,
   roleId: z.string(),
   domainId: z.string().optional(),
+  driverCapacity: z.coerce.number().optional(),
   isActive: z.coerce.boolean().optional(),
   ...userDetailSchema.shape,
 });

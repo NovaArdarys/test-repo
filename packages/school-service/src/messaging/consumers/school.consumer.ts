@@ -3,7 +3,7 @@ import { Channel } from "amqplib";
 import { EXCHANGES } from "../events/exchanges";
 import { entityTypeEnum } from "@/db/schemas";
 import { assignUserToBeneficiary, isUserAssignedToBeneficiary, updateBeneficiary } from "@/services/repositories/beneficiary.service";
-import { safeConsume } from "../utils/consumerHelper";
+import { resetQueuesIfDev, safeConsume } from "../utils/consumerHelper";
 
 // ===== VALIDATORS =====
 const entityTypeValidator = z.enum(entityTypeEnum.enumValues);
@@ -69,21 +69,95 @@ async function handleAssignToSchool(data: z.infer<typeof baseUserSchool>) {
   }
 }
 
-export async function setupSchoolServiceConsumers(channel: Channel) {
+export async function setupConsumer(channel: Channel) {
+  await resetQueuesIfDev(channel, [
+    STORAGE_QUEUE_NAME,
+    `${STORAGE_QUEUE_NAME}.retry`,
+    USER_ASSIGN_BENEFICIARY_QUEUE_NAME,
+    `${USER_ASSIGN_BENEFICIARY_QUEUE_NAME}.retry`,
+  ]);
 
-  // STORAGE listener
-  await channel.assertExchange(EXCHANGES.STORAGE, "topic", { durable: true });
-  const storageQueue = await channel.assertQueue(STORAGE_QUEUE_NAME, { durable: true });
-  await channel.bindQueue(storageQueue.queue, EXCHANGES.STORAGE, STORAGE_ROUTING_KEY);
   channel.prefetch(10);
-  channel.consume(storageQueue.queue, safeConsume(handleStorageEvent, channel), { noAck: false });
+
+  // STORAGE LISTENER
+  const STORAGE_RETRY_EXCHANGE = `${EXCHANGES.STORAGE}.retry`;
+
+  await channel.assertExchange(EXCHANGES.STORAGE, "topic", { durable: true });
+  await channel.assertExchange(STORAGE_RETRY_EXCHANGE, "topic", { durable: true });
+
+  const storageQueue = await channel.assertQueue(STORAGE_QUEUE_NAME, {
+    durable: true,
+    arguments: {
+      "x-dead-letter-exchange": STORAGE_RETRY_EXCHANGE,
+    },
+  });
+
+  await channel.assertQueue(`${STORAGE_QUEUE_NAME}.retry`, {
+    durable: true,
+    arguments: {
+      "x-message-ttl": 5000,
+      "x-dead-letter-exchange": EXCHANGES.STORAGE,
+    },
+  });
+
+  await channel.bindQueue(
+    storageQueue.queue,
+    EXCHANGES.STORAGE,
+    STORAGE_ROUTING_KEY
+  );
+
+  await channel.bindQueue(
+    `${STORAGE_QUEUE_NAME}.retry`,
+    STORAGE_RETRY_EXCHANGE,
+    STORAGE_ROUTING_KEY
+  );
+
+  channel.consume(
+    storageQueue.queue,
+    safeConsume(handleStorageEvent, channel),
+    { noAck: false }
+  );
+
   console.log(`[*] School Service listening for STORAGE events in ${storageQueue.queue}`);
 
-  // USER listener
+  // USER LISTENER
+  const USER_RETRY_EXCHANGE = `${EXCHANGES.USER}.retry`;
+
   await channel.assertExchange(EXCHANGES.USER, "topic", { durable: true });
-  const userQueue = await channel.assertQueue(USER_ASSIGN_BENEFICIARY_QUEUE_NAME, { durable: true });
-  await channel.bindQueue(userQueue.queue, EXCHANGES.USER, USER_ASSIGN_BENEFICIARY_ROUTING_KEY);
-  channel.prefetch(10);
-  channel.consume(userQueue.queue, safeConsume(handleAssignToSchool, channel), { noAck: false });
+  await channel.assertExchange(USER_RETRY_EXCHANGE, "topic", { durable: true });
+
+  const userQueue = await channel.assertQueue(USER_ASSIGN_BENEFICIARY_QUEUE_NAME, {
+    durable: true,
+    arguments: {
+      "x-dead-letter-exchange": USER_RETRY_EXCHANGE,
+    },
+  });
+
+  await channel.assertQueue(`${USER_ASSIGN_BENEFICIARY_QUEUE_NAME}.retry`, {
+    durable: true,
+    arguments: {
+      "x-message-ttl": 5000,
+      "x-dead-letter-exchange": EXCHANGES.USER,
+    },
+  });
+
+  await channel.bindQueue(
+    userQueue.queue,
+    EXCHANGES.USER,
+    USER_ASSIGN_BENEFICIARY_ROUTING_KEY
+  );
+
+  await channel.bindQueue(
+    `${USER_ASSIGN_BENEFICIARY_QUEUE_NAME}.retry`,
+    USER_RETRY_EXCHANGE,
+    USER_ASSIGN_BENEFICIARY_ROUTING_KEY
+  );
+
+  channel.consume(
+    userQueue.queue,
+    safeConsume(handleAssignToSchool, channel),
+    { noAck: false }
+  );
+
   console.log(`[*] School Service listening for USER events in ${userQueue.queue}`);
 }

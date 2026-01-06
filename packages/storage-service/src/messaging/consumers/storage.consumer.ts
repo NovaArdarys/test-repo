@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { Channel } from "amqplib";
 import { EXCHANGES } from "../events/exchanges";
-import { safeConsume } from "../utils/consumerHelper";
+import { resetQueuesIfDev, safeConsume } from "../utils/consumerHelper";
 import { storageClientCommittedSchema } from "@/validator/storage.validator";
 import { storageQueue } from "@/jobs/queue/storage.queue";
 
@@ -31,25 +31,121 @@ async function handleLogEvent(data: any) {
 
 }
 
-export async function setupStorageConsumer(channel: Channel) {
-  const logQueue = await channel.assertQueue(LOG_QUEUE_NAME, { durable: true });
-  await channel.bindQueue(logQueue.queue, EXCHANGES.LOG, LOG_ROUTING_KEY);
+export async function setupConsumer(channel: Channel) {
+  await resetQueuesIfDev(channel, [
+    CLIENT_STORAGE_QUEUE_NAME,
+    `${CLIENT_STORAGE_QUEUE_NAME}.retry`,
+    LOG_QUEUE_NAME,
+    `${LOG_QUEUE_NAME}.retry`,
+  ]);
   channel.prefetch(10);
-  channel.consume(logQueue.queue, safeConsume(handleLogEvent, channel), { noAck: false });
+
+  /* =====================================================
+   * LOG LISTENER
+   * ===================================================== */
+  const LOG_RETRY_EXCHANGE = `${EXCHANGES.LOG}.retry`;
+
+  await channel.assertExchange(EXCHANGES.LOG, "topic", { durable: true });
+  await channel.assertExchange(LOG_RETRY_EXCHANGE, "topic", { durable: true });
+
+  const logQueue = await channel.assertQueue(LOG_QUEUE_NAME, {
+    durable: true,
+    arguments: {
+      "x-dead-letter-exchange": LOG_RETRY_EXCHANGE,
+    },
+  });
+
+  await channel.assertQueue(`${LOG_QUEUE_NAME}.retry`, {
+    durable: true,
+    arguments: {
+      "x-message-ttl": 5000,
+      "x-dead-letter-exchange": EXCHANGES.LOG,
+    },
+  });
+
+  await channel.bindQueue(
+    logQueue.queue,
+    EXCHANGES.LOG,
+    LOG_ROUTING_KEY
+  );
+
+  await channel.bindQueue(
+    `${LOG_QUEUE_NAME}.retry`,
+    LOG_RETRY_EXCHANGE,
+    LOG_ROUTING_KEY
+  );
+
+  channel.consume(
+    logQueue.queue,
+    safeConsume(handleLogEvent, channel),
+    { noAck: false }
+  );
+
   console.log(`[*] Storage Service listening for LOG events in ${logQueue.queue}`);
 
-  const clientQueue = await channel.assertQueue(CLIENT_STORAGE_QUEUE_NAME, { durable: true });
+  /* =====================================================
+   * CLIENT STORAGE COMMIT LISTENER
+   * (upload image / file heavy)
+   * ===================================================== */
+  const CLIENT_STORAGE_RETRY_EXCHANGE = `${EXCHANGES.STORAGE}.retry`;
 
-  await channel.bindQueue(clientQueue.queue, EXCHANGES.BENEFICIARY, CLIENT_STORAGE_ROUTING_KEY);
-  await channel.bindQueue(clientQueue.queue, EXCHANGES.REPORT, CLIENT_STORAGE_ROUTING_KEY);
-  await channel.bindQueue(clientQueue.queue, EXCHANGES.STORAGE, CLIENT_STORAGE_ROUTING_KEY);
-  await channel.bindQueue(clientQueue.queue, EXCHANGES.USER, CLIENT_STORAGE_ROUTING_KEY);
-  await channel.bindQueue(clientQueue.queue, EXCHANGES.KITCHEN, CLIENT_STORAGE_ROUTING_KEY);
+  await channel.assertExchange(EXCHANGES.STORAGE, "topic", { durable: true });
+  await channel.assertExchange(CLIENT_STORAGE_RETRY_EXCHANGE, "topic", { durable: true });
+
+  const clientQueue = await channel.assertQueue(CLIENT_STORAGE_QUEUE_NAME, {
+    durable: true,
+    arguments: {
+      "x-dead-letter-exchange": CLIENT_STORAGE_RETRY_EXCHANGE,
+    },
+  });
+
+  await channel.assertQueue(`${CLIENT_STORAGE_QUEUE_NAME}.retry`, {
+    durable: true,
+    arguments: {
+      "x-message-ttl": 5000,
+      "x-dead-letter-exchange": EXCHANGES.STORAGE,
+    },
+  });
+
+  await channel.bindQueue(
+    clientQueue.queue,
+    EXCHANGES.BENEFICIARY,
+    CLIENT_STORAGE_ROUTING_KEY
+  );
+  await channel.bindQueue(
+    clientQueue.queue,
+    EXCHANGES.REPORT,
+    CLIENT_STORAGE_ROUTING_KEY
+  );
+  await channel.bindQueue(
+    clientQueue.queue,
+    EXCHANGES.STORAGE,
+    CLIENT_STORAGE_ROUTING_KEY
+  );
+  await channel.bindQueue(
+    clientQueue.queue,
+    EXCHANGES.USER,
+    CLIENT_STORAGE_ROUTING_KEY
+  );
+  await channel.bindQueue(
+    clientQueue.queue,
+    EXCHANGES.KITCHEN,
+    CLIENT_STORAGE_ROUTING_KEY
+  );
+
+  await channel.bindQueue(
+    `${CLIENT_STORAGE_QUEUE_NAME}.retry`,
+    CLIENT_STORAGE_RETRY_EXCHANGE,
+    CLIENT_STORAGE_ROUTING_KEY
+  );
 
   channel.consume(
     clientQueue.queue,
     safeConsume(handleClientStorageCommit, channel),
     { noAck: false }
   );
-  console.log(`[*] Storage Service listening for CLIENT STORAGE commits from SCHOOL, REPORT, STORAGE exchanges`);
+
+  console.log(
+    `[*] Storage Service listening for CLIENT STORAGE commits from multiple exchanges`
+  );
 }

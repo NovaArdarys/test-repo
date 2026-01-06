@@ -20,14 +20,10 @@ const getAuditFields = (c: Context) => ({
   isAppManager: c.get("isAppManager") as boolean,
 });
 
-
-
 export const registerHandler = catchAsync(async (c) => {
 
-  const { email, password, address, dateOfBirth, fullName, phoneNumber, roleId, isActive, domainId }: RegisterSchemaType = await c.get("validatedData").body;
+  const { email, password, address, dateOfBirth, fullName, phoneNumber, roleId, isActive, domainId, driverCapacity }: RegisterSchemaType = await c.get("validatedData").body;
   const audit = getAuditFields(c);
-  console.log({ email, password, address, dateOfBirth, fullName, phoneNumber, roleId, isActive, domainId }, "====ok=====");
-
 
   const [firstName, lastName] = fullName?.split(" ") || ["", ""];
   const { password: _removedPassword, ...result } = await createUserServiceClient({
@@ -43,6 +39,7 @@ export const registerHandler = catchAsync(async (c) => {
     domainId: domainId ?? "",
     createdBy: audit.createdBy,
     updatedAt: new Date(),
+    driverCapacity: driverCapacity ?? 0
   });
   const resetToken = await generateResetToken({ email: email, id: result.id });
   const resetLink = `${process.env.FRONTEND_URL}/auth/reset-password/${resetToken}`;

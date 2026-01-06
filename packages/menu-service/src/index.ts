@@ -60,7 +60,7 @@ const app = new Hono<{ Variables: Variables; }>()
     }
   }))
   .get('/swagger/mobile', swaggerUI({
-    url: process.env.ENVIRONMENT === 'DEVELOPMENT'
+    url: process.env.NODE_ENV === 'DEVELOPMENT'
       ? '/api/mobile/openapi.json' : '/menu/api/mobile/openapi.json'
   }))
   .get('/swagger', swaggerUI({ url: '/menu/api/openapi.json' })).get('/api/health', async (c) => {
