@@ -579,7 +579,7 @@ export const menuPlansRelations = relations(menuPlans, ({ one, many }) => ({
   village: one(villages, { fields: [menuPlans.villageId], references: [villages.id] }),
   menuFoodItem: many(menuFoodItem),
   dailyReports: many(dailyReports),
-  consumptionNote: one(foodConsumptionNotes, { fields: [menuPlans.id], references: [foodConsumptionNotes.menuPlanId] }),
+  consumptionNote: many(foodConsumptionNotes),
   foodConsumtions: many(foodConsumptionItems),
   beneficiaryClassRoom: many(beneficiaryPortions),
   menuPlanBeneficiaries: many(menuPlanBeneficiaries),
@@ -640,3 +640,17 @@ export const deliveryStepReportsRelations = relations(
     }),
   })
 );
+
+export const notificationsRelations = relations(notifications, ({ one }) => ({
+  actor: one(users, {
+    fields: [notifications.userActorId],
+    references: [users.id],
+    relationName: "notification_actor",
+  }),
+
+  receiver: one(users, {
+    fields: [notifications.userReceivedId],
+    references: [users.id],
+    relationName: "notification_receiver",
+  }),
+}));

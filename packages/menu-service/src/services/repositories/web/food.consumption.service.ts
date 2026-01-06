@@ -89,8 +89,17 @@ export async function upsertFoodConsumptionItems(data: {
       .where(eq(foodConsumptionItems.menuPlanId, data.menuPlanId));
 
     await tx
-      .delete(foodConsumptionItems)
-      .where(eq(foodConsumptionItems.menuPlanId, data.menuPlanId));
+      .update(foodConsumptionNotes)
+      .set({
+        isDeleted: true,
+        updatedBy: data.userId,
+        updatedAt: now,
+      })
+      .where(eq(foodConsumptionNotes.menuPlanId, data.menuPlanId));
+
+    // await tx
+    //   .delete(foodConsumptionNotes)
+    //   .where(eq(foodConsumptionNotes.menuPlanId, data.menuPlanId));
 
     if (data.items.length === 0) return [];
 
@@ -125,12 +134,14 @@ export async function softDeleteFoodConsumptionItem(
   id: string,
   updatedBy: string,
 ) {
-  await db
+  const res = await db
     .update(foodConsumptionItems)
     .set({
       isDeleted: true,
       updatedBy,
       updatedAt: new Date(),
     })
-    .where(eq(foodConsumptionItems.menuPlanId, id));
+    .where(eq(foodConsumptionItems.menuPlanId, id)).returning();
+
+  return res;
 }

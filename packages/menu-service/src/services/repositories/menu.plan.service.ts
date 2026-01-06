@@ -93,12 +93,16 @@ export async function getMenuPlansList({
             planStartDate: true,
         },
         with: {
-            // consumptionNote: {
-            //     columns: {
-            //         note: true,
-            //         reason: true,
-            //     },
-            // },
+            consumptionNote: {
+                columns: {
+                    note: true,
+                    reason: true,
+                },
+                where: (fields, { and, eq }) =>
+                    and(
+                        eq(fields.isDeleted, false),
+                    ),
+            },
             menuFoodItem: {
                 with: {
                     foodConsumtions: {
@@ -167,13 +171,9 @@ export async function getMenuPlansList({
             const foodWaste = sfi.foodConsumtions?.[0] ? {
                 quantity: sfi.foodConsumtions?.[0].quantity,
                 unit: sfi.foodConsumtions?.[0].unit,
-                note: "",
-                reason: "",
             } : {
                 quantity: "0",
                 unit: "",
-                note: "",
-                reason: "",
             };
             if (!foodItem) return;
 
@@ -192,6 +192,8 @@ export async function getMenuPlansList({
 
         return {
             ...menuPlan,
+            foodWasteNote: report?.consumptionNote?.[0]?.note,
+            foodWasteReason: report?.consumptionNote?.[0]?.reason,
             date: planStartDate,
             foodItems: Array.from(foodItemMap.values()),
             beneficiaries: Array.from(beneficiaryMap.values()),
@@ -219,6 +221,16 @@ export async function getMenuPlanById(
             planStartDate: true,
         },
         with: {
+            consumptionNote: {
+                columns: {
+                    note: true,
+                    reason: true,
+                },
+                where: (fields, { and, eq }) =>
+                    and(
+                        eq(fields.isDeleted, false),
+                    ),
+            },
             menuFoodItem: {
                 with: {
                     foodConsumtions: {
@@ -287,13 +299,9 @@ export async function getMenuPlanById(
         const foodWaste = sfi.foodConsumtions?.[0] ? {
             quantity: sfi.foodConsumtions?.[0].quantity,
             unit: sfi.foodConsumtions?.[0].unit,
-            note: "",
-            reason: "",
         } : {
             quantity: "0",
             unit: "",
-            note: "",
-            reason: "",
         };
         if (!foodItem) return;
 
@@ -312,10 +320,12 @@ export async function getMenuPlanById(
             });
     });
 
-    const { menuPlanBeneficiaries, menuFoodItem, planEndDate, planStartDate, ...menuPlan } = data;
+    const { menuPlanBeneficiaries, consumptionNote, menuPlankitchen, menuFoodItem, planEndDate, planStartDate, ...menuPlan } = data;
 
     const formattedData = {
         ...menuPlan,
+        foodWasteNote: data.consumptionNote?.[0]?.note,
+        foodWasteReason: data.consumptionNote?.[0]?.reason,
         date: planStartDate,
         kitchenId: kitchenIds?.[0] ?? null,
         foodItems: Array.from(foodItemMap.values()),
