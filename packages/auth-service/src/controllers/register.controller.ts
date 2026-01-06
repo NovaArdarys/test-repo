@@ -39,7 +39,7 @@ export const registerHandler = catchAsync(async (c) => {
     domainId: domainId ?? "",
     createdBy: audit.createdBy,
     updatedAt: new Date(),
-    driverCapacity: driverCapacity ?? 0
+    driverCapacity: Number(driverCapacity) ?? 0
   });
   const resetToken = await generateResetToken({ email: email, id: result.id });
   const resetLink = `${process.env.FRONTEND_URL}/auth/reset-password/${resetToken}`;
