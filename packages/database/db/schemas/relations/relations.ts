@@ -579,7 +579,7 @@ export const menuPlansRelations = relations(menuPlans, ({ one, many }) => ({
   village: one(villages, { fields: [menuPlans.villageId], references: [villages.id] }),
   menuFoodItem: many(menuFoodItem),
   dailyReports: many(dailyReports),
-  consumptionNote: one(foodConsumptionNotes),
+  consumptionNote: one(foodConsumptionNotes, { fields: [menuPlans.id], references: [foodConsumptionNotes.menuPlanId] }),
   foodConsumtions: many(foodConsumptionItems),
   beneficiaryClassRoom: many(beneficiaryPortions),
   menuPlanBeneficiaries: many(menuPlanBeneficiaries),

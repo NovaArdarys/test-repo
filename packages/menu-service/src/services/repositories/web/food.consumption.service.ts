@@ -32,17 +32,15 @@ export async function createFoodConsumptionItems(data: {
     )
     .returning();
 
-  if (data.reason || data.note) {
-    await db.insert(foodConsumptionNotes).values({
-      menuPlanId: data.menuPlanId,
-      reason: data.reason || null,
-      note: data.note || null,
-      createdBy: data.createdBy,
-      createdAt: now,
-      updatedAt: now,
-      updatedBy: data.createdBy,
-    });
-  }
+  await db.insert(foodConsumptionNotes).values({
+    menuPlanId: data.menuPlanId,
+    reason: data.reason || null,
+    note: data.note || null,
+    createdBy: data.createdBy,
+    createdAt: now,
+    updatedAt: now,
+    updatedBy: data.createdBy,
+  });
   return rows;
 }
 
@@ -96,17 +94,15 @@ export async function upsertFoodConsumptionItems(data: {
 
     if (data.items.length === 0) return [];
 
-    if (data.reason || data.note) {
-      await tx.insert(foodConsumptionNotes).values({
-        menuPlanId: data.menuPlanId,
-        reason: data.reason || null,
-        note: data.note || null,
-        createdBy: data.userId,
-        createdAt: now,
-        updatedAt: now,
-        updatedBy: data.userId,
-      });
-    }
+    await tx.insert(foodConsumptionNotes).values({
+      menuPlanId: data.menuPlanId,
+      reason: data.reason || null,
+      note: data.note || null,
+      createdBy: data.userId,
+      createdAt: now,
+      updatedAt: now,
+      updatedBy: data.userId,
+    });
 
     return tx
       .insert(foodConsumptionItems)

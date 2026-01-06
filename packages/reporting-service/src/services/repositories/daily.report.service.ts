@@ -322,6 +322,7 @@ export async function getDailyReportsList(params?: {
   menuPlanName?: string;
   view?: "home" | "calendar" | "delivery" | "report" | "profile";
   subDomains?: string[];
+  entityType?: string;
 }) {
   const today = new Date().toISOString().slice(0, 10);
 
