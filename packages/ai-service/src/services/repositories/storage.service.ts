@@ -24,7 +24,6 @@ const storageSelect = {
       `.as("aiAnalysis"),
 };
 
-
 export async function getStorageByEntityIds(entityIds: string[]) {
   if (!entityIds.length) return [];
 
