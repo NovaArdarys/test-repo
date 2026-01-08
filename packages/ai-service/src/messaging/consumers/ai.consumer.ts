@@ -11,19 +11,24 @@ const STEP_ROUTING_KEY = "report.step.commit";
 
 // ================= HANDLERS =================
 async function handleStepEvent(data: z.infer<typeof stepCommittedSchema>) {
-  const parsed = stepCommittedSchema.parse(data);
+  try {
+    const parsed = stepCommittedSchema.parse(data);
 
-  await foodQueue.add("detection", parsed, {
-    removeOnComplete: true,
-    removeOnFail: false,
-    attempts: 1000000,
-    backoff: {
-      type: "exponential",
-      delay: 5000,
-    },
-  });
+    await foodQueue.add("detection", parsed, {
+      removeOnComplete: true,
+      removeOnFail: false,
+      attempts: 1000000,
+      backoff: {
+        type: "exponential",
+        delay: 5000,
+      },
+    });
 
-  console.log(`[AI WORKER] ✅ Job queued for detection`);
+    console.log(`[AI WORKER] ✅ Job queued for detection`);
+  } catch (error) {
+    console.log(`[AI WORKER ERROR] ${error}`);
+
+  }
 }
 
 
