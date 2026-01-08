@@ -6,7 +6,6 @@ import { Hono } from "hono";
 
 const app = new Hono();
 app.get("/:bucket/:path", validate({ param: getStorageParamSchema }), getItemStorageHandler);
-app.use(checkAccessToken);
-app.post("/upload", validate(uploadBodySchema), storageHandler);
+app.post("/upload", checkAccessToken, validate(uploadBodySchema), storageHandler);
 
 export default app;
