@@ -18,11 +18,12 @@ async function handleStepEvent(data: z.infer<typeof stepCommittedSchema>) {
     await foodQueue.add("detection", parsed, {
       removeOnComplete: true,
       removeOnFail: false,
-      attempts: 1000000,
+      attempts: 5,
       backoff: {
         type: "exponential",
         delay: 5000,
       },
+
     });
 
     console.log(`[AI WORKER] ✅ Job queued for detection`);
