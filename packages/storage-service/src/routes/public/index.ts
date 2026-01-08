@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 
-import storage from '@/routes/private/storage.route';
+import storage from './storage.route';
 import { generateOpenAPIDoc } from '@/utils/autoRoute';
 
 const app = new Hono();
