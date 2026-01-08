@@ -11,8 +11,6 @@ export const deliveryWorker = createLoggedWorker<StorageClientCommittedType>(
   async (job) => {
     const { storageId, storageIds = [], entityId, entityType } = job.data;
 
-    console.log(storageId, storageIds, entityId, entityType, "=====ok=====");
-
     if (!entityType || (!storageId && !storageIds.length)) {
       console.warn(`Invalid payload for job ${job.id}, skipped`);
       return;
@@ -31,11 +29,11 @@ export const deliveryWorker = createLoggedWorker<StorageClientCommittedType>(
             return;
           }
 
-          // const { fileUrl, fileName, path } = await moveFileFromTmp(
-          //   storage.path,
-          //   storage.fileName,
-          //   entityType || 'other'
-          // );
+          const { fileUrl, fileName, path } = await moveFileFromTmp(
+            storage.path,
+            storage.fileName,
+            entityType || 'other'
+          );
 
           await linkStorageToEntity(
             id,
@@ -48,7 +46,6 @@ export const deliveryWorker = createLoggedWorker<StorageClientCommittedType>(
 
           console.log(`✅ [Worker] Linked storage ${id} → ${entityType}:${entityId}`);
         } catch (error: any) {
-          console.log(error, "=========error==========");
 
           if (isUniqueConstraintError(error)) {
             return;

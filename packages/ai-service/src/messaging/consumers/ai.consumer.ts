@@ -7,7 +7,7 @@ import { stepCommittedSchema } from "@/validator/step.validator";
 
 // ===== QUEUES =====
 const AI_QUEUE_NAME = "ai_service_queue";
-const REPORT_ROUTING_KEY = "report.step.commit";
+const STEP_ROUTING_KEY = "report.step.commit";
 
 // ================= HANDLERS =================
 async function handleStepEvent(data: z.infer<typeof stepCommittedSchema>) {
@@ -53,11 +53,11 @@ export async function setupConsumer(channel: Channel) {
     },
   });
 
-  await channel.bindQueue(reportQueue.queue, EXCHANGES.REPORT, REPORT_ROUTING_KEY);
+  await channel.bindQueue(reportQueue.queue, EXCHANGES.REPORT, STEP_ROUTING_KEY);
   await channel.bindQueue(
     `${AI_QUEUE_NAME}.retry`,
     RETRY_EXCHANGE,
-    REPORT_ROUTING_KEY
+    STEP_ROUTING_KEY
   );
 
   channel.prefetch(10);

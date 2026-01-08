@@ -13,7 +13,10 @@ export async function compressImageToBase64(
 ): Promise<string> {
   const resolvedUrl = getInternalMinioUrl(url);
 
+  console.log(resolvedUrl, "=====resolvedUrl=====");
+
   const response = await axios.get(resolvedUrl, { responseType: "arraybuffer" });
+  console.log(resolvedUrl, "=====resolved=====");
   const inputBuffer = new Uint8Array(response.data);
 
   const isPNG = inputBuffer[0] === 0x89 && inputBuffer[1] === 0x50;
@@ -55,13 +58,3 @@ export async function compressImageToBase64(
 
   return outputBuffer.toString("base64");
 }
-
-// export async function compressImageToBase64(url: string): Promise<string> {
-//   const resolvedUrl = getInternalMinioUrl(url);
-
-//   const response = await axios.get(resolvedUrl, { responseType: "arraybuffer" });
-//   const inputBuffer = new Uint8Array(response.data);
-
-//   return Buffer.from(inputBuffer).toString("base64");
-// }
-

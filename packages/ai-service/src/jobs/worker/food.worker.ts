@@ -3,7 +3,6 @@ import { Worker } from 'bullmq';
 import { isEmpty } from 'lodash';
 import z from 'zod';
 
-import { db } from '@/db';
 import { stepCommittedSchema } from '@/validator/step.validator';
 import { compressImageToBase64 } from '@/utils/imageCompress';
 
@@ -42,6 +41,8 @@ export const foodWorker = new Worker<z.infer<typeof stepCommittedSchema>>(
         console.warn(`⚠️ Job ${job.id} tidak memiliki stepReport id`);
         return null;
       }
+
+      console.log(job.data, "=====jobdata=====");
 
       const stepReport = await getStepReportDetail(job.data.id);
 
@@ -90,7 +91,6 @@ export const foodWorker = new Worker<z.infer<typeof stepCommittedSchema>>(
       }
 
       imageURL = stepReport.imageURL;
-      console.log(stepReport.imageURL, "=======stepReport.imageURL====== 🅿️");
 
       const image = await compressImageToBase64(imageURL);
       let labels: { id: string; en: string; }[] = [];

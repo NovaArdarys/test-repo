@@ -19,29 +19,35 @@ export interface MinioUploadResult {
   bucket: string;
 }
 
-export async function ensureBucket(bucketName: string, makePublic = true) {
+export async function ensureBucket(
+  bucketName: string,
+  makePublic = true
+) {
   const exists = await minioClient.bucketExists(bucketName).catch(() => false);
 
   if (!exists) {
     await minioClient.makeBucket(bucketName);
+  }
 
-    if (makePublic) {
-      const policy = {
-        Version: "2012-10-17",
-        Statement: [
-          {
-            Effect: "Allow",
-            Principal: "*",
-            Action: ["s3:GetObject", "s3:PutObject"],
-            Resource: [`arn:aws:s3:::${bucketName}/*`],
-          },
-        ],
-      };
-      await minioClient.setBucketPolicy(bucketName, JSON.stringify(policy));
-    }
+  if (makePublic) {
+    const policy = {
+      Version: "2012-10-17",
+      Statement: [
+        {
+          Effect: "Allow",
+          Principal: "*",
+          Action: ["s3:GetObject"],
+          Resource: [`arn:aws:s3:::${bucketName}/*`],
+        },
+      ],
+    };
+
+    await minioClient.setBucketPolicy(
+      bucketName,
+      JSON.stringify(policy)
+    );
   }
 }
-
 function isBrowserFile(file: any): file is File {
   return typeof File !== "undefined" && file instanceof File;
 }

@@ -13,8 +13,6 @@ async function handleAiStatusEvent(data: unknown) {
 
   const eventName = `ai:${parsed.status.toLowerCase()}`;
 
-  console.log(parsed.channel, eventName, parsed, "======parsed.channel, eventName, parsed======");
-
   await sendSseToChannel(parsed.channel, eventName, parsed,);
 
   console.log(`[NOTIFICATION] SSE sent to ${parsed.channel}: ${eventName}`);

@@ -1,7 +1,9 @@
-import { db } from "@/db";
 import aiClient from "@/utils/api";
 import { EntityType } from "@/validator/storage.validator";
 
+/* =========================
+ *  TYPES
+ * ========================= */
 export type AIAnalysisType =
   | "food"
   | "cleanliness"
@@ -10,60 +12,70 @@ export type AIAnalysisType =
   | "liveness"
   | "people"
   | "apd"
-  | null
-  ;
+  | null;
 
 export interface BaseAIInput {
   image: string;
 }
+
 export interface DetectInput extends BaseAIInput {
   labels?: Array<{ id: string; en: string; }>;
-  image: string;
 }
 
+type RuleWhen = {
+  analysisType?: string;
+  entityType?: EntityType | EntityType[];
+  stepOrder?: number | number[];
+};
 
-export function getAITypeFromStepOrder(stepOrder: number, entityType: EntityType, analysisType?: string) {
-  if (analysisType) {
-    switch (analysisType) {
-      case "apd_check":
-        return "apd";
-      case "cleanliness":
-        return "cleanliness";
-      case "food_detection":
-        return "food";
-      case "mealbox":
-        return "mealbox";
-      default:
-        return null;
+type AIRule = {
+  when: RuleWhen;
+  then: AIAnalysisType;
+};
 
-    }
-  } else {
-    if (entityType === "kitchen" || entityType === "kitchen_daily_report") {
-      switch (stepOrder) {
-        case 1:
-          return "food";
-        case 2:
-          return "cleanliness";
-        case 3:
-          return "food";
-        case 4:
-          return "food";
-        default:
-          return null;
-      }
-    }
+const AI_RULES: AIRule[] = [
+  { when: { analysisType: "apd_check" }, then: "apd" },
+  { when: { analysisType: "cleanliness" }, then: "cleanliness" },
+  { when: { analysisType: "food_detection" }, then: "food" },
+  { when: { analysisType: "mealbox_count" }, then: "mealbox" },
+];
 
-    if (entityType === "school" || entityType === "beneficiary" || entityType === "beneficiary_daily_report") {
-      switch (stepOrder) {
-        case 2:
-          return "food";
-        case 3:
-          return "food";
-        default:
-          return null;
-      }
-    }
+function matchValue<T>(
+  ruleValue: T | T[] | undefined,
+  actual: T | undefined
+): boolean {
+  if (ruleValue === undefined) return true;
+  if (actual === undefined) return false;
+  return Array.isArray(ruleValue)
+    ? ruleValue.includes(actual)
+    : ruleValue === actual;
+}
+
+function matchRule(
+  when: RuleWhen,
+  ctx: {
+    stepOrder: number;
+    entityType: EntityType;
+    analysisType?: string;
   }
+): boolean {
+  return (
+    matchValue(when.analysisType, ctx.analysisType) &&
+    matchValue(when.entityType, ctx.entityType) &&
+    matchValue(when.stepOrder, ctx.stepOrder)
+  );
+}
+
+export function getAITypeFromStepOrder(
+  stepOrder: number,
+  entityType: EntityType,
+  analysisType?: string
+): AIAnalysisType {
+  const ctx = { stepOrder, entityType, analysisType };
+
+  const rule = AI_RULES.find((r) => matchRule(r.when, ctx));
+
+  return rule?.then ?? null;
 }
 
 export async function detectAI<T extends AIAnalysisType>(
@@ -74,17 +86,22 @@ export async function detectAI<T extends AIAnalysisType>(
     const res = await aiClient.post(`/detect/${type}`, data);
     return res.data;
   } catch (error: any) {
-
     if (error.response) {
       throw new Error(
         `AI fetch failed [${type}]: ${error.response.status} - ${JSON.stringify(
           error.response.data
         )}`
       );
-    } else if (error.request) {
-      throw new Error(`AI fetch no response [${type}]: ${error.message}`);
-    } else {
-      throw new Error(`AI fetch setup error [${type}]: ${error.message}`);
     }
+
+    if (error.request) {
+      throw new Error(
+        `AI fetch no response [${type}]: ${error.message}`
+      );
+    }
+
+    throw new Error(
+      `AI fetch setup error [${type}]: ${error.message}`
+    );
   }
 }
