@@ -13,6 +13,7 @@ const STEP_ROUTING_KEY = "report.step.commit";
 async function handleStepEvent(data: z.infer<typeof stepCommittedSchema>) {
   try {
     const parsed = stepCommittedSchema.parse(data);
+    console.log(`[AI WORKER PARSED] ${parsed}`);
 
     await foodQueue.add("detection", parsed, {
       removeOnComplete: true,
