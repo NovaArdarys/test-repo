@@ -28,7 +28,5 @@ export default async function fetchBeneficiaries(
     )
     .then(res => res.map(r => r.menu_plan_beneficiaries));
 
-  console.log(rows, "=======rows=======");
-
   return rows;
 }

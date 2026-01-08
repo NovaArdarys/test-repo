@@ -107,15 +107,28 @@ export async function isUserAlreadyHaveDriverRole(userId: string, kitchenId: str
   return result.length > 0;
 }
 
-export async function isUserAssignedToKitchen(userId: string, kitchenId: string): Promise<boolean> {
-  const result = await db.select({ userId: drivers.userId })
+export async function isDriverAssignedToKitchen(
+  userId: string,
+  kitchenId: string,
+): Promise<{
+  isAssigned: boolean;
+  assignment: { userId: string; id: string; } | null;
+}> {
+  const result = await db
+    .select({ userId: drivers.userId, id: drivers.id })
     .from(drivers)
-    .where(and(
-      eq(drivers.userId, userId),
-      eq(drivers.kitchenId, kitchenId),
-    ))
+    .where(
+      and(
+        eq(drivers.userId, userId),
+        eq(drivers.kitchenId, kitchenId),
+      ),
+    )
     .limit(1);
-  return result.length > 0;
+
+  return {
+    isAssigned: result.length > 0,
+    assignment: result[0] ?? null,
+  };
 }
 
 

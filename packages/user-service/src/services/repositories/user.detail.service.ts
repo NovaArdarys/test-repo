@@ -213,6 +213,10 @@ export async function getUserById(id: string) {
       address: userDetails.address,
       fullName: sql<string>`CONCAT(${userDetails.firstName}, ' ', ${userDetails.lastName})`,
       imageURL: userDetails.imageURL,
+      driverProfile: {
+        licenseNumber: drivers.licenseNumber,
+        portionCapacity: drivers.portionCapacity
+      },
       kitchen: {
         id: kitchens.id,
         name: kitchens.name,

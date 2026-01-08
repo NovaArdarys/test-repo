@@ -95,7 +95,7 @@ export const getUserByIdHandler = catchAsync(async (c) => {
 
 export const updateUserHandler = catchAsync(async (c) => {
   const id = c.req.param('id');
-  const { email, password, address, dateOfBirth, firstName, lastName, phoneNumber, roleId, isActive, domainId, createdBy } = await c.get("validatedData").body as unknown as registerSchemaType;
+  const { email, password, driverCapacity, address, dateOfBirth, firstName, lastName, phoneNumber, roleId, isActive, domainId, createdBy } = await c.get("validatedData").body as unknown as registerSchemaType;
   const audit = getAuditFields(c);
 
   const result = await updateUserAll(id, {
@@ -114,6 +114,8 @@ export const updateUserHandler = catchAsync(async (c) => {
   if (roleId) {
 
     const role = await getRoleById(roleId);
+
+    console.log(role?.domain, domainId, "=====ok======");
 
     if (role?.domain === "kitchen" && domainId) {
       await publishAssignUserToKitchen({
@@ -135,7 +137,8 @@ export const updateUserHandler = catchAsync(async (c) => {
       await publishAssignProfileDriver({
         kitchenId: domainId,
         userId: result.userId,
-        createdBy: createdBy || audit.createdBy || ""
+        createdBy: createdBy || audit.createdBy || "",
+        driverCapacity: Number(driverCapacity ?? 0)
       });
     }
 

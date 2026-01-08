@@ -6,7 +6,7 @@ import { updateKitchen } from "@/services/repositories/kitchen.service";
 import { updateSupplier } from "@/services/repositories/suppliers.service";
 import { resetQueuesIfDev, safeConsume } from "../utils/consumerHelper";
 import { assignUserToKitchen, isUserAssignedToKitchen } from "@/services/repositories/user.kitchen.service";
-import { createDriver, isUserAlreadyHaveDriverRole } from "@/services/repositories/driver.service";
+import { createDriver, isDriverAssignedToKitchen, isUserAlreadyHaveDriverRole, updateDriver } from "@/services/repositories/driver.service";
 
 // ===== VALIDATORS =====
 const entityTypeValidator = z.enum(entityTypeEnum.enumValues);
@@ -82,14 +82,23 @@ async function handleAssignToKitchen(data: z.infer<typeof baseUserKitchen>) {
 async function handleAssignProfileDriver(data: z.infer<typeof baseUserKitchen>) {
   const parsed = baseUserKitchen.parse(data);
 
-  const alreadyAssigned = await isUserAssignedToKitchen(parsed.userId, parsed.kitchenId);
-  if (!alreadyAssigned) {
+  const { assignment, isAssigned } = await isDriverAssignedToKitchen(parsed.userId, parsed.kitchenId);
+  if (!isAssigned) {
     await createDriver({
       kitchenId: parsed.kitchenId,
       userId: parsed.userId,
       createdBy: parsed.createdBy || "11111111-1111-1111-1111-111111111111",
       portionCapacity: parsed.driverCapacity
     });
+  } else {
+    if (assignment?.id) {
+      await updateDriver(assignment?.id, {
+        kitchenId: parsed.kitchenId,
+        userId: parsed.userId,
+        portionCapacity: parsed.driverCapacity,
+        updatedBy: parsed.createdBy || "11111111-1111-1111-1111-111111111111",
+      });
+    }
   }
 
   console.log(`[USER EVENT] Assign user ${parsed.userId} to kitchen ${parsed.kitchenId}`);

@@ -37,16 +37,19 @@ async function executeAutoDelivery(
   const kitchen = await fetchKitchen(trx, data.kitchenId);
   const menuPlan = await fetchMenuPlan(trx, data.menuPlanId);
   const beneficiaries = await fetchBeneficiaries(trx, data.menuPlanId);
-  const drivers = await fetchDrivers(trx, data.kitchenId);
-
+  const drivers = (await fetchDrivers(trx, data.kitchenId))
+    .filter(d => d.portionCapacity && d.portionCapacity > 0);
   console.log({ kitchen, menuPlan, beneficiaries, drivers });
+
+  if (!drivers.length) {
+    throw new Error("Tidak ada driver dengan kapasitas valid");
+  }
 
   const units = expandUnits(beneficiaries, kitchen, menuPlan);
 
   const clustered = clusterUnits(units, 5);
 
   const flattenedCluster = clustered.flat();
-
 
   const assignments = assignDriverUnitsWithRefill(flattenedCluster, drivers);
 
