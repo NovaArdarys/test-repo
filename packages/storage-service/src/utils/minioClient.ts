@@ -84,10 +84,8 @@ export async function uploadToMinio(
       "Content-Type": contentType,
     });
 
-    const endpoint = process.env.MINIO_ENDPOINT || "127.0.0.1";
-    const port = process.env.MINIO_PORT || "9000";
-    const protocol = process.env.MINIO_USE_SSL === "true" ? "https" : "http";
-    const url = `${protocol}://${endpoint}:${port}/${bucket}/${fileName}`;
+    const endpoint = process.env.MINIO_ENDPOINT || "https://dev-mbg-be.midigi.id/storage/api/storage";
+    const url = `${endpoint}/${bucket}/${fileName}`;
 
     return {
       tmpId,
@@ -143,5 +141,21 @@ export async function moveFileFromTmp(
     path: `${targetBucket}/${fileName}`,
     fileUrl: newUrl,
     bucket: targetBucket,
+  };
+}
+
+export async function getImageBuffer(
+  bucket: string,
+  objectPath: string
+): Promise<{ buffer: Buffer; contentType?: string; }> {
+  const stream = await minioClient.getObject(bucket, objectPath);
+
+  const chunks: Buffer[] = [];
+  for await (const chunk of stream) {
+    chunks.push(chunk);
+  }
+
+  return {
+    buffer: Buffer.concat(chunks),
   };
 }

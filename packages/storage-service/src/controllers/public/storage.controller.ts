@@ -1,7 +1,7 @@
 import { publishStorageUpload, StorageUploadEvent } from "@/messaging/publishers/storage.publisher";
 import { saveStorageRecord } from "@/services/repositories/storage.service";
 import { catchAsync } from "@/utils/catchAsync";
-import { uploadToMinio } from "@/utils/minioClient";
+import { getImageBuffer, uploadToMinio } from "@/utils/minioClient";
 import { uploadBodySchema, uploadBodyType } from "@/validator/storage.validator";
 import { Context } from "hono";
 
@@ -80,3 +80,25 @@ export const storageHandler = catchAsync(async (c) => {
   return c.json(results.length === 1 ? results[0] : results);
 });
 
+
+export const getItemStorageHandler = catchAsync(async (c) => {
+  const param = await c.get("validatedData").param;
+
+  const bucket = "temporary";
+  const objectPath = param.path;
+
+  const { buffer } = await getImageBuffer(bucket, objectPath);
+
+  const ext = objectPath.split(".").pop()?.toLowerCase();
+  const contentType =
+    ext === "png"
+      ? "image/png"
+      : ext === "webp"
+        ? "image/webp"
+        : "image/jpeg";
+
+  c.header("Content-Type", contentType);
+  c.header("Cache-Control", "public, max-age=3600");
+
+  return c.body(buffer);
+});

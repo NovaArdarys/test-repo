@@ -2,15 +2,12 @@ import axios from "axios";
 import { decode as decodeJpeg } from "@jsquash/jpeg";
 import { decode as decodePng } from "@jsquash/png";
 import { encode as encodeWebp } from "@jsquash/webp";
-import { getInternalMinioUrl } from "./imageToBase64";
 
 export async function compressImageToBase64(
   url: string,
   targetSizeKB = 60
 ): Promise<string> {
-  const resolvedUrl = getInternalMinioUrl(url);
-
-  const response = await axios.get(resolvedUrl, { responseType: "arraybuffer" });
+  const response = await axios.get(url, { responseType: "arraybuffer" });
   const inputBuffer = new Uint8Array(response.data);
 
   const isPNG = inputBuffer[0] === 0x89 && inputBuffer[1] === 0x50;

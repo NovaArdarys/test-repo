@@ -34,6 +34,19 @@ export const uploadBodySchema = z.object({
     .optional(),
 });
 
+export const getStorageParamSchema = z.object({
+  bucket: z
+    .string()
+    .min(1)
+    .regex(/^[a-z0-9-]+$/, "invalid bucket name"),
+
+  path: z
+    .string()
+    .min(1)
+    .refine((val) => !val.includes(".."), "invalid path"),
+});
+
+
 // TypeScript type
 export type uploadBodyType = z.infer<typeof uploadBodySchema>;
 

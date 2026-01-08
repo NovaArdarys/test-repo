@@ -37,7 +37,7 @@ data:
   # MINIO_PORT: '9000'
   # MINIO_CONSOLE_PORT: '9001'
   MINIO_ENDPOINT_SERVER: '128.199.77.145'
-  MINIO_ENDPOINT: '128.199.77.145'
+  MINIO_ENDPOINT: 'https://dev-mbg-be.midigi.id/storage/api/storage'
   MINIO_PORT: '9000'
   MINIO_CONSOLE_PORT: '9001'
 
