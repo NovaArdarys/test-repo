@@ -1,6 +1,6 @@
 import { drivers } from "@/db/schemas";
 import { eq } from "drizzle-orm";
-import { Trx, DriverRow } from "../types/domain";
+import { Trx, DriverRow } from "../../types/domain";
 
 export default async function fetchDrivers(
   trx: Trx,

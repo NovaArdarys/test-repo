@@ -1,6 +1,6 @@
 import { kitchens } from "@/db/schemas";
 import { eq } from "drizzle-orm";
-import { Trx, KitchenRow } from "../types/domain";
+import { Trx, KitchenRow } from "../../types/domain";
 
 export default async function fetchKitchen(
   trx: Trx,

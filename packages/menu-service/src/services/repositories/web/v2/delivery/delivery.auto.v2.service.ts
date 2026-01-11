@@ -6,10 +6,10 @@ import {
   Trx
 } from "./types/domain";
 
-import fetchKitchen from "./helpers/fetchKitchen";
+import fetchKitchen from "./helpers/fetcher/fetchKitchen";
 import fetchMenuPlan from "./helpers/fetchMenuPlan";
-import fetchBeneficiaries from "./helpers/fetchBeneficiaries";
-import fetchDrivers from "./helpers/fetchDrivers";
+import fetchBeneficiaries from "./helpers/fetcher/fetchBeneficiaries";
+import fetchDrivers from "./helpers/fetcher/fetchDrivers";
 
 import expandUnits from "./helpers/expandUnits";
 import { assignDriverUnitsWithRefill } from "./helpers/assignDriverUnits";

@@ -3,7 +3,7 @@ import {
   menuPlanBeneficiaries
 } from "@/db/schemas";
 import { and, eq, or } from "drizzle-orm";
-import { MenuPlanBeneficiariesRow, Trx } from "../types/domain";
+import { MenuPlanBeneficiariesRow, Trx } from "../../types/domain";
 
 export default async function fetchBeneficiaries(
   trx: Trx,
