@@ -1,7 +1,6 @@
 import { db } from "@/db";
-import { kitchens, userDetails, userKitchens, users, } from "@/db/schemas";
-import { APIPagination } from "@/types/paginations.type";
-import { eq, InferSelectModel, InferInsertModel, SQLWrapper, sql, and, desc, inArray } from "drizzle-orm";
+import { kitchens, } from "@/db/schemas";
+import { eq, InferSelectModel, InferInsertModel, SQLWrapper, sql, and, inArray } from "drizzle-orm";
 import { compact } from "lodash";
 
 export type Kitchen = InferSelectModel<typeof kitchens>;

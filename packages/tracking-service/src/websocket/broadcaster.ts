@@ -1,4 +1,4 @@
-import { CHANNEL_DELIVERY, CHANNEL_DRIVER_STATUS, redisSubscriber } from "@/services/public/redis.service.js";
+import { CHANNEL_DELIVERY, CHANNEL_DRIVER_STATUS, redisSubscriber } from "@/services/public/redis.service";
 import { broadcastToRoom } from "./rooms";
 
 export function setupRedisSubscriptions() {
