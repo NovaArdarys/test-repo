@@ -3,11 +3,11 @@ import ApiError from "@/utils/ApiError";
 import { createKitchen, getKitchenById, getKitchensList, softDeleteKitchen, updateKitchen } from "@/services/repositories/kitchen.service";
 import { catchAsync } from "@/utils/catchAsync";
 import { assignUserToKitchen, isUserAssignedToKitchen, syncUserKitchenByMerge, unassignUserFromKitchen } from "@/services/repositories/user.kitchen.service";
-import { AssignUserToKitchenSchemaType, CreateKitchenSchemaType } from "@/validator/kitchen.validator";
+import { AssignUserToKitchenSchemaType, CreateKitchenSchemaType } from "@/validators/kitchen.validator";
 import { updateSchoolServiceClient } from "../../../services/clients/school.service";
 import { isArray, isEmpty, uniq } from "lodash";
 import { buildPaginationAndSort } from "@/utils/buildGlobalQuery";
-import { paginationSchema } from "@/validator/global.validator";
+import { paginationSchema } from "@/validators/global.validator";
 import { kitchenSortMapper } from "@/services/mappers/kitchen.mapper";
 
 const getAuditFields = (c: Context) => ({

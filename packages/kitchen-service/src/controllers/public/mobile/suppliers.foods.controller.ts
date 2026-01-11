@@ -7,7 +7,7 @@ import {
   updateSupplier,
   deleteSupplier,
 } from "@/services/repositories/suppliers.service";
-import { CreateSupplierSchemaType, ItemsQuerySchemaType, UpdateSupplierFoodItemSchemaType } from "@/validator/supplier.validator";
+import { CreateSupplierSchemaType, ItemsQuerySchemaType, UpdateSupplierFoodItemSchemaType } from "@/validators/supplier.validator";
 import { updateSupplierFoodItem } from "@/services/repositories/suppliers.food.items.service";
 
 
