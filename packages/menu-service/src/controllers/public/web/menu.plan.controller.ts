@@ -9,12 +9,13 @@ import {
   AssignPlanDistributionSchemaType,
   UnassignPlanDistributionQuerySchemaType
 } from "@/validator/menu.plan.validator";
-import { getDistributionByMenuPlanId, getFoodItemsByMenuPlanId, getMenuPlanById, getMenuPlansList, softDeleteMenuPlan, updateMenuPlan, updatePlanStatus } from "@/services/repositories/menu.plan.service";
+import { getDistributionByMenuPlanId, getFoodItemsByMenuPlanId, getMenuPlanById, getMenuPlansList, softDeleteMenuPlan, updatePlanStatus } from "@/services/repositories/menu.plan.service";
 import { assignFoodToMenuPlan, unassignFoodFromMenuPlan } from "@/services/repositories/menu.food.service";
 import { assignPlanDistribution, unassignPlanDistribution } from "@/services/repositories/menu.plan.schools.kitchen.service";
 import { isEmpty } from "lodash";
 import { menuPlanQueue } from "@/jobs/queue/menuplan.queue";
 import { getPriorityByDate } from "@/utils/jobPriority";
+import { getActiveDriversByKitchen } from "@/services/repositories/web/driver.service";
 
 const getAuditFields = (c: Context) => ({
   createdBy: c.get('userId'),
@@ -30,8 +31,6 @@ const getAuditFields = (c: Context) => ({
   createdAt: new Date(),
   isAppManager: c.get("isAppManager") as boolean,
 });
-
-
 
 export const listMenuPlansHandler = catchAsync(async (c: Context) => {
   const query = c.req.query() as unknown as ListMenuPlansQuerySchemaType;
@@ -68,6 +67,17 @@ export const createMenuPlanHandler = catchAsync(async (c: Context) => {
 
   const foodIdArray = body.foodIds as unknown as string[] || (body as any)["foodIds[]"] || [];
   const dateArray = body.dates as unknown as string[] || (body as any)["dates[]"] || [];
+
+  const activeDrivers = await getActiveDriversByKitchen(audit.kitchenId);
+
+  if (activeDrivers.length < 2) {
+    return c.json(
+      {
+        message: "Tidak dapat membuat rencana menu. Pastikan terdapat minimal 2 pengemudi aktif dengan kapasitas porsi lebih dari 0.",
+      },
+      400
+    );
+  }
 
   for (const date of dateArray) {
     await menuPlanQueue.add(
@@ -110,6 +120,17 @@ export const updateMenuPlanHandler = catchAsync(async (c: Context) => {
   const body = await await c.req.parseBody() as unknown as UpdateMenuPlanSchemaType;
   const audit = getAuditFields(c);
   const foodIdArray = body.foodIds as unknown as string[] || (body as any)["foodIds[]"] || [];
+
+  const activeDrivers = await getActiveDriversByKitchen(audit.kitchenId);
+
+  if (activeDrivers.length < 2) {
+    return c.json(
+      {
+        message: "Tidak dapat membuat rencana menu. Pastikan terdapat minimal 2 pengemudi aktif dengan kapasitas porsi lebih dari 0.",
+      },
+      400
+    );
+  }
 
   await menuPlanQueue.add(
     "menuplan-update",
