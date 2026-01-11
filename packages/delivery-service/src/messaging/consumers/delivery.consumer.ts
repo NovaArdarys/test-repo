@@ -2,7 +2,7 @@ import { z } from "zod";
 import { Channel } from "amqplib";
 import { EXCHANGES } from "../events/exchanges";
 import { resetQueuesIfDev, safeConsume } from "../utils/consumerHelper";
-import { dropoffJobSchema } from "@/types/delivery.type";
+import { dropoffJobSchema } from "@/validators/jobs/delivery.schema";
 import { deliveryQueue } from "@/jobs/queue/delivery.queue";
 import { format } from "date-fns";
 

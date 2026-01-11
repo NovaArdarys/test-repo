@@ -1,10 +1,6 @@
-import { z } from "zod";
-import { createAutoDelivery } from "@/services/repositories/delivery.school.driver.service";
 import { createLoggedWorker } from "@/utils/catchWorker";
 import { DELIVERY_QUEUE_NAME } from "../queue/delivery.queue";
-import { createDelivery } from "@/services/repositories/delivery.service";
-import { dropoffJobSchema, notifyJobSchema, pickupJobSchema } from "@/types/delivery.type";
-import { getDeliveryBeneficiary } from "@/services/repositories/mobile/delivery.beneficery.service";
+import { notifyJobSchema } from "@/validators/jobs/delivery.schema";
 
 export const deliveryWorker = createLoggedWorker<unknown>(
   DELIVERY_QUEUE_NAME,
