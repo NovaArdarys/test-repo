@@ -16,7 +16,7 @@ import {
   getMenuByIdHandler,
   updateMenuHandler,
   deleteMenuHandler
-} from '@/controllers/public/menu.controller';
+} from '@/controllers/public/web/menu.controller';
 
 const app = new Hono();
 

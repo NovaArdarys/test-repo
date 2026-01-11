@@ -29,7 +29,7 @@ import {
   listPlanDistributionHandler,
   assignPlanDistributionHandler,
   unassignPlanDistributionHandler
-} from '@/controllers/public/menu.plan.controller';
+} from '@/controllers/public/web/menu.plan.controller';
 import { distributeMenuPlanHandler } from '@/controllers/public/web/distribute.route.controller';
 
 const app = new Hono();
