@@ -1,8 +1,8 @@
 import { boolean, date, index, integer, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
-import { deliveryBeneficiaryStatusEnum, deliveryStatusEnum } from "./enums/enums";
-import { masterSteps } from "./stepPlan.schema";
+import { deliveryStatusEnum } from "./enums/enums";
 import { users } from "./user.schema";
 import { storage } from "./storage.schema";
+import { stepReports } from "./reporting.Schema";
 
 export const deliveries = pgTable('deliveries', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -64,8 +64,8 @@ export const deliveryStepReports = pgTable(
 
     stepId: uuid("step_id")
       .notNull()
-      .references(() => masterSteps.id, {
-        onDelete: "restrict",
+      .references(() => stepReports.id, {
+        onDelete: "cascade",
       }),
 
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),

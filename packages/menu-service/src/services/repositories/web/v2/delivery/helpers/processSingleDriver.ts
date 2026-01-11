@@ -5,7 +5,6 @@ import resolveDriverDailyReport from "./insert/insertDriverDailyReport";
 import insertDeliveryBeneficiary from "./insert/insertDeliveryBeneficiary";
 import insertDeliveryDropoff from "./insert/insertDeliveryDropoff";
 import insertPickupDelivery from "./insert/insertDeliveryPickup";
-import insertDeliveryStepReports from "./insert/insertDeliveryStepReports";
 import insertDriverLocation from "./insert/insertDriverLocation";
 import insertDriverStepReports from "./insert/insertDriverStepReports";
 
@@ -57,12 +56,6 @@ export default async function processSingleDriver(
     );
 
     //
-    // STEP REPORTS
-    //
-    await insertDeliveryStepReports(trx, beneficiaryPickupRecord.id, args.data.createdBy);
-    await insertDeliveryStepReports(trx, beneficiaryDropOffRecord.id, args.data.createdBy);
-
-    //
     // ETA
     //
     await trx.update(deliveries)
@@ -77,7 +70,7 @@ export default async function processSingleDriver(
 
     if (!dailyReportMap[args.driver.id]?.[unit.type]) {
       const dailyReportId = await resolveDriverDailyReport(trx, args, args.driver, unit, dailyReportMap);
-      await insertDriverStepReports(trx, args, dailyReportId);
+      await insertDriverStepReports(trx, args, dailyReportId, { dropoffId: beneficiaryDropOffRecord.id, pickupId: beneficiaryPickupRecord.id });
     }
     //
     // RETURN RESULT

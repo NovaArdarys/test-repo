@@ -150,7 +150,6 @@ export const stepReportRelations = relations(stepReports, ({ one }) => ({
  */
 export const masterStepRelations = relations(masterSteps, ({ many }) => ({
   stepReports: many(stepReports),
-  deliveryStepReports: many(deliveryStepReports),
 }));
 
 /**
@@ -629,9 +628,9 @@ export const deliveryStepReportsRelations = relations(
       fields: [deliveryStepReports.deliveryBeneficiaryId],
       references: [deliveryBeneficiaries.id],
     }),
-    step: one(masterSteps, {
+    step: one(stepReports, {
       fields: [deliveryStepReports.stepId],
-      references: [masterSteps.id],
+      references: [stepReports.id],
     }),
     createdByUser: one(users, {
       fields: [deliveryStepReports.createdBy],
