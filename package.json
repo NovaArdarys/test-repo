@@ -9,6 +9,7 @@
     "infra:up": "bun run scripts/infra-up.ts",
     "infra:down": "bun run scripts/infra-down.ts",
     "check:imports": "bun scripts/check-imports.ts",
+    "check:used": "bun  scripts/scan-import-prefix.ts",
     "run:all": "bun scripts/start-all-no-ui.ts"
   },
   "devDependencies": {
