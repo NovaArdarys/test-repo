@@ -7,7 +7,7 @@ import {
 import {
   getDeliveriesList,
   getDeliveryById
-} from "@/services/repositories/delivery.service";
+} from "@/services/repositories/web/delivery.service";
 
 const getAuditFields = (c: Context) => ({
   createdBy: c.get('userId'),

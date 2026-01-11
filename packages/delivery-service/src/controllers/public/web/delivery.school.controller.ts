@@ -3,7 +3,7 @@ import { catchAsync } from "@/utils/catchAsync";
 import {
   DeliveryBeneficiaryListQueryType,
 } from "@/validators";
-import { getDeliveryBeneficiaryList } from "@/services/repositories/delivery.schools.service";
+import { getDeliveryBeneficiaryList } from "@/services/repositories/web/delivery.schools.service";
 
 const getAuditFields = (c: Context) => ({
   createdBy: c.get('userId'),
