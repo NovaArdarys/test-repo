@@ -46,7 +46,7 @@ async function handleStorageEvent(data: z.infer<typeof storageCommittedSchema>) 
       imageURL: parsed.url,
       updatedBy: parsed.meta?.uploadedBy,
     });
-    console.log(`[STORAGE EVENT] ✅ Updated kitchen ${parsed.entityId}`);
+    console.log(`[STORAGE EVENT] Updated kitchen ${parsed.entityId}`);
   }
 
   if (parsed.entityType === "profile_supplier" && parsed.storageId) {
@@ -55,7 +55,7 @@ async function handleStorageEvent(data: z.infer<typeof storageCommittedSchema>) 
       imageURL: parsed.url,
       updatedBy: parsed.meta?.uploadedBy,
     });
-    console.log(`[STORAGE EVENT] ✅ Updated supplier ${parsed.entityId}`);
+    console.log(`[STORAGE EVENT] Updated supplier ${parsed.entityId}`);
   }
 }
 
