@@ -9,7 +9,7 @@ import {
   AssignPlanDistributionSchemaType,
   UnassignPlanDistributionQuerySchemaType
 } from "@/validator/menu.plan.validator";
-import { createMenuPlan, getDistributionByMenuPlanId, getFoodItemsByMenuPlanId, getMenuPlanById, getMenuPlansList, softDeleteMenuPlan, updateMenuPlan, updatePlanStatus } from "@/services/repositories/menu.plan.service";
+import { getDistributionByMenuPlanId, getFoodItemsByMenuPlanId, getMenuPlanById, getMenuPlansList, softDeleteMenuPlan, updateMenuPlan, updatePlanStatus } from "@/services/repositories/menu.plan.service";
 import { assignFoodToMenuPlan, unassignFoodFromMenuPlan } from "@/services/repositories/menu.food.service";
 import { assignPlanDistribution, unassignPlanDistribution } from "@/services/repositories/menu.plan.schools.kitchen.service";
 import { isEmpty } from "lodash";

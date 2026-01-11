@@ -15,7 +15,6 @@ export const menuPlanWorker = new Worker(
       const input = menuPlanJobSchema.parse(job.data);
 
       if (input.type === "create") {
-        console.log("=====starting====");
         const result = await createMenuPlan(
           input.data,
           input.kitchenId!,
