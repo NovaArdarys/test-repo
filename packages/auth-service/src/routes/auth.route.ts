@@ -6,7 +6,7 @@ import {
     RefreshTokenSchema,
     RegisterSchema,
     ResetPasswordSchema,
-} from '@/validator/auth.validator';
+} from '@/validators';
 import { logoutHandler } from '@/controllers/logout.controller';
 import { refreshHandler } from '@/controllers/refresh.controller';
 import { forgotPasswordHandler, resetPasswordHandler } from '@/controllers/password.controller';

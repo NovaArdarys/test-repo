@@ -1,4 +1,4 @@
-import { ForgotPasswordSchemaType, ResetPasswordSchemaType } from "../validator/auth.validator";
+import { ForgotPasswordSchemaType, ResetPasswordSchemaType } from "../validators";
 import { catchAsync } from "../utils/catchAsync";
 import ApiError from "@/utils/ApiError";
 import { isEmpty } from "lodash";

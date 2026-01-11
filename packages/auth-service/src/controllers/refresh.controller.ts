@@ -2,7 +2,7 @@ import { catchAsync } from "@/utils/catchAsync";
 import { verifyToken, generateToken, generateRefreshToken } from "@/utils/jwt";
 import ApiError from "@/utils/ApiError";
 import { saveTokenServiceClient, validateRefreshTokenServiceClient } from "@/services/clients/user.service";
-import { RefreshTokenSchemaType } from "@/validator/auth.validator";
+import { RefreshTokenSchemaType } from "@/validators";
 import * as HttpStatus from "http-status";
 import { parseDeviceInfo } from "@/utils/device.util";
 import { REDIS_PERMIISONS_KEY_PREFIX, TIMESTAMP_30_DAYS } from "@/constants/config";

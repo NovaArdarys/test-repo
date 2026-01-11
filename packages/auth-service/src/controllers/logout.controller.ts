@@ -1,7 +1,7 @@
 import { revokeRefreshTokenServiceClient } from "@/services/clients/user.service";
 import ApiError from "@/utils/ApiError";
 import { catchAsync } from "@/utils/catchAsync";
-import { RefreshTokenSchemaType } from "@/validator/auth.validator";
+import { RefreshTokenSchemaType } from "@/validators";
 import * as HttpStatus from "http-status";
 
 export const logoutHandler = catchAsync(async (c) => {

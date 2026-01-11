@@ -2,7 +2,7 @@ import { emailQueue } from "@/jobs/queue/email.queue";
 import { createUserServiceClient } from "@/services/clients/user.service";
 import { catchAsync } from "@/utils/catchAsync";
 import { generateResetToken } from "@/utils/jwt";
-import { RegisterSchemaType } from "@/validator/auth.validator";
+import { RegisterSchemaType } from "@/validators";
 import { Context } from "hono";
 
 const getAuditFields = (c: Context) => ({
