@@ -1,5 +1,5 @@
 import { dailyReports } from "@/db/schemas";
-import { Trx, MenuPlan, DailyReport } from "../types/domain";
+import { Trx, MenuPlan, DailyReport } from "../../types/domain";
 import createStepReports from "./createStepReports";
 
 export default async function createKitchenDailyReport(

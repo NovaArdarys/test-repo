@@ -1,10 +1,11 @@
 import { db } from "@/db";
-import { masterSteps } from "@/db/schemas";
-import { eq } from "drizzle-orm";
+import { masterSteps, stepKeyEnum } from "@/db/schemas";
+import { and, eq } from "drizzle-orm";
 
+type StepKey = (typeof stepKeyEnum.enumValues)[number];;
 export interface StepTemplate {
   id: string;
-  stepKey: string;
+  stepKey: StepKey;
   subDomains?: string[] | null;
 }
 
@@ -20,7 +21,7 @@ export async function planEntity(
       targetEntity: masterSteps.entityType
     })
     .from(masterSteps)
-    .where(eq(masterSteps.entityType, entityType));
+    .where(and(eq(masterSteps.entityType, entityType), eq(masterSteps.isDeleted, false)));
 
   return rows.map(row => ({
     id: row.id,

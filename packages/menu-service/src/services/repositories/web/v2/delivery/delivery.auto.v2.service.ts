@@ -7,7 +7,7 @@ import {
 } from "./types/domain";
 
 import fetchKitchen from "./helpers/fetcher/fetchKitchen";
-import fetchMenuPlan from "./helpers/fetchMenuPlan";
+import fetchMenuPlan from "./helpers/fetcher/fetchMenuPlan";
 import fetchBeneficiaries from "./helpers/fetcher/fetchBeneficiaries";
 import fetchDrivers from "./helpers/fetcher/fetchDrivers";
 
