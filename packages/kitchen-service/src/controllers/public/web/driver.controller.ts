@@ -2,7 +2,7 @@ import { Context } from "hono";
 import ApiError from "@/utils/ApiError";
 import { catchAsync } from "@/utils/catchAsync";
 import { createDriver, getDriverById, getDriverByUserId, getDriversList, softDeleteDriver, updateDriver } from "@/services/repositories/driver.service";
-import { CreateDriverSchemaType } from "@/validators/driver.validator";
+import { CreateDriverSchemaType } from "@/validator";
 
 const getAuditFields = (c: Context) => ({
   createdBy: c.get('userId'),

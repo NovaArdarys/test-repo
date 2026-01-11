@@ -7,7 +7,7 @@ import {
   updateSupplier,
   deleteSupplier,
 } from "@/services/repositories/suppliers.service";
-import { CreateSupplierSchemaType, ItemsQuerySchemaType } from "@/validators/supplier.validator";
+import { CreateSupplierSchemaType, ItemsQuerySchemaType } from "@/validator";
 import { isEmpty } from "lodash";
 import { resolveKitchenId } from "@/services/repositories/additional/get.kitchen.by.user.service";
 import { resolveEntityId } from "@/utils/resolveEntity";

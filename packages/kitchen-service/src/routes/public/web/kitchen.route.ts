@@ -3,8 +3,7 @@ import { validate } from '@/middleware/validate.middleware';
 import { permission } from '@/middleware/permission.middleware';
 import { checkAccessToken } from '@/middleware/auth.middleware';
 
-import { idParamSchema, paginationSchema, userIdParamSchema } from '@/validators/global.validator';
-import { createKitchenSchema, assignUserToKitchenSchema, listKitchensQuerySchema } from '@/validators/kitchen.validator';
+import { idParamSchema, userIdParamSchema, createKitchenSchema, assignUserToKitchenSchema, listKitchensQuerySchema } from '@/validator';
 
 import {
   listKitchensHandler,

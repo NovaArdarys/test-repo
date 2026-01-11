@@ -1,13 +1,6 @@
 import { Context } from "hono";
 import { catchAsync } from "@/utils/catchAsync";
-import {
-  getSuppliers,
-  getSupplierById,
-  createSupplier,
-  updateSupplier,
-  deleteSupplier,
-} from "@/services/repositories/suppliers.service";
-import { CreateSupplierSchemaType, ItemsQuerySchemaType, UpdateSupplierFoodItemSchemaType } from "@/validators/supplier.validator";
+import { UpdateSupplierFoodItemSchemaType } from "@/validator";
 import { updateSupplierFoodItem } from "@/services/repositories/suppliers.food.items.service";
 
 

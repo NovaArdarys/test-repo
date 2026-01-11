@@ -8,8 +8,7 @@ import {
   deleteSupplierHandler,
 } from "@/controllers/public/mobile/suppliers.controller";
 import { validate } from "@/middleware/validate.middleware";
-import { CreateSupplierSchema, ItemsQuerySchema, UpdateSupplierSchema } from "@/validators/supplier.validator";
-import { idParamSchema } from "@/validators/global.validator";
+import { idParamSchema, CreateSupplierSchema, ItemsQuerySchema, UpdateSupplierSchema } from "@/validator";
 
 const app = new Hono();
 app.use(checkAccessToken);
