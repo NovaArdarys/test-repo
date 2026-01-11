@@ -49,7 +49,7 @@ export const loginHandler = catchAsync(async (c) => {
 
     captchaScore = result.score;
   } else {
-    console.log("⚠️ captcha token missing — skipping verification");
+    console.log("captcha token missing");
   }
 
 
@@ -83,9 +83,6 @@ export const loginHandler = catchAsync(async (c) => {
       console.log(`Permissions cached for user ${roleId}`);
     }
   }
-
-  console.log(findUser.userRoles?.[0].role, "===== ok ======");
-
 
   let context = {
     domain: domain ?? "",
@@ -122,7 +119,6 @@ export const loginHandler = catchAsync(async (c) => {
     email: findUser.email,
     roleId: roleId,
   };
-  console.log({ ...payload, data: context }, "====ok=====");
 
   const accessToken = await generateToken({ ...payload, data: context });
   const { token, tmpExp } = await generateRefreshToken(payload);

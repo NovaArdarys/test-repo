@@ -33,9 +33,6 @@ export const forgotPasswordHandler = catchAsync(async (c) => {
     }
   );
 
-
-  // await sendEmail("reset-password", findUser.email, { resetLink });
-
   return c.json({
     status: "success",
     message: "Reset password email has been sent",

@@ -64,8 +64,6 @@ export const refreshHandler = catchAsync(async (c) => {
     }
   }
 
-
-
   await saveTokenServiceClient(decoded.id, newRefreshToken, tmpExp, deviceInfo.ip, `${deviceInfo.deviceType} | ${deviceInfo.browser} on ${deviceInfo.os}`);
 
   return c.json({
