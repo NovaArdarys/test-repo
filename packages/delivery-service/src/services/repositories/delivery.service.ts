@@ -2,7 +2,7 @@
 import { db } from "@/db";
 import { deliveries, deliveryBeneficiaries, } from "@/db/schemas";
 import { generateDeliveryCode } from "@/messaging/utils/generateDeliveryCode";
-import { entityTypeEnum } from "@/validator/globa.validator";
+import { entityTypeEnum } from "@/validators/global.validator";
 import { eq, InferSelectModel, InferInsertModel } from "drizzle-orm";
 import { isEmpty } from "lodash";
 import z from "zod";

@@ -1,6 +1,6 @@
 import { db } from "@/db";
 import { deliveryBeneficiaries, beneficiaries, menuPlans, } from "@/db/schemas";
-import { DeliveryBeneficiaryListQueryType } from "@/validator/delivery.school.validation";
+import { DeliveryBeneficiaryListQueryType } from "@/validators";
 import { eq, and, sql, InferSelectModel, InferInsertModel, desc, SQLWrapper } from "drizzle-orm";
 
 export type DeliveryBeneficiary = InferSelectModel<typeof deliveryBeneficiaries>;

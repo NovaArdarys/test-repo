@@ -3,10 +3,10 @@ import { validate } from '@/middleware/validate.middleware';
 import { permission } from '@/middleware/permission.middleware';
 import { checkAccessToken } from '@/middleware/auth.middleware';
 
-import { idParamSchema } from '@/validator/globa.validator';
+import { idParamSchema } from '@/validators/global.validator';
 import {
   ListDeliveriesQuerySchema
-} from '@/validator/delivery.validator';
+} from '@/validators';
 
 import {
   listDeliveriesHandler,

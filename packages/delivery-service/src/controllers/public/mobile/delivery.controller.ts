@@ -2,13 +2,13 @@ import { Context } from "hono";
 import { catchAsync } from "@/utils/catchAsync";
 import {
   ListDeliveriesQuerySchemaType
-} from "@/validator/delivery.validator";
+} from "@/validators";
 
 import { updateDeliveryStatus, getDeliveriesListDriver } from "@/services/repositories/mobile/delivery.driver.service";
 import { getDeliveriesListKitchen } from "@/services/repositories/mobile/delivery.kitchen.service";
 import { getDeliveriesListBeneficiary } from "@/services/repositories/mobile/delivery.beneficery.service";
 import { deliveryQueue } from "@/jobs/queue/delivery.queue";
-import { UpdateDeliveryStatusSchemaType } from "../../../validator/delivery.validator";
+import { UpdateDeliveryStatusSchemaType } from "../../../validators";
 
 const getAuditFields = (c: Context) => ({
   createdBy: c.get('userId'),

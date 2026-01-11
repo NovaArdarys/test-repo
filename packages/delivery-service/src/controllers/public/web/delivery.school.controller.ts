@@ -1,12 +1,9 @@
 import { Context } from "hono";
 import { catchAsync } from "@/utils/catchAsync";
 import {
-  DeliveryBeneficiaryCreatebodySchemaType,
   DeliveryBeneficiaryListQueryType,
-  DeliveryBeneficiaryUpdateType,
-  UpdateDeliveryBeneficiaryStatusSchemaType,
-} from "@/validator/delivery.school.validation";
-import { assignBeneficiaryToDelivery, getDeliveryBeneficiaryById, getDeliveryBeneficiaryList, softDeleteDeliveryBeneficiary, updateDeliveryBeneficiary, updateDeliveryBeneficiaryStatusById } from "@/services/repositories/delivery.schools.service";
+} from "@/validators";
+import { getDeliveryBeneficiaryList } from "@/services/repositories/delivery.schools.service";
 
 const getAuditFields = (c: Context) => ({
   createdBy: c.get('userId'),

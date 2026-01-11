@@ -7,9 +7,9 @@ import {
   ListDeliveriesQuerySchema,
   RecordLocationSchema,
   UpdateDeliveryStatusSchema,
-} from '@/validator/delivery.validator';
+} from '@/validators';
 
-import { entityTypeEnum, idParamSchema } from '@/validator/globa.validator';
+import { entityTypeEnum, idParamSchema } from '@/validators/global.validator';
 import z from 'zod';
 import { listDeliveriesHandler, updateDeliveryStatusHandler } from '@/controllers/public/mobile/delivery.controller';
 import { createBulkLocationHandler, createSingleLocationHandler, listLocationsByDeliveryHandler } from '@/controllers/public/mobile/driver.location.controller';

@@ -2,7 +2,7 @@ import { Context } from "hono";
 import { catchAsync } from "@/utils/catchAsync";
 import {
   ListDeliveriesQuerySchemaType
-} from "@/validator/delivery.validator";
+} from "@/validators";
 
 import {
   getDeliveriesList,

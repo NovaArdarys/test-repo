@@ -1,6 +1,6 @@
 import { Context } from "hono";
 import { catchAsync } from "@/utils/catchAsync";
-import { BulkRecordLocationSchemaType, RecordLocationSchemaType } from "@/validator/delivery.validator";
+import { BulkRecordLocationSchemaType, RecordLocationSchemaType } from "@/validators";
 import { getDriverLocationHistoryByDeliveryId, createDriverLocationService, createBulkDriverLocationsService } from "@/services/repositories/mobile/driver.location.service"; // Asumsi service pelacakan
 
 const getAuditFields = (c: Context) => ({
