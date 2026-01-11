@@ -11,7 +11,7 @@ import {
 import {
   listDeliveriesHandler,
   getDeliveryByIdHandler
-} from '@/controllers/public/delivery.controller';
+} from '@/controllers/public/web/delivery.controller';
 
 const app = new Hono();
 app.use(checkAccessToken);

@@ -1,22 +1,13 @@
 import { Context } from "hono";
 import { catchAsync } from "@/utils/catchAsync";
 import {
-  CreateDeliverySchemaType,
-  ListDeliveriesQuerySchemaType,
-  UpdateDeliverySchemaType,
-  UpdateDeliveryStatusSchemaType,
-  AssignBeneficiarySchemaType
+  ListDeliveriesQuerySchemaType
 } from "@/validator/delivery.validator";
 
 import {
-  createDelivery,
   getDeliveriesList,
-  getDeliveryById,
-  softDeleteDelivery,
-  updateDelivery,
-  updateDeliveryStatus
+  getDeliveryById
 } from "@/services/repositories/delivery.service";
-import { assignBeneficiaryToDelivery, getBeneficiarysByDeliveryId, unassignBeneficiaryFromDelivery } from "@/services/repositories/delivery.schools.service";
 
 const getAuditFields = (c: Context) => ({
   createdBy: c.get('userId'),
