@@ -1,7 +1,7 @@
 import { deliveries } from "@/db/schemas";
-import { ProcessSingleDriverArgs } from "../types/autoDelivery";
-import { DeliveryUnit } from "../types/domain";
-import { generateDeliveryCode } from "../lib/generateDeliveryCode";
+import { ProcessSingleDriverArgs } from "../../types/autoDelivery";
+import { DeliveryUnit } from "../../types/domain";
+import { generateDeliveryCode } from "../../lib/generateDeliveryCode";
 import { sql } from "drizzle-orm";
 
 export default async function insertPickupDelivery(

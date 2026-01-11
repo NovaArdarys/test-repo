@@ -1,13 +1,13 @@
 import { Trx, } from "../types/domain";
 import { ProcessSingleDriverArgs, DeliveryResult } from "../types/autoDelivery";
-import resolveDriverDailyReport from "./resolveDriverDailyReport";
+import resolveDriverDailyReport from "./insert/insertDriverDailyReport";
 
-import insertDeliveryBeneficiary from "./insertDeliveryBeneficiary";
-import insertDeliveryDropoff from "./insertDeliveryDropoff";
-import insertPickupDelivery from "./insertDeliveryPickup";
-import insertDeliveryStepReports from "./insertDeliveryStepReports";
-import insertDriverLocation from "./insertDriverLocation";
-import insertDriverStepReports from "./insertDriverStepReports";
+import insertDeliveryBeneficiary from "./insert/insertDeliveryBeneficiary";
+import insertDeliveryDropoff from "./insert/insertDeliveryDropoff";
+import insertPickupDelivery from "./insert/insertDeliveryPickup";
+import insertDeliveryStepReports from "./insert/insertDeliveryStepReports";
+import insertDriverLocation from "./insert/insertDriverLocation";
+import insertDriverStepReports from "./insert/insertDriverStepReports";
 
 import { deliveries } from "@/db/schemas";
 import { eq } from "drizzle-orm";

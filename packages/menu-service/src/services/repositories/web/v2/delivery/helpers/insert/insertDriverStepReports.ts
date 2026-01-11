@@ -1,5 +1,5 @@
 import { stepReports } from "@/db/schemas";
-import { getStepTemplate } from "./driverSteps";
+import { getStepTemplate } from "../driverSteps";
 
 export default async function insertDriverStepReports(
   trx: any,
