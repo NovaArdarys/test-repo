@@ -64,19 +64,16 @@ function resolveImport(
  * Check if file or directory (index) exists
  */
 function resolveFile(base: string): boolean {
-  // exact file
   if (fs.existsSync(base) && fs.statSync(base).isFile()) {
     return true;
   }
 
-  // try extensions
   for (const ext of EXTENSIONS) {
     if (fs.existsSync(base + ext)) {
       return true;
     }
   }
 
-  // directory → index.*
   if (fs.existsSync(base) && fs.statSync(base).isDirectory()) {
     for (const idx of INDEX_FILES) {
       if (fs.existsSync(path.join(base, idx))) {
@@ -88,9 +85,7 @@ function resolveFile(base: string): boolean {
   return false;
 }
 
-/* ================================
- * SCAN FILE
- * ================================ */
+// SCAN FILE
 
 function scanFile(filePath: string, errors: string[]) {
   const content = fs.readFileSync(filePath, "utf8");
@@ -121,10 +116,6 @@ Resolved : ${resolved}
   }
 }
 
-/* ================================
- * WALK DIRECTORY
- * ================================ */
-
 function walk(dir: string, errors: string[]) {
   if (!fs.existsSync(dir)) return;
 
@@ -146,10 +137,6 @@ function walk(dir: string, errors: string[]) {
     }
   }
 }
-
-/* ================================
- * MAIN
- * ================================ */
 
 function main() {
   const errors: string[] = [];
