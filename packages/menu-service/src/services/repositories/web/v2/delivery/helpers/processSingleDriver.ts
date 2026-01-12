@@ -11,6 +11,8 @@ import insertDriverStepReports from "./insert/insertDriverStepReports";
 import { deliveries } from "@/db/schemas";
 import { eq } from "drizzle-orm";
 import generateDeliveryMarkdownFull, { MdDeliveryLog } from "../lib/testing-purpose/generateDeliveryMarkdownFull";
+import getDriverStepReportsByDailyReportId from "./fetcher/fetchDailyReport";
+import createDriverDeliveryStepReports from "./insert/insertDriverDeliveryStepReports";
 
 export default async function processSingleDriver(
   trx: Trx,
@@ -68,10 +70,43 @@ export default async function processSingleDriver(
 
     // Driver dengan >1 unit, beda portionType → 1 daily report per portionType
 
-    if (!dailyReportMap[args.driver.id]?.[unit.type]) {
-      const dailyReportId = await resolveDriverDailyReport(trx, args, args.driver, unit, dailyReportMap);
-      await insertDriverStepReports(trx, args, dailyReportId, { dropoffId: beneficiaryDropOffRecord.id, pickupId: beneficiaryPickupRecord.id });
+    let dailyReportId =
+      dailyReportMap[args.driver.id]?.[unit.type];
+
+    let stepReports;
+
+    if (!dailyReportId) {
+      dailyReportId = await resolveDriverDailyReport(
+        trx,
+        args,
+        args.driver,
+        unit,
+        dailyReportMap
+      );
+
+      stepReports = await insertDriverStepReports(
+        trx,
+        args,
+        dailyReportId
+      );
+    } else {
+      stepReports = await getDriverStepReportsByDailyReportId(
+        trx,
+        dailyReportId
+      );
     }
+
+    await createDriverDeliveryStepReports(
+      trx,
+      args,
+      stepReports,
+      {
+        pickupId: beneficiaryPickupRecord.id,
+        dropoffId: beneficiaryDropOffRecord.id,
+      }
+    );
+
+    // { dropoffId: beneficiaryDropOffRecord.id, pickupId: beneficiaryPickupRecord.id }
     //
     // RETURN RESULT
     //

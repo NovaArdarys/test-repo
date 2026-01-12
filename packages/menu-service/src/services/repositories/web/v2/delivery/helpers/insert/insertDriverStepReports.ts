@@ -1,21 +1,19 @@
 // src/modules/steps/insertDriverStepReports.ts
 import { stepKeyEnum, stepReports } from "@/db/schemas";
 import { getStepTemplate } from "../driverSteps";
-import insertDeliveryStepReports from "./insertDeliveryStepReports";
 
 export type StepKey = (typeof stepKeyEnum.enumValues)[number];
+
+export interface InsertedStepReport {
+  stepKey: StepKey;
+  stepReportId: string;
+}
+
 export default async function insertDriverStepReports(
   trx: any,
   args: any,
   dailyReportId: string,
-  {
-    pickupId,
-    dropoffId,
-  }: {
-    pickupId: string;
-    dropoffId: string;
-  }
-): Promise<void> {
+): Promise<InsertedStepReport[]> {
   const steps = await getStepTemplate("driver");
 
   const inserted = await trx
@@ -32,34 +30,9 @@ export default async function insertDriverStepReports(
       id: stepReports.id,
     });
 
-  const stepReportByKey = new Map<StepKey, string>();
 
-  steps.forEach((step, index) => {
-    stepReportByKey.set(step.stepKey as StepKey, inserted[index].id);
-  });
-
-  for (const step of steps) {
-    const stepReportId = stepReportByKey.get(step.stepKey as StepKey);
-    if (!stepReportId) continue;
-
-    switch (step.stepKey as StepKey) {
-      case "pickup":
-        await insertDeliveryStepReports(
-          trx,
-          pickupId,
-          args.data.createdBy,
-          stepReportId
-        );
-        break;
-
-      case "delivery":
-        await insertDeliveryStepReports(
-          trx,
-          dropoffId,
-          args.data.createdBy,
-          stepReportId
-        );
-        break;
-    }
-  }
+  return steps.map((step, index) => ({
+    stepKey: step.stepKey as StepKey,
+    stepReportId: inserted[index].id,
+  }));
 }
