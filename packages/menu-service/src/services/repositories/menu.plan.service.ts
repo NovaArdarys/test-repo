@@ -4,6 +4,7 @@ import { eq, and, sql, desc, InferSelectModel, InferInsertModel, inArray } from 
 import { FoodItem } from "./food.item.service";
 import { isEmpty } from "lodash";
 import { buildPaginatedWhere } from "@/utils/pagination";
+import { buildMenuPlanDeliveries } from "./normalize/deliveryBeneficiaryNormalize";
 
 type ExpandedStep = {
     stepId: string;
@@ -246,6 +247,9 @@ export async function getMenuPlanById(
                     foodItem: {
                         with: {
                             suppliers: {
+                                where: (sfi, { and, eq }) => {
+                                    return and(eq(sfi.isDeleted, false), eq(sfi.menuPlanId, menuPlans.id),);
+                                },
                                 with: {
                                     supplier: {
                                         columns: {
@@ -270,6 +274,12 @@ export async function getMenuPlanById(
             },
             menuPlankitchen: true,
             menuPlanBeneficiaries: {
+                columns: {
+                    largePortion: true,
+                    largeDeliveryTime: true,
+                    smallDeliveryTime: true,
+                    smallPortion: true,
+                },
                 with: {
                     beneficiary: {
                         columns: {
@@ -280,6 +290,69 @@ export async function getMenuPlanById(
                             updatedAt: true
                         }
                     },
+                }
+            },
+            deliveryBeneficiaries: {
+                with: {
+                    beneficiary: {
+                        columns: {
+                            address: true,
+                            category: true,
+                            imageUrl: true,
+                            storageId: true,
+                            lat: true,
+                            lon: true,
+                            phoneNumber: true,
+                            joinedDate: true,
+                            name: true,
+                            status: true,
+                        }
+                    },
+                    delivery: {
+                        with: {
+                            driver: {
+                                columns: {
+                                    licenseNumber: true,
+                                    portionCapacity: true,
+                                },
+                                with: {
+                                    user: {
+                                        columns: {
+                                            id: true,
+                                            email: true,
+                                            isActive: true
+                                        },
+                                        with: {
+                                            userDetails: {
+                                                columns: {
+                                                    address: true,
+                                                    firstName: true,
+                                                    lastName: true,
+                                                    imageURL: true,
+                                                    phoneNumber: true,
+                                                    storageId: true,
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            },
+                        }
+                    },
+                    deliveryStepReports: {
+                        with: {
+                            step: {
+                                with: {
+                                    masterStep: {
+                                        columns: {
+                                            stepName: true,
+                                            stepOrder: true,
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -316,20 +389,26 @@ export async function getMenuPlanById(
         if (mpsk.beneficiary?.id)
             beneficiaryMap.set(mpsk.beneficiary.id, {
                 ...mpsk.beneficiary,
-                portion: 0,
+                smallPortion: mpsk.smallPortion,
+                largePortion: mpsk.largePortion,
+                largeDeliveryTime: mpsk.largeDeliveryTime,
+                smallDeliveryTime: mpsk.smallDeliveryTime,
             });
     });
-
-    const { menuPlanBeneficiaries, consumptionNote, menuPlankitchen, menuFoodItem, planEndDate, planStartDate, ...menuPlan } = data;
+    const delivery = buildMenuPlanDeliveries(
+        data.deliveryBeneficiaries
+    );
+    const { menuPlanBeneficiaries, consumptionNote, menuPlankitchen, menuFoodItem, planEndDate, planStartDate, deliveryBeneficiaries, ...menuPlan } = data;
 
     const formattedData = {
         ...menuPlan,
+        delivery,
         foodWasteNote: data.consumptionNote?.[0]?.note,
         foodWasteReason: data.consumptionNote?.[0]?.reason,
         date: planStartDate,
         kitchenId: kitchenIds?.[0] ?? null,
         foodItems: Array.from(foodItemMap.values()),
-        beneficiaries: Array.from(beneficiaryMap.values())
+        beneficiaries: Array.from(beneficiaryMap.values()),
     };
 
     return {
@@ -397,6 +476,7 @@ export async function updateMenuPlan(
 
         if (!updatedPlan) return null;
 
+        await trx.delete(suppliersFoodItems).where(eq(suppliersFoodItems.menuPlanId, id));
         await trx.delete(menuFoodItem).where(eq(menuFoodItem.menuFoodPlanId, id));
         if (foodItemsIds?.length) {
             await trx.insert(menuFoodItem).values(
@@ -407,74 +487,18 @@ export async function updateMenuPlan(
                     createdBy: updatedBy!,
                 }))
             );
-        }
 
-        // Update beneficiaries
-        await trx.delete(menuPlanBeneficiaries).where(eq(menuPlanBeneficiaries.menuPlanId, id));
-        const beneficiariesByKitchen = kitchenId
-            ? await trx.select().from(beneficiaries).where(eq(beneficiaries.kitchenId, kitchenId))
-            : [];
-
-        if (beneficiariesByKitchen.length) {
-            await trx.insert(menuPlanBeneficiaries).values(
-                beneficiariesByKitchen.map(b => ({
+            await trx.insert(suppliersFoodItems).values(
+                foodItemsIds.map((foodItemId: string) => ({
+                    supplierId: null,
+                    foodItemId,
                     menuPlanId: updatedPlan.id,
-                    beneficiaryId: b.id,
-                    createdAt: updatedPlan.updatedAt,
-                    createdBy: updatedBy!,
+                    createdAt: updatedPlan.createdAt,
+                    createdBy: updatedPlan.createdBy,
+                    updatedAt: new Date(),
+                    updatedBy: updatedPlan.createdBy,
                 }))
             );
-        }
-
-        const planDates = generateDates(data.planStartDate!, data.planEndDate!);
-        await trx.delete(dailyReports).where(eq(dailyReports.menuPlanId, id));
-
-        async function createStepsForDailyReport(daily: any, entity: "kitchen" | "beneficiary") {
-            const expandedSteps = await expandStepsForEntity(entity);
-
-            await trx.insert(stepReports).values(
-                expandedSteps.map(es => ({
-                    dailyReportId: daily.id,
-                    stepId: es.stepId,
-                    subDomain: es.subDomain,
-                    isCompleted: false,
-                    createdBy: updatedBy!,
-                }))
-            );
-        }
-
-        // KITCHEN
-        if (kitchenId) {
-            for (const date of planDates) {
-                const [dailyKitchen] = await trx.insert(dailyReports).values({
-                    date,
-                    entityId: kitchenId,
-                    entityType: "kitchen",
-                    menuPlanId: updatedPlan.id,
-                    status: "PENDING",
-                    createdAt: updatedPlan.updatedAt,
-                    createdBy: updatedBy!,
-                }).returning();
-
-                await createStepsForDailyReport(dailyKitchen, "kitchen");
-            }
-        }
-
-        // BENEFICIARIES
-        for (const school of beneficiariesByKitchen) {
-            for (const date of planDates) {
-                const [dailySchool] = await trx.insert(dailyReports).values({
-                    date,
-                    entityId: school.id,
-                    entityType: "beneficiary",
-                    menuPlanId: updatedPlan.id,
-                    status: "PENDING",
-                    createdAt: updatedPlan.updatedAt,
-                    createdBy: updatedBy!,
-                }).returning();
-
-                await createStepsForDailyReport(dailySchool, "beneficiary");
-            }
         }
 
         return updatedPlan;
