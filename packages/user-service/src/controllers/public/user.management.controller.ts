@@ -98,6 +98,8 @@ export const updateUserHandler = catchAsync(async (c) => {
   const { email, password, driverCapacity, address, dateOfBirth, firstName, lastName, phoneNumber, roleId, isActive, domainId, createdBy } = await c.get("validatedData").body as unknown as registerSchemaType;
   const audit = getAuditFields(c);
 
+  console.log(c.get("validatedData").body, "=====test======");
+
   const result = await updateUserAll(id, {
     email,
     password: "",

@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { drivers } from "@/db/schemas";
+import { drivers, users } from "@/db/schemas";
 import { and, eq, gt, inArray } from "drizzle-orm";
 
 export interface ActiveDriver {
@@ -20,11 +20,13 @@ export async function getActiveDriversByKitchen(
       portionCapacity: drivers.portionCapacity,
     })
     .from(drivers)
+    .leftJoin(users, eq(users.id, drivers.userId))
     .where(
       and(
         inArray(drivers.kitchenId, kitchenIds),
         eq(drivers.isDeleted, false),
         eq(drivers.isActive, true),
+        eq(users.isActive, true),
         gt(drivers.portionCapacity, 0)
       )
     );
