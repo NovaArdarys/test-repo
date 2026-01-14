@@ -1,6 +1,6 @@
 import { db } from "@/db";
 import { kitchens, } from "@/db/schemas";
-import { eq, InferSelectModel, InferInsertModel, SQLWrapper, sql, and, inArray } from "drizzle-orm";
+import { eq, InferSelectModel, InferInsertModel, SQLWrapper, sql, and, inArray, ilike } from "drizzle-orm";
 import { compact } from "lodash";
 
 export type Kitchen = InferSelectModel<typeof kitchens>;
@@ -136,7 +136,10 @@ export async function getKitchensList({
   const countResult = await db
     .select({ count: sql<number>`count(*)` })
     .from(kitchens)
-    .where(and(eq(kitchens.isDeleted, isDeleted)));
+    .where(and(...whereConditions,
+      eq(kitchens.isDeleted, isDeleted),
+      name ? ilike(kitchens.name, `%${name.toLowerCase()}%`) : undefined,
+      status ? eq(kitchens.status, status) : undefined,));
 
   const total = Number(countResult[0].count);
 
