@@ -62,48 +62,68 @@ export const listMenuPlansHandler = catchAsync(async (c: Context) => {
 });
 
 export const createMenuPlanHandler = catchAsync(async (c: Context) => {
-  const body = await await c.req.parseBody() as unknown as CreateMenuPlanSchemaType;
+  const body = await c.req.parseBody() as unknown as CreateMenuPlanSchemaType;
   const audit = getAuditFields(c);
 
-  const foodIdArray = body.foodIds as unknown as string[] || (body as any)["foodIds[]"] || [];
-  const dateArray = body.dates as unknown as string[] || (body as any)["dates[]"] || [];
+  const foodIdArray = body.foodIds as string[] || (body as any)["foodIds[]"] || [];
+  const dateArray = body.dates as string[] || (body as any)["dates[]"] || [];
+
+  const kitchenId = !isEmpty(body?.kitchenId) ? body.kitchenId : audit.kitchenId?.[0] || null;
+
+  if (!kitchenId) {
+    return c.json({ message: "kitchenId dibutuhkan" }, 400);
+  }
 
   const activeDrivers = await getActiveDriversByKitchen(audit.kitchenId);
-
   if (activeDrivers.length < 2) {
     return c.json(
-      {
-        message: "Tidak dapat membuat rencana menu. Pastikan terdapat minimal 2 pengemudi aktif dengan kapasitas porsi lebih dari 0.",
-      },
+      { message: "Minimal 2 pengemudi aktif dibutuhkan untuk membuat plan" },
       400
     );
   }
 
+  const jobIds: string[] = [];
+
   for (const date of dateArray) {
+    const jobId = `${kitchenId}-${date}`;
+
     await menuPlanQueue.add(
       "menuplan-create",
       {
         type: "create",
         data: {
           ...body,
-          kitchenId: !isEmpty(body?.kitchenId) ? body?.kitchenId : audit.kitchenId?.[0] || null,
+          kitchenId,
           createdBy: audit.createdBy,
-          planStartDate: body?.planStartDate || new Date().toISOString().split("T")[0],
-          planEndDate: body?.planEndDate || new Date().toISOString().split("T")[0],
+          planStartDate: date,
+          planEndDate: date,
           status: "ACTIVE"
         },
-        kitchenId: !isEmpty(body?.kitchenId) ? body?.kitchenId : audit.kitchenId?.[0],
+        kitchenId,
         foodItemsIds: foodIdArray,
         dates: date
       },
       {
-        jobId: `${!isEmpty(body?.kitchenId) ? body?.kitchenId : audit.kitchenId?.[0] || null}-${date}`,
+        jobId,
         priority: getPriorityByDate(date),
+        removeOnComplete: { age: 3600 * 24 * 7 },
+        removeOnFail: { age: 3600 * 24 * 7 }
       }
     );
+
+    jobIds.push(jobId);
   }
 
-  return c.json({ data: body, message: "Plan menu created" }, 201);
+  // Response cepat sekali
+  return c.json(
+    {
+      message: `Pembuatan menu plan untuk ${dateArray.length} tanggal telah dimulai`,
+      jobIds,           // kembalikan ke FE
+      kitchenId,
+      dates: dateArray
+    },
+    202 // Accepted — proses asynchronous
+  );
 });
 
 export const getMenuPlanByIdHandler = catchAsync(async (c: Context) => {
