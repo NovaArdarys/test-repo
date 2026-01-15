@@ -189,63 +189,6 @@ export async function getDashboardData(params: DashboardParams) {
     .groupBy(menuPlans.planStartDate)
     .orderBy(asc(menuPlans.planStartDate));
 
-  // const [summary] = await db
-  //   .select({
-  //     totalPorsi: sql<number>`
-  //       COALESCE(SUM(${deliveries.deliveredPortion}), 0)
-  //     `,
-  //     totalPenerima: sql<number>`
-  //       COUNT(DISTINCT ${beneficiaries.id})
-  //     `,
-  //     totalLaporan: sql<number>`
-  //       COUNT(DISTINCT ${eventReports.id})
-  //     `,
-  //   })
-  //   .from(deliveries)
-  //   .leftJoin(
-  //     beneficiaries,
-  //     eq(beneficiaries.kitchenId, deliveries.kitchenId)
-  //   )
-  //   .leftJoin(
-  //     eventReports,
-  //     eq(eventReports.entityId, beneficiaries.id)
-  //   )
-  //   .leftJoin(
-  //     kitchens,
-  //     eq(kitchens.id, deliveries.kitchenId)
-  //   )
-  //   .where(
-  //     and(
-  //       eq(deliveries.status, "DELIVERED"),
-  //       startDate ? gte(deliveries.deliveryDate, startDate) : undefined,
-  //       endDate ? lte(deliveries.deliveryDate, endDate) : undefined,
-  //       deliveryKitchenScope
-  //     )
-  //   );
-
-  // const portionTrend = await db
-  //   .select({
-  //     date: deliveries.deliveryDate,
-  //     total: sql<number>`
-  //       COALESCE(SUM(${deliveries.deliveredPortion}), 0)
-  //     `,
-  //   })
-  //   .from(deliveries)
-  //   .leftJoin(
-  //     kitchens,
-  //     eq(kitchens.id, deliveries.kitchenId)
-  //   )
-  //   .where(
-  //     and(
-  //       eq(deliveries.status, "DELIVERED"),
-  //       startDate ? gte(deliveries.deliveryDate, startDate) : undefined,
-  //       endDate ? lte(deliveries.deliveryDate, endDate) : undefined,
-  //       deliveryKitchenScope
-  //     )
-  //   )
-  //   .groupBy(deliveries.deliveryDate)
-  //   .orderBy(asc(deliveries.deliveryDate));
-
   const level: RegionLevel = params.regionLevel ?? "regency";
 
   let regionRaw: {
