@@ -45,14 +45,14 @@ export async function createMenuPlan(
       }
 
       const plan: MenuPlan = await createPlan(trx, data, kitchenId, date);
+      reports.push(plan);
+
       await attachFoodItems(trx, plan, foodItemsIds);
       await attachBeneficiaries(trx, plan, beneficiaries);
 
       const kitchenDaily = await createKitchenDailyReport(trx, plan);
-      reports.push(kitchenDaily);
 
       const beneficiaryDaily = await createBeneficiaryDailyReports(trx, plan, beneficiaries);
-      reports.push(...beneficiaryDaily);
 
       const delivery = await createAutoDelivery({
         kitchenId: plan.kitchenId!,
@@ -60,10 +60,8 @@ export async function createMenuPlan(
         createdBy: plan.createdBy
       }, trx);
 
-      reports.push(...delivery);
-
     }
 
-    return { dailyReports: reports };
+    return { dailyReports: reports, };
   });
 }

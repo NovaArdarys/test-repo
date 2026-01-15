@@ -5,6 +5,7 @@ import { MENU_PLAN_QUEUE } from "../queue/menuplan.queue";
 import { menuPlanJobSchema } from "@/jobs/types/menuplan.type";
 import { updateMenuPlan } from "@/services/repositories/menu.plan.service";
 import { createMenuPlan } from "@/services/repositories/web/v2/menu-plan/menu.plan.v2.service";
+import { processStatus } from "@/messaging/publishers/notification.publisher";
 
 export const menuPlanWorker = new Worker(
   MENU_PLAN_QUEUE,
@@ -22,6 +23,18 @@ export const menuPlanWorker = new Worker(
           [input.dates]
         );
 
+        await processStatus.completed({
+          entityType: "MENU_PLAN",
+          entityId: result.dailyReports?.[0]?.id,
+          kitchenId: input.kitchenId!,
+          jobId: job.id,
+          date: input.dates,
+          result: { planId: result.dailyReports?.[0]?.id, totalReports: result.dailyReports.length },
+          message: `Menu plan berhasil dibuat untuk tanggal ${input.dates}`,
+          progress: 100,
+          status: "QUEUED",
+          timestamp: ""
+        });
         return { status: "created", result };
       }
 
@@ -33,6 +46,19 @@ export const menuPlanWorker = new Worker(
           input.foodItemsIds,
           input.updatedBy
         );
+
+        await processStatus.completed({
+          entityType: "MENU_PLAN",
+          entityId: result?.id,
+          kitchenId: input.kitchenId!,
+          jobId: job.id,
+          date: input.dates,
+          result: { planId: result?.id, totalReports: 1 },
+          message: `Menu plan berhasil dibuat untuk tanggal ${input.dates}`,
+          progress: 100,
+          status: "QUEUED",
+          timestamp: ""
+        });
         return { status: "updated", result };
       }
 
@@ -41,18 +67,15 @@ export const menuPlanWorker = new Worker(
 
     } catch (error: any) {
 
-      // Handle duplicate
       if (error?.code === "23505" || error?.message?.includes("duplicate key")) {
         await job.remove();
         return { skipped: true };
       }
 
-      // Retry if still allowed
       if (job.attemptsMade < job.opts.attempts!) {
         throw error;
       }
 
-      // No more retry
       console.error("menuplan job dead:", error);
       throw error;
     }

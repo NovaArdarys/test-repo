@@ -14,7 +14,7 @@ data:
   REDIS_HOST_PORT: '6380'
   REDIS_MANAGEMENT_HOST_PORT: '5544'
 
-  # Supabase
+  # Databae
   DB_HOST: '128.199.77.145'
   DB_PORT: '5481'
   DB_NAME: 'mbgreport'

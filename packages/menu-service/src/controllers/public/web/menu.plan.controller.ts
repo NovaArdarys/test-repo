@@ -16,6 +16,7 @@ import { isEmpty } from "lodash";
 import { menuPlanQueue } from "@/jobs/queue/menuplan.queue";
 import { getPriorityByDate } from "@/utils/jobPriority";
 import { getActiveDriversByKitchen } from "@/services/repositories/web/driver.service";
+import { processStatus } from "@/messaging/publishers/notification.publisher";
 
 const getAuditFields = (c: Context) => ({
   createdBy: c.get('userId'),
@@ -150,7 +151,17 @@ export const updateMenuPlanHandler = catchAsync(async (c: Context) => {
     );
   }
 
-  const jobId = `menu-plan:update:${body?.kitchenId}:${body.planStartDate}`;
+  const jobId = `menu-plan:update:${audit.kitchenId?.[0]}:${body.planStartDate}`;
+
+  await processStatus.queued({
+    entityType: "MENU_PLAN",
+    kitchenId: audit.kitchenId?.[0] ?? "",
+    jobId,
+    date: body.planStartDate,
+    message: "Menu plan sedang diantrikan",
+    status: "QUEUED",
+    timestamp: ""
+  });
 
   await menuPlanQueue.add(
     "menuplan-update",
