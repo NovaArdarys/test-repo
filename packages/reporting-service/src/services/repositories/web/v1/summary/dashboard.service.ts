@@ -14,7 +14,7 @@ import {
   menuPlanBeneficiaries,
   menuPlans,
 } from "@/db/schemas";
-import { format } from "date-fns";
+import { format, parseISO, startOfDay } from "date-fns";
 import { and, eq, gte, lte, sql, desc, asc, inArray } from "drizzle-orm";
 
 export type RegionLevel = "province" | "regency" | "district" | "village";
@@ -94,20 +94,6 @@ export async function getDashboardData(params: DashboardParams) {
     villageId,
   });
 
-  console.log(audit, "=====audit=====", params);
-
-  const offset = (page - 1) * limit;
-
-  const deliveryKitchenScope = scopeOrAll(
-    deliveries.kitchenId,
-    audit.kitchenId
-  );
-
-  const kitchenScope = scopeOrAll(
-    deliveries.kitchenId,
-    audit.kitchenId,
-  );
-
   const beneficiaryKitchenScope = scopeOrAll(
     beneficiaries.kitchenId,
     audit.kitchenId
@@ -126,40 +112,48 @@ export async function getDashboardData(params: DashboardParams) {
         0
       )
     `,
-      totalPenerima: sql<number>`
-      COUNT(DISTINCT ${menuPlanBeneficiaries.beneficiaryId})
-    `,
-      totalLaporan: sql<number>`
-      COUNT(DISTINCT ${eventReports.id})
-    `,
+      totalPenerima: sql<number>`COUNT(DISTINCT ${beneficiaries.id})`,
     })
-    .from(menuPlanBeneficiaries)
+    .from(beneficiaries)
+    .leftJoin(
+      menuPlanBeneficiaries,
+      and(
+        eq(menuPlanBeneficiaries.beneficiaryId, beneficiaries.id),
+        eq(menuPlanBeneficiaries.isDeleted, false)
+      )
+    )
     .leftJoin(
       menuPlans,
-      eq(menuPlans.id, menuPlanBeneficiaries.menuPlanId)
-    )
-    .leftJoin(
-      beneficiaries,
-      eq(beneficiaries.id, menuPlanBeneficiaries.beneficiaryId)
-    )
-    .leftJoin(
-      eventReports,
-      eq(eventReports.entityId, beneficiaries.id)
+      and(
+        eq(menuPlans.id, menuPlanBeneficiaries.menuPlanId),
+        eq(menuPlans.isDeleted, false),
+        lte(menuPlans.planStartDate, today),
+        lte(menuPlans.planEndDate, today),
+        scopeOrAll(menuPlans.kitchenId, audit.kitchenId),
+        startDate ? gte(menuPlans.planStartDate, startDate) : undefined,
+        endDate ? lte(menuPlans.planEndDate, endDate) : undefined
+      )
     )
     .where(
       and(
-        eq(menuPlanBeneficiaries.isDeleted, false),
-        eq(menuPlans.isDeleted, false),
-
-        lte(menuPlans.planStartDate, today),
-        lte(menuPlans.planEndDate, today),
-
-        scopeOrAll(menuPlans.kitchenId, audit.kitchenId),
-        startDate ? gte(menuPlans.planStartDate, startDate) : undefined,
-        endDate ? lte(menuPlans.planEndDate, endDate) : undefined,
+        audit.isAppManager ? sql`TRUE` : scopeOrAll(beneficiaries.kitchenId, audit.kitchenId),
+        startDate ? gte(beneficiaries.joinedDate, startOfDay(parseISO(startDate))) : undefined,
+        endDate ? lte(beneficiaries.joinedDate, startOfDay(parseISO(endDate))) : undefined
       )
     );
 
+
+  const [totalLaporan] = await db
+    .select({ count: sql<number>`COUNT(DISTINCT ${eventReports.id})` })
+    .from(eventReports)
+    .where(
+      and(
+        eq(eventReports.isDeleted, false),
+        startDate ? gte(eventReports.date, startDate) : undefined,
+        endDate ? lte(eventReports.date, endDate) : undefined,
+        audit.isAppManager ? undefined : scopeOrAll(eventReports.domainId, audit.kitchenId)
+      )
+    );
 
   const portionTrend = await db
     .select({
@@ -411,7 +405,7 @@ export async function getDashboardData(params: DashboardParams) {
         eq(eventReports.isDeleted, false),
         startDate ? gte(eventReports.date, startDate) : undefined,
         endDate ? lte(eventReports.date, endDate) : undefined,
-        scopeOrAll(eventReports.domainId, audit.kitchenId) // 🔥 kitchen scope
+        scopeOrAll(eventReports.domainId, audit.kitchenId)
       )
     )
     .orderBy(desc(eventReports.createdAt))
@@ -445,7 +439,7 @@ export async function getDashboardData(params: DashboardParams) {
     summary: {
       totalPorsi: Number(summary?.totalPorsi ?? 0),
       totalPenerima: Number(summary?.totalPenerima ?? 0),
-      totalLaporan: Number(summary?.totalLaporan ?? 0),
+      totalLaporan: Number(totalLaporan?.count ?? 0),
     },
     charts: {
       portionTrend,

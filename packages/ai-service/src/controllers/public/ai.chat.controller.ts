@@ -30,6 +30,10 @@ export const chatWithAIAgentHandler = catchAsync(async (c: Context) => {
     );
   }
 
+  console.log({
+    message
+  }, "====chat=====");
+
   const payload = {
     user_id: getAuditFields(c).userId,
     conversation_id: "conv456",
@@ -51,6 +55,13 @@ export const chatWithAIAgentHandler = catchAsync(async (c: Context) => {
 
   const end = performance.now();
   const processingTime = (end - start) / 1000;
+
+  console.log({
+    success: true,
+    payloadSent: payload,
+    aiResponse,
+    processingTime
+  }, "====chat=====");
 
   return c.json({
     success: true,

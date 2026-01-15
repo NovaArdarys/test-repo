@@ -246,21 +246,15 @@ export async function getEventReportsWithFilter({
     .offset(offset);
 
   const [{ count }] = await db
-    .select({ count: sql<number>`COUNT(*)` })
+    .select({ count: sql<number>`COUNT(DISTINCT ${eventReports.id})` })
     .from(eventReports)
-    .leftJoin(drivers, and(
-      eq(eventReports.entityId, drivers.id),
-      eq(eventReports.reportType, "driver")
-    ))
-    .leftJoin(beneficiaries, and(
-      eq(eventReports.entityId, beneficiaries.id),
-      eq(eventReports.reportType, "beneficiary")
-    ))
-    .leftJoin(kitchens, and(
-      eq(eventReports.entityId, kitchens.id),
-      eq(eventReports.reportType, "kitchen")
-    ))
-
+    .leftJoin(users, eq(eventReports.createdBy, users.id))
+    .leftJoin(userDetails, eq(users.id, userDetails.userId))
+    .leftJoin(userRoles, eq(users.id, userRoles.userId))
+    .leftJoin(roles, eq(userRoles.roleId, roles.id))
+    .leftJoin(drivers, eq(eventReports.entityId, drivers.id))
+    .leftJoin(beneficiaries, eq(eventReports.entityId, beneficiaries.id))
+    .leftJoin(kitchens, eq(eventReports.entityId, kitchens.id))
     .where(and(...conditions));
 
   const dataWithClassrooms = await Promise.all(
