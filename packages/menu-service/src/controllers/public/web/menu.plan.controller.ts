@@ -85,8 +85,7 @@ export const createMenuPlanHandler = catchAsync(async (c: Context) => {
   const jobIds: string[] = [];
 
   for (const date of dateArray) {
-    const jobId = `${kitchenId}-${date}`;
-
+    const jobId = `menu-plan:create:${kitchenId}:${date}`;
     await menuPlanQueue.add(
       "menuplan-create",
       {
@@ -114,15 +113,14 @@ export const createMenuPlanHandler = catchAsync(async (c: Context) => {
     jobIds.push(jobId);
   }
 
-  // Response cepat sekali
   return c.json(
     {
       message: `Pembuatan menu plan untuk ${dateArray.length} tanggal telah dimulai`,
-      jobIds,           // kembalikan ke FE
+      jobIds,
       kitchenId,
       dates: dateArray
     },
-    202 // Accepted — proses asynchronous
+    202
   );
 });
 
@@ -152,6 +150,8 @@ export const updateMenuPlanHandler = catchAsync(async (c: Context) => {
     );
   }
 
+  const jobId = `menu-plan:update:${body?.kitchenId}:${body.planStartDate}`;
+
   await menuPlanQueue.add(
     "menuplan-update",
     {
@@ -170,6 +170,7 @@ export const updateMenuPlanHandler = catchAsync(async (c: Context) => {
       dates: body.planStartDate || new Date().toISOString().split("T")[0],
     },
     {
+      jobId: jobId,
       priority: getPriorityByDate(body.planStartDate || new Date().toISOString().split("T")[0]),
       removeOnComplete: true,
       attempts: 3
