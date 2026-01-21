@@ -1,61 +1,58 @@
 import { Context } from 'hono';
 import { streamSSE } from 'hono/streaming';
-type SSEStream = {
-  write: (payload: { event?: string; data: string; id?: string; }) => Promise<void>;
-};
 
-const clients: SSEStream[] = [];
-const channels = new Map<string, Set<SSEStream>>();
+const channels = new Map<string, Set<any>>();
+
 export const sseController = (c: Context) => {
   const channelKey = c.req.query("channel");
   if (!channelKey) return c.text("Missing channel", 400);
 
   c.header("Access-Control-Allow-Origin", "*");
   c.header("Content-Type", "text/event-stream");
-  c.header("Cache-Control", "no-cache, no-transform");
+  c.header("Cache-Control", "no-cache");
   c.header("Connection", "keep-alive");
+  c.header("X-Accel-Buffering", "no");
 
-  const encoder = new TextEncoder();
+  return streamSSE(c, async (stream) => {
+    if (!channels.has(channelKey)) {
+      channels.set(channelKey, new Set());
+    }
 
-  const { readable, writable } = new TransformStream();
-  const writer = writable.getWriter();
+    const group = channels.get(channelKey)!;
+    group.add(stream);
 
-  if (!channels.has(channelKey)) channels.set(channelKey, new Set());
+    console.log("[SSE CONNECT]", channelKey, "Total clients:", group.size);
 
-  const sseClient: SSEStream = {
-    write: async ({ event, data, id }) => {
+    // Send initial connection message
+    await stream.writeSSE({
+      event: "init",
+      data: "connected",
+    });
 
-      await writer.write(encoder.encode(`data: ${data}\n\n`));
-    },
-  };
+    // Heartbeat to keep connection alive
+    const heartbeat = setInterval(async () => {
+      try {
+        await stream.writeSSE({ data: ':heartbeat' });
+      } catch (err) {
+        console.error("[HEARTBEAT ERROR]", err);
+        clearInterval(heartbeat);
+        group.delete(stream);
+      }
+    }, 15000);
 
-  const heartbeat = setInterval(() => {
-    writer.write(encoder.encode('data: {"msg":"ok"}\n\n'));
-  }, 15000);
-
-  c.req.raw.signal.addEventListener("abort", () => {
-    clearInterval(heartbeat);
-    channels.get(channelKey)?.delete(sseClient);
-    writer.close();
-  });
-
-  return new Response(readable, {
-    headers: {
-      "Content-Type": "text/event-stream",
-      "Cache-Control": "no-cache, no-transform",
-      "Connection": "keep-alive",
-      "Access-Control-Allow-Origin": "*",
-
-      "X-Accel-Buffering": "no",
-      "Content-Encoding": "identity",
-      "Keep-Alive": "timeout=600, max=1000",
-      "Transfer-Encoding": "chunked",
-    },
+    // Wait for client disconnect - THIS IS THE KEY
+    await new Promise<void>((resolve) => {
+      c.req.raw.signal.addEventListener('abort', () => {
+        console.log("[SSE DISCONNECT]", channelKey, "Remaining:", group.size - 1);
+        clearInterval(heartbeat);
+        group.delete(stream);
+        resolve();
+      });
+    });
   });
 };
 
 function safeEncode(data: unknown): string {
-  // If already a string, keep it but sanitize
   if (typeof data === "string") {
     return data
       .replace(/\r/g, "\\r")
@@ -65,12 +62,10 @@ function safeEncode(data: unknown): string {
       .replace(/\u2028|\u2029/g, "");
   }
 
-  // JSON stringify once, then sanitize
   let json = "";
   try {
     json = JSON.stringify(data);
   } catch (e) {
-    // fallback to String() if circular / not serializable
     json = String(data);
   }
 
@@ -82,38 +77,37 @@ function safeEncode(data: unknown): string {
     .replace(/\u2028|\u2029/g, "");
 }
 
-
-
-export const sendSseToAll = async (event: string, data: unknown) => {
-  for (const client of clients) {
-    const safeJson = safeEncode(data);
-
-    await client.write({
-      event,
-      data: safeJson,
-      id: String(Date.now()),
-    });
-  }
-};
-
-
-export const sendSseToChannel = async (channelKey: string, event: string, data: unknown) => {
+export const sendSseToChannel = async (
+  channelKey: string,
+  event: string,
+  data: unknown
+) => {
   const group = channels.get(channelKey);
-  console.log(data, group);
-  if (!group) return;
+
+  if (!group || group.size === 0) {
+    console.log(`[SSE] No clients for channel: ${channelKey}`);
+    return;
+  }
+
+  console.log(`[SSE] Sending to ${group.size} clients on ${channelKey}`);
+
+  const deadClients: any[] = [];
 
   for (const client of Array.from(group)) {
     try {
       const safeJson = safeEncode(data);
 
-      await client.write({
+      await client.writeSSE({
         event,
         data: safeJson,
         id: String(Date.now()),
       });
     } catch (error) {
-      console.log("===== SSE SEND ERROR =====", error);
+      console.error("[SSE SEND ERROR]", error);
+      deadClients.push(client);
     }
   }
-};
 
+  // Clean up dead clients
+  deadClients.forEach((client) => group.delete(client));
+};

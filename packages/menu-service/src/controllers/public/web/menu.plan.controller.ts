@@ -86,7 +86,8 @@ export const createMenuPlanHandler = catchAsync(async (c: Context) => {
   const jobIds: string[] = [];
 
   for (const date of dateArray) {
-    const jobId = `menu-plan:create:${kitchenId}:${date}`;
+    const jobId = `menu-plan-create-${kitchenId}-${date}`;
+
     await menuPlanQueue.add(
       "menuplan-create",
       {
@@ -151,7 +152,7 @@ export const updateMenuPlanHandler = catchAsync(async (c: Context) => {
     );
   }
 
-  const jobId = `menu-plan:update:${audit.kitchenId?.[0]}:${body.planStartDate}`;
+  const jobId = `menu-plan-update-${audit.kitchenId?.[0]}-${body.planStartDate}`;
 
   await processStatus.queued({
     entityType: "MENU_PLAN",

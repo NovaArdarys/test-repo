@@ -25,31 +25,31 @@ async function publishProcessStatus(
 export const processStatus = {
   queued: (data: ProcessStatusPayload) =>
     publishProcessStatus(
-      `process.${data.entityType.toLowerCase()}.queued`,
+      `process.${data.entityType.toLowerCase()}.status.queued`,
       { ...data, status: "QUEUED" }
     ),
 
   processing: (data: ProcessStatusPayload) =>
     publishProcessStatus(
-      `process.${data.entityType.toLowerCase()}.processing`,
+      `process.${data.entityType.toLowerCase()}.status.processing`,
       { ...data, status: "PROCESSING" }
     ),
 
   completed: (data: ProcessStatusPayload) =>
     publishProcessStatus(
-      `process.${data.entityType.toLowerCase()}.completed`,
+      `process.${data.entityType.toLowerCase()}.status.completed`,
       { ...data, status: "COMPLETED" }
     ),
 
   failed: (data: ProcessStatusPayload) =>
     publishProcessStatus(
-      `process.${data.entityType.toLowerCase()}.failed`,
+      `process.${data.entityType.toLowerCase()}.status.failed`,
       { ...data, status: "FAILED" }
     ),
 
   cancelled: (data: ProcessStatusPayload) =>
     publishProcessStatus(
-      `process.${data.entityType.toLowerCase()}.cancelled`,
+      `process.${data.entityType.toLowerCase()}.status.cancelled`,
       { ...data, status: "CANCELLED" }
     ),
 };

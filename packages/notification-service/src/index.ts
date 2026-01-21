@@ -13,7 +13,7 @@ import { checkDatabase } from '@/db';
 import { eventMonitorRoute } from './routes/event.monitor.route';
 import { swaggerUI } from '@hono/swagger-ui';
 import { initializeConsumers } from './messaging/consumers';
-import { sendSseToAll, sseController } from './controllers/public/notification.controller';
+import { sseController } from './controllers/public/notification.controller';
 
 type Variables = JwtVariables;
 
@@ -22,11 +22,6 @@ export const clients = new Set<WebSocket>();
 
 const app = new Hono<{ Variables: Variables; }>();
 app.get("/notifications/sse", sseController);
-
-app.get('/trigger', async (c) => {
-  await sendSseToAll('main', { hello: 'world', timestamp: Date.now() });
-  return c.text('Triggered');
-});
 app.use("*", async (c, next) => {
   if (c.req.path.startsWith("/notifications/sse")) {
     return next();

@@ -32,19 +32,23 @@ const processStatusSchema = z.object({
   timestamp: z.string(),
 });
 
+export type ProcessStatusType = z.infer<typeof processStatusSchema>;
+export type AiStatusType = z.infer<typeof aiStatusSchema>;
+
 const NOTIFICATION_QUEUE = "notification_status_queue";
-const STATUS_ROUTING_PATTERN = "#.status.#"; // catch semua *.status.*
 
 async function handleStatusEvent(data: unknown) {
-  let parsed: any;
+  let parsed: ProcessStatusType | AiStatusType;
   let eventName: string;
   let channelKey: string;
+
+  console.log(data, "=====data======");
 
   try {
     parsed = processStatusSchema.parse(data);
     const statusLower = parsed.status.toLowerCase();
     eventName = `${parsed.entityType.toLowerCase()}:${statusLower}`;
-    channelKey = `kitchen:${parsed.kitchenId}`; // channel utama per kitchen
+    channelKey = `kitchen:${parsed.kitchenId}`;
   } catch {
     parsed = aiStatusSchema.parse(data);
     eventName = `ai:${parsed.status.toLowerCase()}`;
@@ -62,7 +66,7 @@ async function handleStatusEvent(data: unknown) {
   }
 }
 
-export async function setupNotificationConsumer(channel: Channel) {
+export async function setupConsumer(channel: Channel) {
   await resetQueuesIfDev(channel, [
     NOTIFICATION_QUEUE,
     `${NOTIFICATION_QUEUE}.retry`,
