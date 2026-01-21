@@ -1,5 +1,5 @@
 import { menuPlanBeneficiaries } from "@/db/schemas";
-import { Trx, MenuPlan, Beneficiary } from "../../types/domain";
+import { Trx, MenuPlan, Beneficiary } from "../../../types/domain";
 
 export default async function attachBeneficiaries(
   trx: Trx,

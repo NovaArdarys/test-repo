@@ -1,6 +1,6 @@
 import { menuPlans } from "@/db/schemas";
-import { CreateMenuPlanInput } from "../../types";
-import { MenuPlan } from "../../types/domain";
+import { CreateMenuPlanInput } from "../../../types";
+import { MenuPlan } from "../../../types/domain";
 
 export default async function createPlan(
   trx: any,

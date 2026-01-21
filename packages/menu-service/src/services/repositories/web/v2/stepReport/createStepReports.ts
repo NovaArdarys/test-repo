@@ -1,5 +1,5 @@
-import { Trx } from "../../types/domain";
-import { planEntity } from "../../lib/stepFactory";
+import { Trx } from "../types/domain";
+import { planEntity } from "./stepFactory";
 import { stepReports, beneficiaryFoodAllergies, stepKeyEnum } from "@/db/schemas";
 
 interface ExpandedStep {

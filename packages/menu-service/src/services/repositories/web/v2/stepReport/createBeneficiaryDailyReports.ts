@@ -1,9 +1,9 @@
 import { beneficiaryFoodAllergies, dailyReports, stepKeyEnum } from "@/db/schemas";
-import { Trx, MenuPlan, Beneficiary, DailyReport, PortionType } from "../../types/domain";
+import { Trx, MenuPlan, Beneficiary, DailyReport, PortionType } from "../types/domain";
 import createStepReports from "./createStepReports";
 import { db } from "@/db";
 import { and, eq } from "drizzle-orm";
-type StepKey = (typeof stepKeyEnum.enumValues)[number];;
+type StepKey = (typeof stepKeyEnum.enumValues)[number];
 
 export default async function createBeneficiaryDailyReports(
   trx: Trx,

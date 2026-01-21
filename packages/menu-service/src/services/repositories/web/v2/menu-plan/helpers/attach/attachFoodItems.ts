@@ -1,5 +1,5 @@
 import { menuFoodItem, suppliersFoodItems } from "@/db/schemas";
-import { Trx, MenuPlan } from "../../types/domain";
+import { Trx, MenuPlan } from "../../../types/domain";
 
 export default async function attachFoodItems(
   trx: Trx,
