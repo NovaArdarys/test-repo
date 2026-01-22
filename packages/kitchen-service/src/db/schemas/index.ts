@@ -13,3 +13,4 @@ export * from './master.schema';
 export * from './school.schema';
 export * from './supplier.schema';
 export * from './user.schema';
+export * from './jobStatus.schema';

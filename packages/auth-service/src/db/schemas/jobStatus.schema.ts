@@ -4,8 +4,7 @@ import { relations } from 'drizzle-orm';
 export const sagaOrchestration = pgTable('saga_orchestration', {
   id: uuid('id').primaryKey().defaultRandom(),
   sagaType: varchar('saga_type', { length: 100 }).notNull(),
-  status: varchar('status', { length: 50 }).notNull(),
-  // 'STARTED', 'IN_PROGRESS', 'COMPLETED', 'FAILED', 'COMPENSATING', 'COMPENSATED'
+  status: varchar('status', { length: 50 }).notNull(), // 'STARTED', 'IN_PROGRESS', 'COMPLETED', 'FAILED', 'COMPENSATING', 'COMPENSATED'
   totalSteps: integer('total_steps').notNull(),
   completedSteps: integer('completed_steps').default(0).notNull(),
   failedSteps: integer('failed_steps').default(0).notNull(),
@@ -28,8 +27,7 @@ export const jobStatus = pgTable('job_status', {
   sagaType: varchar('saga_type', { length: 100 }).notNull(),
   jobType: varchar('job_type', { length: 100 }).notNull(), // 'CREATE_REPORT', 'CREATE_DELIVERY'
   serviceName: varchar('service_name', { length: 100 }).notNull(), // 'report-service'
-  status: varchar('status', { length: 50 }).notNull(),
-  // 'PENDING', 'PROCESSING', 'COMPLETED', 'FAILED', 'COMPENSATING', 'COMPENSATED'
+  status: varchar('status', { length: 50 }).notNull(), // 'PENDING', 'PROCESSING', 'COMPLETED', 'FAILED', 'COMPENSATING', 'COMPENSATED'
   payload: jsonb('payload').notNull(),
   result: jsonb('result'),
   error: jsonb('error'),
@@ -42,7 +40,7 @@ export const jobStatus = pgTable('job_status', {
   entityId: varchar('entity_id', { length: 255 }), // menuPlanId, reportId, deliveryId
   entityType: varchar('entity_type', { length: 100 }), // 'menu_plan', 'report', 'delivery'
   parentJobId: uuid('parent_job_id')
-    .references(() => jobStatus.id, { onDelete: 'set null' }),
+    .references((): any => jobStatus.id, { onDelete: 'set null' }),
 }, (table) => ({
   sagaIdIdx: index('job_saga_id_idx').on(table.sagaId),
   statusIdx: index('job_status_idx').on(table.status),
