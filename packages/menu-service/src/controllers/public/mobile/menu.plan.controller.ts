@@ -4,7 +4,6 @@ import {
   ListMenuPlansQuerySchemaType
 } from "@/validator/mobile/menu.plan.validator";
 import { getMenuPlanById, getMenuPlansList } from "@/services/repositories/mobile/menu.plan.service";
-import { createAutoDelivery } from "@/services/repositories/web/v2/delivery/delivery.auto.v2.service";
 
 const getAuditFields = (c: Context) => ({
   createdBy: c.get('userId'),
@@ -19,17 +18,6 @@ const getAuditFields = (c: Context) => ({
   updatedAt: new Date(),
   createdAt: new Date(),
   isAppManager: c.get("isAppManager") as boolean,
-});
-
-export const simulationDelivery = catchAsync((c: Context) => {
-  createAutoDelivery({
-    createdBy: "00000000-0000-0000-0000-000000000001",
-    kitchenId: "d6ba4bba-85b6-4057-b221-6383cd41bfc3",
-    menuPlanId: "fe22bc7c-5035-4f8a-ada9-30371bbd2189"
-  }, undefined);
-
-  return c.json({ data: "ok" }, 200);
-
 });
 
 export const listMenuPlansHandler = catchAsync(async (c: Context) => {

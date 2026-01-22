@@ -1,7 +1,4 @@
-// src/utils/buildMenuPlanDeliveries.ts
-
 type PortionType = "SMALL" | "LARGE";
-type DeliveryType = "PICKUP" | "DROPOFF";
 
 function buildSteps(stepReports: any[]) {
   return stepReports.map((sr) => ({
