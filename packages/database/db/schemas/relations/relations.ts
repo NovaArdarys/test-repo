@@ -34,6 +34,7 @@ import { dailyReports, eventReports, stepReports } from "../reporting.Schema";
 import { masterSteps } from "../stepPlan.schema";
 import { storage } from "../storage.schema";
 import { notifications } from "../notification.schema";
+import { jobStatus, sagaOrchestration } from "../jobStatus.schema";
 
 /**
  * Users relations
@@ -651,5 +652,24 @@ export const notificationsRelations = relations(notifications, ({ one }) => ({
     fields: [notifications.userReceivedId],
     references: [users.id],
     relationName: "notification_receiver",
+  }),
+}));
+
+export const sagaOrchestrationRelations = relations(sagaOrchestration, ({ many }) => ({
+  jobs: many(jobStatus),
+}));
+
+export const jobStatusRelations = relations(jobStatus, ({ one, many }) => ({
+  saga: one(sagaOrchestration, {
+    fields: [jobStatus.sagaId],
+    references: [sagaOrchestration.id],
+  }),
+  parentJob: one(jobStatus, {
+    fields: [jobStatus.parentJobId],
+    references: [jobStatus.id],
+    relationName: 'jobHierarchy',
+  }),
+  childJobs: many(jobStatus, {
+    relationName: 'jobHierarchy',
   }),
 }));

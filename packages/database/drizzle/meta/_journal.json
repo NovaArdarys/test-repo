@@ -337,6 +337,20 @@
       "when": 1768172434118,
       "tag": "0047_plain_prodigy",
       "breakpoints": true
+    },
+    {
+      "idx": 48,
+      "version": "7",
+      "when": 1769053533478,
+      "tag": "0048_woozy_mystique",
+      "breakpoints": true
+    },
+    {
+      "idx": 49,
+      "version": "7",
+      "when": 1769054046995,
+      "tag": "0049_mixed_jack_power",
+      "breakpoints": true
     }
   ]
 }
