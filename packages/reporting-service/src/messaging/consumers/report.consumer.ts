@@ -4,6 +4,7 @@ import { EXCHANGES } from "../events/exchanges";
 import { entityTypeEnum } from "@/db/schemas";
 import { updateStepReport } from "@/services/repositories/daily.report.service";
 import { resetQueuesIfDev, safeConsume } from "../utils/consumerHelper";
+import { handleMenuPlanCreated } from "@/services/repositories/web/v1/createReport/createReport";
 
 // ===== VALIDATORS =====
 const entityTypeValidator = z.enum(entityTypeEnum.enumValues);
@@ -50,34 +51,61 @@ async function handleStorageEvent(data: z.infer<typeof storageCommittedSchema>) 
   console.log(`[REPORT STORAGE EVENT] ✅ Updated ${parsed.entityType} (${parsed.entityId})`);
 }
 
-// Log Event Handler
-async function handleLogEvent(data: any) {
-  console.warn(`[LOG EVENT IN] [${data._meta?.routingKey ?? "log"}]`, data?._meta?.eventId);
-
-}
-
 export async function setupConsumer(channel: Channel) {
   await resetQueuesIfDev(channel, [
+    MENU_PLAN_QUEUE_NAME,
+    `${MENU_PLAN_QUEUE_NAME}.retry`,
     STORAGE_QUEUE_NAME,
     `${STORAGE_QUEUE_NAME}.retry`,
   ]);
 
-  const RETRY_EXCHANGE = `${EXCHANGES.STORAGE}.retry`;
-
+  await channel.assertExchange(EXCHANGES.MENU, "topic", { durable: true });
   await channel.assertExchange(EXCHANGES.STORAGE, "topic", { durable: true });
-  await channel.assertExchange(RETRY_EXCHANGE, "topic", { durable: true });
+
+  const MENU_PLAN_RETRY_EXCHANGE = `${EXCHANGES.MENU}.retry`;
+  const STORAGE_RETRY_EXCHANGE = `${EXCHANGES.STORAGE}.retry`;
+
+  await channel.assertExchange(MENU_PLAN_RETRY_EXCHANGE, "topic", { durable: true });
+  await channel.assertExchange(STORAGE_RETRY_EXCHANGE, "topic", { durable: true });
+
+  const menuPlanQueue = await channel.assertQueue(MENU_PLAN_QUEUE_NAME, {
+    durable: true,
+    arguments: {
+      "x-dead-letter-exchange": MENU_PLAN_RETRY_EXCHANGE,
+    },
+  });
+
+  await channel.assertQueue(`${MENU_PLAN_QUEUE_NAME}.retry`, {
+    durable: true,
+    arguments: {
+      "x-message-ttl": 5000, // retry after 5 seconds
+      "x-dead-letter-exchange": EXCHANGES.MENU,
+    },
+  });
+
+  await channel.bindQueue(
+    menuPlanQueue.queue,
+    EXCHANGES.MENU,
+    MENU_PLAN_ROUTING_KEY
+  );
+
+  await channel.bindQueue(
+    `${MENU_PLAN_QUEUE_NAME}.retry`,
+    MENU_PLAN_RETRY_EXCHANGE,
+    MENU_PLAN_ROUTING_KEY
+  );
 
   const storageQueue = await channel.assertQueue(STORAGE_QUEUE_NAME, {
     durable: true,
     arguments: {
-      "x-dead-letter-exchange": RETRY_EXCHANGE,
+      "x-dead-letter-exchange": STORAGE_RETRY_EXCHANGE,
     },
   });
 
   await channel.assertQueue(`${STORAGE_QUEUE_NAME}.retry`, {
     durable: true,
     arguments: {
-      "x-message-ttl": 5000, // delay retry 5 detik
+      "x-message-ttl": 5000,
       "x-dead-letter-exchange": EXCHANGES.STORAGE,
     },
   });
@@ -90,19 +118,21 @@ export async function setupConsumer(channel: Channel) {
 
   await channel.bindQueue(
     `${STORAGE_QUEUE_NAME}.retry`,
-    RETRY_EXCHANGE,
+    STORAGE_RETRY_EXCHANGE,
     STORAGE_ROUTING_KEY
   );
 
   channel.prefetch(10);
 
   channel.consume(
-    storageQueue.queue,
-    safeConsume(handleStorageEvent, channel),
+    menuPlanQueue.queue,
+    safeConsume(handleMenuPlanCreated, channel),
     { noAck: false }
   );
 
-  console.log(
-    `[*] Report Service listening for STORAGE events in ${storageQueue.queue}`
+  channel.consume(
+    storageQueue.queue,
+    safeConsume(handleStorageEvent, channel),
+    { noAck: false }
   );
 }

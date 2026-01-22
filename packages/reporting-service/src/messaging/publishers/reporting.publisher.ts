@@ -1,3 +1,4 @@
+import z from "zod";
 import { EXCHANGES } from "../events/exchanges";
 import { safePublish } from "../utils/publisherHelper";
 
@@ -30,6 +31,44 @@ export async function publishEventReportCommit(data: EventReportCommit) {
     console.log(`Published ${data.entityType}`);
   } catch (err) {
     console.error("[STORAGE PUBLISH ERROR]", err);
+  }
+}
+
+const reportCreatedSchema = z.object({
+  sagaId: z.string(),
+  jobId: z.string(),
+  menuPlanId: z.string(),
+  kitchenId: z.string(),
+  status: z.enum(['SUCCESS', 'FAILED']),
+  result: z.object({
+    kitchenDailyReportId: z.string().optional(),
+    beneficiaryReportsCount: z.number().optional(),
+  }).optional(),
+  error: z.object({
+    message: z.string(),
+    code: z.string().optional(),
+  }).optional(),
+  _meta: z.object({
+    eventId: z.string().optional(),
+    timestamp: z.string().optional(),
+  }).optional(),
+});
+
+export async function publishReportEvent(
+  routingKey: "report.created" | "report.failed",
+  data: z.infer<typeof reportCreatedSchema>
+) {
+  try {
+    const validated = reportCreatedSchema.parse(data);
+
+    await safePublish(
+      EXCHANGES.REPORT,
+      routingKey,
+      validated
+    );
+
+  } catch (err) {
+    throw err;
   }
 }
 

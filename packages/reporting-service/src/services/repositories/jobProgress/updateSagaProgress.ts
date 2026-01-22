@@ -1,14 +1,14 @@
 import { db } from "@/db";
-import { sagaOrchestration } from "@/db/schemas/jobStatus.schema";
+import { jobStatus, sagaOrchestration } from "@/db/schemas/jobStatus.schema";
 import { eq } from "drizzle-orm";
+import z from "zod";
 
-async function updateSagaProgress(sagaId: string) {
+export async function updateSagaProgress(sagaId: string) {
   const saga = await db.query.sagaOrchestration.findFirst({
     where: eq(sagaOrchestration.id, sagaId)
   });
 
   if (!saga) {
-    console.warn(`[SAGA] ⚠️ Saga not found: ${sagaId}`);
     return;
   }
 
@@ -35,6 +35,4 @@ async function updateSagaProgress(sagaId: string) {
       completedAt: sagaStatus === 'COMPLETED' ? new Date() : null
     })
     .where(eq(sagaOrchestration.id, sagaId));
-
-  console.log(`[SAGA ${sagaId}] Progress: ${completedJobs}/${saga.totalSteps} (${sagaStatus})`);
 }
