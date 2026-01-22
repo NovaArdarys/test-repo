@@ -25,11 +25,11 @@ export const menuPlanWorker = new Worker(
 
         await processStatus.completed({
           entityType: "MENU_PLAN",
-          entityId: result.dailyReports?.[0]?.id,
+          entityId: result.menuPlans?.[0].id,
           kitchenId: input.kitchenId!,
           jobId: job.id,
           date: input.dates,
-          result: { planId: result.dailyReports?.[0]?.id, totalReports: result.dailyReports.length },
+          result: { planId: result.menuPlans?.[0]?.id, totalReports: result.menuPlans.length },
           message: `Menu plan berhasil dibuat untuk tanggal ${input.dates}`,
           progress: 100,
           status: "QUEUED",
@@ -62,7 +62,6 @@ export const menuPlanWorker = new Worker(
         return { status: "updated", result };
       }
 
-      console.warn("⚠ Unknown menu plan job type:", input.type);
       return { skipped: true };
 
     } catch (error: any) {
@@ -76,7 +75,6 @@ export const menuPlanWorker = new Worker(
         throw error;
       }
 
-      console.error("menuplan job dead:", error);
       throw error;
     }
   },
