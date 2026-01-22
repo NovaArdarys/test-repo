@@ -1,7 +1,7 @@
 // controllers/menu.plan.controller.ts
 import { Context } from "hono";
 import { catchAsync } from "@/utils/catchAsync";
-import { distributeMenuPlan } from "@/services/repositories/web/menu.plan.distribute.service";
+import { safeRegenerateRouting } from "@/services/repositories/web/createAutomatedDelivery/route.guard";
 
 export type DistributeMenuPlanSchemaType = {
   force?: boolean;
@@ -17,7 +17,6 @@ const getAuditFields = (c: Context) => ({
   kitchenId: c.get("kitchenId") as string[],
   isAppManager: c.get("isAppManager") as boolean,
 });
-
 
 export const distributeMenuPlanHandler = catchAsync(
   async (c: Context) => {
@@ -42,3 +41,24 @@ export const distributeMenuPlanHandler = catchAsync(
     );
   }
 );
+
+async function distributeMenuPlan(
+  menuPlanId: string,
+  options: {
+    force?: boolean;
+    reason?: string;
+    createdBy: string;
+  }
+) {
+  await safeRegenerateRouting({
+    menuPlanId,
+    force: options.force ?? false,
+    reason: options.reason ?? "manual_distribute",
+  });
+
+  return {
+    menuPlanId,
+    status: "DISTRIBUTED",
+    force: options.force ?? false,
+  };
+}

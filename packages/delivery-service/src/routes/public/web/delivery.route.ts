@@ -12,6 +12,7 @@ import {
   listDeliveriesHandler,
   getDeliveryByIdHandler
 } from '@/controllers/public/web/delivery.controller';
+import { distributeMenuPlanHandler } from '@/controllers/public/web/distribute.route.controller';
 
 const app = new Hono();
 app.use(checkAccessToken);
@@ -29,5 +30,10 @@ app.get(
   validate({ param: idParamSchema }),
   getDeliveryByIdHandler
 );
+
+app.post("/:id/distribute",
+  validate(idParamSchema, "param"),
+  distributeMenuPlanHandler);
+
 
 export default app;
