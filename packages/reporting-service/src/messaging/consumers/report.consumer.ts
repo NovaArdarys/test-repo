@@ -17,7 +17,10 @@ const storageCommittedSchema = z.object({
 });
 
 // ===== QUEUES =====
-const STORAGE_QUEUE_NAME = "report_service_storage_queue";
+const MENU_PLAN_QUEUE_NAME = "report_service_menu_plan_queue";
+const STORAGE_QUEUE_NAME = "report_service_storage_queue";;
+
+const MENU_PLAN_ROUTING_KEY = "menu-plan.created";
 const STORAGE_ROUTING_KEY = "storage.upload.commit";
 
 // ================= HANDLERS =================

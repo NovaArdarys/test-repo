@@ -1,4 +1,4 @@
-import { SUB_DOMAIN_ORDER } from "@/services/aditional/step.order.service";
+import { SUB_DOMAIN_ORDER } from "@/services/repositories/additional/step.order.service";
 
 type NormalizedStep = {
   id: string;

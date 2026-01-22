@@ -6,7 +6,7 @@ import { addDays } from "date-fns";
 import { eq, and, desc, InferInsertModel, InferSelectModel, between, gte, lte, sql, inArray, SQLWrapper } from "drizzle-orm";
 import { isEmpty, orderBy } from "lodash";
 import { getHomeWidgets } from "./additional/widgets.service";
-import { SUB_DOMAIN_ORDER } from "../aditional/step.order.service";
+import { SUB_DOMAIN_ORDER } from "./additional/step.order.service";
 import { buildOrderedDomainSteps } from "./additional/order.step.service";
 
 export type DailyReport = InferSelectModel<typeof dailyReports>;
