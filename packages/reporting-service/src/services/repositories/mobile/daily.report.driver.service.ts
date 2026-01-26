@@ -257,9 +257,9 @@ export async function getDriverDeliveriesV2(params: {
       steps,
     });
 
-    if (row.portionType === "SMALL") {
+    if (row.portionType === "SMALL" && row.type === "PICKUP") {
       agendaMap[row.menuPlanId].portion.small += row.targetPortion ?? 0;
-    } else if (row.portionType === "LARGE") {
+    } else if (row.portionType === "LARGE" && row.type === "PICKUP") {
       agendaMap[row.menuPlanId].portion.large += row.targetPortion ?? 0;
     }
     agendaMap[row.menuPlanId].portion.total =
