@@ -34,7 +34,6 @@ async function executeAutoDelivery(
   const beneficiaries = await fetchBeneficiaries(trx, data.menuPlanId);
   const drivers = (await fetchDrivers(trx, data.kitchenId))
     .filter(d => d.portionCapacity && d.portionCapacity > 0);
-  console.log({ kitchen, menuPlan, beneficiaries, drivers });
 
   if (!drivers.length) {
     throw new Error("Tidak ada driver dengan kapasitas valid");

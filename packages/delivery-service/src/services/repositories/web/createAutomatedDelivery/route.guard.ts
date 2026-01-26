@@ -16,64 +16,44 @@ export interface RegenerateRoutingInput {
   | "MANUAL_TRIGGER";
 }
 
-export async function safeRegenerateRouting(
-  args: {
-    trx?: Trx;
-    menuPlanId: string;
-    reason: string;
-    force?: boolean;
-  }
-) {
-  const exec = async (trx: Trx) => {
+export async function safeRegenerateRouting(args: {
+  trx?: Trx;
+  menuPlanId: string;
+  reason: string;
+  force?: boolean;
+}) {
+  const [plan] = await db
+    .select()
+    .from(menuPlans)
+    .where(eq(menuPlans.id, args.menuPlanId));
 
-    const [plan] = await trx
-      .select()
-      .from(menuPlans)
-      .where(eq(menuPlans.id, args.menuPlanId))
-      .for("update");
+  if (!plan) return;
 
+  const today = new Date().toISOString().slice(0, 10);
 
-    if (!plan) return;
-
-    const today = new Date().toISOString().slice(0, 10);
-
-
-    if (!args.force && plan.planStartDate <= today) {
-      return;
-    }
-
-    const hasRouting = await trx
-      .select({ id: deliveryBeneficiaries.id })
-      .from(deliveryBeneficiaries)
-      .where(eq(deliveryBeneficiaries.menuPlanId, plan.id))
-      .limit(1);
-
-    // if (hasRouting.length && !args.force) {
-    //   return;
-    // }
-    console.log(plan, "=====plan 2=====", hasRouting);
-
-    if (hasRouting.length) {
-      await purgeRoutingByMenuPlan(trx, plan.id);
-    }
-
-    await createAutoDelivery(
-      {
-        kitchenId: plan.kitchenId!,
-        menuPlanId: plan.id,
-        createdBy: plan.createdBy,
-      },
-      trx
-    );
-  };
-
-  if (args.trx) {
-    await exec(args.trx);
+  if (!args.force && plan.planStartDate <= today) {
     return;
   }
 
-  await db.transaction(exec);
+  const hasRouting = await db
+    .select({ id: deliveryBeneficiaries.id })
+    .from(deliveryBeneficiaries)
+    .where(eq(deliveryBeneficiaries.menuPlanId, plan.id))
+    .limit(1);
+
+  if (hasRouting.length) {
+    await db.transaction(async (trx) => {
+      await purgeRoutingByMenuPlan(trx, plan.id);
+    });
+  }
+
+  await createAutoDelivery({
+    kitchenId: plan.kitchenId!,
+    menuPlanId: plan.id,
+    createdBy: plan.createdBy,
+  });
 }
+
 
 
 export async function handleDriverChange(

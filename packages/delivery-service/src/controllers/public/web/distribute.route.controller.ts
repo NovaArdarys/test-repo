@@ -21,14 +21,18 @@ const getAuditFields = (c: Context) => ({
 export const distributeMenuPlanHandler = catchAsync(
   async (c: Context) => {
     const { id: menuPlanId } = c.req.param();
-    const body =
-      (await c.req.json()) as unknown as DistributeMenuPlanSchemaType;
+    // console.log(menuPlanId, "=====menuPlanId====", await c.get("validatedData").body);
+    // const body =
+    //   (await c.req.json()) as unknown as DistributeMenuPlanSchemaType;
 
     const audit = getAuditFields(c);
 
+
     const result = await distributeMenuPlan(menuPlanId, {
-      force: body.force,
-      reason: body.reason,
+      force: true,
+      reason: "manual trigger",
+      // force: body.force,
+      // reason: body.reason,
       createdBy: audit.createdBy,
     });
 

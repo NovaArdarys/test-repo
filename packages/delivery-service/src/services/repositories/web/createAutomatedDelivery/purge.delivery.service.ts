@@ -23,7 +23,6 @@ export async function purgeRoutingByMenuPlan(
   await purgeDeliveryBeneficiaries(trx, menuPlanId);
   await purgeDriverLocations(trx, ids);
   await purgeDailyReportsByMenuPlan(trx, menuPlanId);
-  await purgeDeliveryBeneficiaries(trx, menuPlanId);
 }
 
 export async function purgeRoutingByBeneficiary(
