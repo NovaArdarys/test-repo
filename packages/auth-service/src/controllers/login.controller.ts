@@ -114,8 +114,6 @@ export const loginHandler = catchAsync(async (c) => {
     };
   }
 
-  console.log(context, "=====context=====", findUser);
-
   const payload = {
     id: findUser.id,
     email: findUser.email,
