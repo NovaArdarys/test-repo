@@ -17,7 +17,24 @@ export default async function createKitchenDailyReport(
     createdBy: plan.createdBy,
   };
 
-  const [report] = await trx.insert(dailyReports).values(insertData).returning();
+  const [report] = await trx
+    .insert(dailyReports)
+    .values(insertData)
+    .onConflictDoUpdate({
+      target: [
+        dailyReports.entityType,
+        dailyReports.entityId,
+        dailyReports.menuPlanId,
+        dailyReports.date,
+        dailyReports.portionType,
+      ],
+      set: {
+        status: insertData.status,
+        updatedAt: new Date(),
+        updatedBy: insertData.createdBy,
+      },
+    })
+    .returning();
 
   if (!report) {
     throw new Error("Failed to create kitchen daily report");

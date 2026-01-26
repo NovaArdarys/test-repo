@@ -3,13 +3,13 @@ import { format } from "date-fns";
 
 export default async function resolveDriverDailyReport(
   trx: any,
-  args: any,
   driver: any,
+  menuPlan: any,
   unit: any,
   dailyReportMap: Record<string, Record<string, string>>
 ): Promise<string> {
 
-  const driverId: string = args.driver.id;
+  const driverId: string = driver.id;
   const portionType: string = unit.type;
 
   if (!dailyReportMap[driverId]) {
@@ -18,17 +18,30 @@ export default async function resolveDriverDailyReport(
 
   if (!dailyReportMap[driverId][portionType]) {
 
-    const [dailyReport] = await trx
-      .insert(dailyReports)
-      .values({
-        date: format(new Date(), "yyyy-MM-dd"),
+    console.log({
+      dailyReportMap, driver, unit, data: {
+        date: menuPlan.planStartDate,
         entityId: driver.id,
         entityType: "driver",
-        menuPlanId: unit.menuPlanId,
+        menuPlanId: menuPlan.id,
         portionType,
         status: "PENDING",
         createdAt: new Date(),
-        createdBy: args.driver.userId,
+        createdBy: driver.userId,
+      }
+    });
+
+    const [dailyReport] = await trx
+      .insert(dailyReports)
+      .values({
+        date: menuPlan.planStartDate,
+        entityId: driver.id,
+        entityType: "driver",
+        menuPlanId: menuPlan.id,
+        portionType,
+        status: "PENDING",
+        createdAt: new Date(),
+        createdBy: driver.userId,
       })
       .onConflictDoUpdate({
         target: [
@@ -40,7 +53,7 @@ export default async function resolveDriverDailyReport(
         ],
         set: {
           updatedAt: new Date(),
-          updatedBy: args.driver.userId,
+          updatedBy: driver.userId,
         },
       })
       .returning({ id: dailyReports.id });

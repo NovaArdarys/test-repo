@@ -26,7 +26,7 @@ app.get(
       entity: entityTypeEnum
     }),
   }),
-  listMenuPlansHandler
+  listMenuPlansHandler 
 );
 
 app.get(

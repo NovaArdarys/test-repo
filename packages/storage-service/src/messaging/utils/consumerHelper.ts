@@ -11,7 +11,7 @@ import { redisShared as redis } from "@/constants/redis";
  * @param {Channel} channel
  * @return {*} 
  */
-const MAX_RETRY = 3;
+const MAX_RETRY = 5;
 export function safeConsume<T extends Record<string, any>>(
   handler: (data: T, msg: ConsumeMessage, channel: Channel) => Promise<void> | void,
   channel: Channel

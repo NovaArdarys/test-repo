@@ -94,6 +94,7 @@ export async function handleMenuPlanCreated(data: MenuPlanCreatedEvent) {
           message: error.message,
           stack: error.stack,
           timestamp: new Date().toISOString(),
+          errorRaw: error
         }
       })
       .where(eq(jobStatus.id, jobId));

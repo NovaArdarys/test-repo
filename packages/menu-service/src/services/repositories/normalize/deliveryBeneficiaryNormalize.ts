@@ -44,7 +44,9 @@ export function buildMenuPlanDeliveries(
     const portionType = delivery.portionType as PortionType;
 
     let portion = beneficiaryNode.portions.find(
-      (p: any) => p.portionType === portionType
+      (p: any) =>
+        p.portionType === portionType &&
+        p.targetPortion === delivery.targetPortion
     );
 
     if (!portion) {

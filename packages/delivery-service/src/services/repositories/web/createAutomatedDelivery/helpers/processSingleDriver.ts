@@ -78,8 +78,8 @@ export default async function processSingleDriver(
     if (!dailyReportId) {
       dailyReportId = await resolveDriverDailyReport(
         trx,
-        args,
         args.driver,
+        args.menuPlan,
         unit,
         dailyReportMap
       );

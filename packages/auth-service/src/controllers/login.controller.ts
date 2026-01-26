@@ -97,12 +97,12 @@ export const loginHandler = catchAsync(async (c) => {
       type: 'kitchen',
       kitchenIds: findUser.userKitchens.map((k: any) => k.kitchenId).slice(0, 5),
     };
-  } else if (findUser.userBeneficiaries?.length > 0) {
+  } if (findUser.userBeneficiaries?.length > 0) {
     context.beneficiary = {
       type: 'beneficiary',
       beneficiaryIds: findUser.userBeneficiaries.map((s: any) => s.beneficiaryId).slice(0, 5),
     };
-  } else if (findUser.drivers?.length > 0) {
+  } if (findUser.drivers?.length > 0) {
     context.driver = {
       type: 'driver',
       driverIds: findUser.drivers.map((d: any) => d.id).slice(0, 5),
@@ -113,6 +113,8 @@ export const loginHandler = catchAsync(async (c) => {
       kitchenIds: findUser.drivers.map((d: any) => d.kitchenId).slice(0, 5),
     };
   }
+
+  console.log(context, "=====context=====", findUser);
 
   const payload = {
     id: findUser.id,
