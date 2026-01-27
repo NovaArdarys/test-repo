@@ -241,7 +241,7 @@ export async function createMenuPlan(
           userActorId: createdPlans[0].createdBy,
           userReceivedId: userId,
           title: "Menu Makanan",
-          message: `Menu ${name} tanggal ${createdPlans[0].planStartDate}`,
+          message: `Menu untuk ${name} tanggal ${createdPlans[0].planStartDate} adalah ${createdPlans[0].name}`,
           timestamp: new Date().toISOString(),
         });
       });
