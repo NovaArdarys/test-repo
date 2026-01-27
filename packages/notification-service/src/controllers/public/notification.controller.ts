@@ -23,13 +23,11 @@ export const sseController = (c: Context) => {
 
     console.log("[SSE CONNECT]", channelKey, "Total clients:", group.size);
 
-    // Send initial connection message
     await stream.writeSSE({
       event: "init",
       data: "connected",
     });
 
-    // Heartbeat to keep connection alive
     const heartbeat = setInterval(async () => {
       try {
         await stream.writeSSE({ data: ':heartbeat' });
@@ -38,9 +36,8 @@ export const sseController = (c: Context) => {
         clearInterval(heartbeat);
         group.delete(stream);
       }
-    }, 15000);
+    }, 6000);
 
-    // Wait for client disconnect - THIS IS THE KEY
     await new Promise<void>((resolve) => {
       c.req.raw.signal.addEventListener('abort', () => {
         console.log("[SSE DISCONNECT]", channelKey, "Remaining:", group.size - 1);
@@ -108,6 +105,5 @@ export const sendSseToChannel = async (
     }
   }
 
-  // Clean up dead clients
   deadClients.forEach((client) => group.delete(client));
 };
