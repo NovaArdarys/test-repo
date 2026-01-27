@@ -5,7 +5,7 @@ import { entityTypeEnum } from "@/db/schemas";
 import { updateStepReport } from "@/services/repositories/daily.report.service";
 import { resetQueuesIfDev, safeConsume } from "../utils/consumerHelper";
 import { handleMenuPlanCreated } from "@/services/repositories/web/v1/createReport/createReport";
-import { reportQueue } from "@/jobs/queue/report";
+import { reportQueue } from "@/jobs/queue/report.queue";
 
 // ===== VALIDATORS =====
 const entityTypeValidator = z.enum(entityTypeEnum.enumValues);

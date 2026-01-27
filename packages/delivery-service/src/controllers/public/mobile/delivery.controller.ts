@@ -7,7 +7,6 @@ import {
 import { updateDeliveryStatus, getDeliveriesListDriver } from "@/services/repositories/mobile/delivery.driver.service";
 import { getDeliveriesListKitchen } from "@/services/repositories/mobile/delivery.kitchen.service";
 import { getDeliveriesListBeneficiary } from "@/services/repositories/mobile/delivery.beneficery.service";
-import { deliveryQueue } from "@/jobs/queue/delivery.queue";
 import { UpdateDeliveryStatusSchemaType } from "../../../validators";
 
 const getAuditFields = (c: Context) => ({
@@ -97,21 +96,6 @@ export const updateDeliveryStatusHandler = catchAsync(async (c: Context) => {
     storageId,
     updatedBy,
   });
-
-
-  if (updatedDelivery.type === "DROPOFF" && status === "DELIVERED") {
-    await deliveryQueue.add("pickup-creation", {
-      id: updatedDelivery.id,
-      kitchenId: updatedDelivery.kitchenId,
-      portionType: updatedDelivery.portionType,
-      targetPortion: updatedDelivery.targetPortion,
-      driverId: updatedDelivery.driverId,
-      startTime: updatedDelivery.startTime,
-      estimatedDeliveryTime: updatedDelivery.estimatedDeliveryTime,
-      notes: updatedDelivery.notes,
-      deliveryCode: updatedDelivery.deliveryCode
-    });
-  }
 
   return c.json(
     { data: updatedDelivery, message: "Delivery status updated" },

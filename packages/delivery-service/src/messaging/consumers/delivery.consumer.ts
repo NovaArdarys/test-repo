@@ -9,21 +9,7 @@ import { resetQueuesIfDev, safeConsume } from "../utils/consumerHelper";
 import { handleStepCommit } from "@/services/repositories/web/handlers/stepCommitHandler";
 import { dropoffJobSchema } from "@/validators/jobs/delivery.schema";
 import { handleMenuPlanCreated } from "@/services/repositories/web/handlers/menuPlanHandler";
-
-// ===== VALIDATORS =====
-const menuPlanCreatedSchema = z.object({
-  sagaId: z.string(),
-  jobId: z.string(),
-  menuPlanId: z.string(),
-  kitchenId: z.string(),
-  planStartDate: z.string().optional(),
-  createdBy: z.string().optional(),
-  eventType: z.literal('DELIVERY_CREATION'),
-  _meta: z.object({
-    eventId: z.string().optional(),
-    timestamp: z.string().optional(),
-  }).optional(),
-});
+import { deliveryQueue } from "@/jobs/queue/delivery.queue";
 
 const MENU_PLAN_QUEUE_NAME = "delivery_service_menu_plan_queue";
 const STEP_QUEUE_NAME = "delivery_service_step_queue";
@@ -106,9 +92,18 @@ export async function setupConsumer(channel: Channel) {
 
   channel.consume(
     menuPlanQueue.queue,
-    safeConsume(async (rawData: any) => {
-      const validated = menuPlanCreatedSchema.parse(rawData);
-      await handleMenuPlanCreated(validated);
+    safeConsume(async (data: any) => {
+      await deliveryQueue.add(
+        "delivery-create",
+        {
+          type: "create",
+          data: data
+        },
+        {
+          removeOnComplete: { age: 3600 * 24 * 7 },
+          removeOnFail: { age: 3600 * 24 * 7 }
+        }
+      );
     }, channel),
     { noAck: false }
   );

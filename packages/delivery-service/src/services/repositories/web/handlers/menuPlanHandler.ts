@@ -5,22 +5,9 @@ import { eq } from "drizzle-orm";
 import { publishDeliveryEvent } from "@/messaging/publishers/delivery.publisher";
 import { createAutoDelivery } from "../createAutomatedDelivery/delivery.auto.v2.service";
 import { updateSagaProgress } from "../jobProgress/updateSagaProgress";
+import { MenuPlanCreatedEventType } from "@/jobs/types/report.type";
 
-interface MenuPlanCreatedEvent {
-  sagaId: string;
-  jobId: string;
-  menuPlanId: string;
-  kitchenId: string;
-  planStartDate?: string;
-  createdBy?: string;
-  eventType: string;
-  _meta?: {
-    eventId?: string;
-    timestamp?: string;
-  };
-}
-
-export async function handleMenuPlanCreated(data: MenuPlanCreatedEvent) {
+export async function handleMenuPlanCreated(data: MenuPlanCreatedEventType) {
   const { sagaId, jobId, menuPlanId, kitchenId, createdBy } = data;
 
   try {

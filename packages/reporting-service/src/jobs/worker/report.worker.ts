@@ -1,7 +1,7 @@
 // jobs/worker/menuplan.worker.ts
 import { Worker } from "bullmq";
 import { redisBull } from "@/constants/redis";
-import { REPORT_QUEUE } from "../queue/report";
+import { REPORT_QUEUE } from "../queue/report.queue";
 import { ReportQueueSchema } from "@/jobs/types/report.type";
 import { handleMenuPlanCreated } from "@/services/repositories/web/v1/createReport/createReport";
 

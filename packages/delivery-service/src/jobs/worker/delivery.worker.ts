@@ -1,54 +1,36 @@
 import { createLoggedWorker } from "@/utils/catchWorker";
 import { DELIVERY_QUEUE_NAME } from "../queue/delivery.queue";
-import { notifyJobSchema } from "@/validators/jobs/delivery.schema";
+import { handleMenuPlanCreated } from "@/services/repositories/web/handlers/menuPlanHandler";
+import { ReportQueueSchema } from "../types/report.type";
 
 export const deliveryWorker = createLoggedWorker<unknown>(
   DELIVERY_QUEUE_NAME,
   async (job) => {
-    console.log("🏢 job worker:", job.name, job.data);
+    try {
+      console.log("▶️ MenuPlan Worker processing:", job.name, job.data);
 
-    switch (job.name) {
+      const input = ReportQueueSchema.parse(job.data);
 
-      case "dropoff-creation": {
-        // const parsed = dropoffJobSchema.parse(job.data);
-
-        // await createAutoDelivery({
-        //   kitchenId: parsed.entityId,
-        //   menuPlanId: parsed.menuPlanId,
-        //   status: "PENDING",
-        //   createdBy: "11111111-1111-1111-1111-111111111111",
-        // });
-
-        break;
+      if (input.type === "create") {
+        await handleMenuPlanCreated(input.data);
       }
 
-      case "pickup-creation": {
-        // const parsed = pickupJobSchema.parse(job.data);
-        // const beneficiary = await getDeliveryBeneficiary(parsed.id);
+      if (input.type === "update") {
 
-        // await createDelivery({
-        //   kitchenId: parsed.kitchenId,
-        //   driverId: parsed.driverId,
-        //   startTime: new Date(parsed.startTime) || new Date(),
-        //   endTime: null,
-        //   estimatedDeliveryTime: new Date(parsed.estimatedDeliveryTime),
-        //   status: "PENDING",
-        //   notes: parsed.notes,
-        //   portionType: parsed.portionType,
-        //   receivedPortion: 0,
-        //   createdBy: "11111111-1111-1111-1111-111111111111",
-        // }, beneficiary.beneficiaryId, parsed.portionType, beneficiary.menuPlanId);
-
-        break;
       }
 
-      case "delivery-notify": {
-        const parsed = notifyJobSchema.parse(job.data);
-        break;
+
+    } catch (error: any) {
+
+      if (error?.code === "23505" || error?.message?.includes("duplicate key")) {
+        await job.remove();
       }
 
-      default:
-        console.warn(`Unknown job name: ${job.name}`);
+      if (job.attemptsMade < job.opts.attempts!) {
+        throw error;
+      }
+
+      throw error;
     }
   }
 );
