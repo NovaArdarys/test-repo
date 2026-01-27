@@ -240,8 +240,8 @@ export async function createMenuPlan(
           error: undefined,
           userActorId: createdPlans[0].createdBy,
           userReceivedId: userId,
-          title: "Menu Plan Berhasil Dibuat",
-          message: `Menu untuk ${name} tanggal ${createdPlans[0].planStartDate} telah selesai dibuat`,
+          title: "Menu Makanan",
+          message: `Menu ${name} tanggal ${createdPlans[0].planStartDate}`,
           timestamp: new Date().toISOString(),
         });
       });
@@ -265,7 +265,7 @@ export async function createMenuPlan(
         error: undefined,
         userActorId: createdPlans[0].createdBy,
         userReceivedId: userId,
-        title: "Menu Plan Berhasil Dibuat",
+        title: "Menu Makanan",
         message: `Menu tanggal ${createdPlans[0].planStartDate} telah selesai dibuat`,
         timestamp: new Date().toISOString(),
       });

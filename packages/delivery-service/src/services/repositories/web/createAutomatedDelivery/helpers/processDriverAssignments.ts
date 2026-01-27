@@ -40,8 +40,8 @@ export default async function processDriverAssignments(
       error: undefined,
       userActorId: args.menuPlan.createdBy,
       userReceivedId: driver.userId,
-      title: "Menu Plan Berhasil Dibuat",
-      message: `Menu tanggal ${args.menuPlan.planStartDate} telah selesai dibuat`,
+      title: "Menu Makanan",
+      message: `Menu tanggal ${args.menuPlan.planStartDate}`,
       timestamp: new Date().toISOString(),
     });
 
