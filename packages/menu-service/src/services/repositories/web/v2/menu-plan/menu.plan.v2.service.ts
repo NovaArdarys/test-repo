@@ -247,7 +247,6 @@ export async function createMenuPlan(
       });
     });
 
-
     kitchen?.users.forEach((userId) => {
       processStatus.completed({
         status: "COMPLETED",
