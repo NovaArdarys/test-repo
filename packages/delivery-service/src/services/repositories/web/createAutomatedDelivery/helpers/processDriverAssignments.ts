@@ -1,6 +1,7 @@
 import { Trx } from "../types/domain";
 import { DeliveryResult, ProcessDriverArgs } from "../types/autoDelivery";
 import processSingleDriver, { processSingleDriverSimulated } from "./processSingleDriver";
+import { processStatus } from "@/messaging/publishers/notification.publisher";
 
 export default async function processDriverAssignments(
   trx: Trx,
@@ -22,12 +23,27 @@ export default async function processDriverAssignments(
       units: driverUnits,
     });
 
-    // await processSingleDriverSimulated({
-    //   ...args,
-    //   trx,
-    //   driver,
-    //   units: driverUnits,
-    // });
+
+    processStatus.completed({
+      status: "COMPLETED",
+      entityType: "MENU_PLAN",
+      entityId: args.menuPlan.id,
+      kitchenId: args.kitchen.id,
+      beneficiaryId: undefined,
+      relatedId: undefined,
+      relatedType: undefined,
+      jobId: undefined,
+      date: new Date().toISOString().split('T')[0],
+      progress: 100,
+      step: "Berhasil Membuat Menu",
+      result: deliveries,
+      error: undefined,
+      userActorId: args.menuPlan.createdBy,
+      userReceivedId: driver.userId,
+      title: "Menu Plan Berhasil Dibuat",
+      message: `Menu tanggal ${args.menuPlan.planStartDate} telah selesai dibuat`,
+      timestamp: new Date().toISOString(),
+    });
 
     results.push(...deliveries);
   }
