@@ -40,13 +40,19 @@ export const listEventReportsHandler = catchAsync(async (c: Context) => {
   const reportType = query.reportType || undefined;
   const startDate = query.startDate ? query.startDate : undefined;
   const endDate = query.endDate ? query.endDate : undefined;
+  const { kitchenId, driverId, beneficiaryId, userId, subDomain, domain } = getAuditFields(c);
 
   const reports = await getEventReports({
     page,
     limit,
     reportType,
     startDate,
-    endDate
+    endDate,
+    kitchenIds: kitchenId,
+    beneficiaryIds: beneficiaryId,
+    driversIds: driverId,
+    subDomains: subDomain,
+    domain: domain
   });
 
   return c.json({ data: reports.data, meta: reports.meta }, 200);
