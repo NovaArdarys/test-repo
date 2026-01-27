@@ -5,7 +5,6 @@ import { MENU_PLAN_QUEUE } from "../queue/menuplan.queue";
 import { menuPlanJobSchema } from "@/jobs/types/menuplan.type";
 import { updateMenuPlan } from "@/services/repositories/menu.plan.service";
 import { createMenuPlan } from "@/services/repositories/web/v2/menu-plan/menu.plan.v2.service";
-import { processStatus } from "@/messaging/publishers/notification.publisher";
 
 export const menuPlanWorker = new Worker(
   MENU_PLAN_QUEUE,
@@ -23,18 +22,6 @@ export const menuPlanWorker = new Worker(
           [input.dates]
         );
 
-        await processStatus.completed({
-          entityType: "MENU_PLAN",
-          entityId: result.menuPlans?.[0].id,
-          kitchenId: input.kitchenId!,
-          jobId: job.id,
-          date: input.dates,
-          result: { planId: result.menuPlans?.[0]?.id, totalReports: result.menuPlans.length },
-          message: `Menu plan berhasil dibuat untuk tanggal ${input.dates}`,
-          progress: 100,
-          status: "QUEUED",
-          timestamp: ""
-        });
         return { status: "created", result };
       }
 
@@ -47,18 +34,6 @@ export const menuPlanWorker = new Worker(
           input.updatedBy
         );
 
-        await processStatus.completed({
-          entityType: "MENU_PLAN",
-          entityId: result?.id,
-          kitchenId: input.kitchenId!,
-          jobId: job.id,
-          date: input.dates,
-          result: { planId: result?.id, totalReports: 1 },
-          message: `Menu plan berhasil dibuat untuk tanggal ${input.dates}`,
-          progress: 100,
-          status: "QUEUED",
-          timestamp: ""
-        });
         return { status: "updated", result };
       }
 

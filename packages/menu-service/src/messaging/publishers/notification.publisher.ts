@@ -15,7 +15,7 @@ async function publishProcessStatus(
     await safePublish(EXCHANGES.NOTIFICATION, routingKey, validated);
 
     console.log(
-      `[PROCESS STATUS] Published: ${routingKey} | ${validated.entityType} | ${validated.status} | kitchen:${validated.kitchenId}`
+      `[PROCESS STATUS] Published: ${routingKey} | ${validated.entityType} | ${validated.status} | kitchen:${validated.kitchenId} | to:${validated.userReceivedId}`
     );
   } catch (err) {
     console.error(`[PROCESS STATUS PUBLISH FAILED] ❌ ${routingKey}:`, err);
@@ -28,25 +28,21 @@ export const processStatus = {
       `process.${data.entityType.toLowerCase()}.status.queued`,
       { ...data, status: "QUEUED" }
     ),
-
   processing: (data: ProcessStatusPayload) =>
     publishProcessStatus(
       `process.${data.entityType.toLowerCase()}.status.processing`,
       { ...data, status: "PROCESSING" }
     ),
-
   completed: (data: ProcessStatusPayload) =>
     publishProcessStatus(
       `process.${data.entityType.toLowerCase()}.status.completed`,
       { ...data, status: "COMPLETED" }
     ),
-
   failed: (data: ProcessStatusPayload) =>
     publishProcessStatus(
       `process.${data.entityType.toLowerCase()}.status.failed`,
       { ...data, status: "FAILED" }
     ),
-
   cancelled: (data: ProcessStatusPayload) =>
     publishProcessStatus(
       `process.${data.entityType.toLowerCase()}.status.cancelled`,

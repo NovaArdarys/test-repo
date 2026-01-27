@@ -12,14 +12,21 @@ export const processStatusSchema = z.object({
   ]),
   entityId: z.string().optional(),
   kitchenId: z.string().min(1),
+  beneficiaryId: z.string().optional(),
+  relatedId: z.string().optional(),
+  relatedType: z.string().optional(),
   jobId: z.string().optional(),
   date: z.string().optional(),
   progress: z.number().min(0).max(100).optional(),
   step: z.string().optional(),
   result: z.any().optional(),
   error: z.string().optional(),
+  userActorId: z.string(),
+  userReceivedId: z.string(),
+  title: z.string().min(1),
   message: z.string().optional(),
   timestamp: z.string().default(() => new Date().toISOString()),
+
 });
 
 export type ProcessStatusPayload = z.infer<typeof processStatusSchema>;

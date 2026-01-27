@@ -7,12 +7,23 @@ import {
   beneficiaries as beneficiariesTable,
   menuPlans,
   sagaOrchestration,
-  jobStatus
+  jobStatus,
+  userBeneficiaries,
+  kitchens,
+  userKitchens
 } from "@/db/schemas";
-import { Beneficiary, MenuPlan } from "../types/domain";
+import { Beneficiary, Kitchen, MenuPlan } from "../types/domain";
 import { CreateMenuPlanInput } from "../types";
 import { publishMenuEvent } from "@/messaging/publishers/menu.publisher";
 import { isEmpty } from "lodash";
+import { processStatus } from "@/messaging/publishers/notification.publisher";
+
+type BeneficiaryWithUsers = Beneficiary & {
+  users: string[];
+};
+type KitchenWithUsers = Kitchen & {
+  users: string[];
+};
 
 export async function createMenuPlan(
   data: CreateMenuPlanInput,
@@ -44,15 +55,120 @@ export async function createMenuPlan(
 
   try {
     const result = await db.transaction(async trx => {
-      const beneficiaries: Beneficiary[] = await trx
-        .select()
+      const beneficiariesWithUsers = await trx
+        .select({
+          id: beneficiariesTable.id,
+          name: beneficiariesTable.name,
+          kitchenId: beneficiariesTable.kitchenId,
+          address: beneficiariesTable.address,
+          category: beneficiariesTable.category,
+          phoneNumber: beneficiariesTable.phoneNumber,
+          lon: beneficiariesTable.lon,
+          lat: beneficiariesTable.lat,
+          provinceId: beneficiariesTable.provinceId,
+          regencyId: beneficiariesTable.regencyId,
+          districtId: beneficiariesTable.districtId,
+          villageId: beneficiariesTable.villageId,
+          storageId: beneficiariesTable.storageId,
+          imageUrl: beneficiariesTable.imageUrl,
+          isDeleted: beneficiariesTable.isDeleted,
+          joinedDate: beneficiariesTable.joinedDate,
+          smallPortion: beneficiariesTable.smallPortion,
+          largePortion: beneficiariesTable.largePortion,
+          smallDeliveryTime: beneficiariesTable.smallDeliveryTime,
+          largeDeliveryTime: beneficiariesTable.largeDeliveryTime,
+          status: beneficiariesTable.status,
+          createdAt: beneficiariesTable.createdAt,
+          createdBy: beneficiariesTable.createdBy,
+          updatedAt: beneficiariesTable.updatedAt,
+          updatedBy: beneficiariesTable.updatedBy,
+          userId: userBeneficiaries.userId,
+        })
         .from(beneficiariesTable)
+        .innerJoin(
+          userBeneficiaries,
+          and(
+            eq(userBeneficiaries.beneficiaryId, beneficiariesTable.id),
+            eq(userBeneficiaries.isDeleted, false)
+          )
+        )
         .where(
           and(
             eq(beneficiariesTable.kitchenId, kitchenId),
-            eq(beneficiariesTable.status, "AKTIF")
+            eq(beneficiariesTable.status, "AKTIF"),
+            eq(beneficiariesTable.isDeleted, false)
           )
         );
+
+      const beneficiaries: BeneficiaryWithUsers[] = beneficiariesWithUsers.reduce((acc, row) => {
+        const { userId, ...beneficiary } = row;
+
+        const existing = acc.find(b => b.id === beneficiary.id);
+
+        if (existing) {
+          existing.users.push(userId);
+        } else {
+          acc.push({
+            ...beneficiary,
+            users: [userId],
+          });
+        }
+
+        return acc;
+      }, [] as BeneficiaryWithUsers[]);
+
+
+      const kitchenWithUsers = await trx
+        .select({
+          id: kitchens.id,
+          name: kitchens.name,
+          address: kitchens.address,
+          status: kitchens.status,
+          joinDate: kitchens.joinDate,
+          phoneNumber: kitchens.phoneNumber,
+          lon: kitchens.lon,
+          lat: kitchens.lat,
+          provinceId: kitchens.provinceId,
+          regencyId: kitchens.regencyId,
+          districtId: kitchens.districtId,
+          villageId: kitchens.villageId,
+          storageId: kitchens.storageId,
+          imageURL: kitchens.imageURL,
+          isDeleted: kitchens.isDeleted,
+          createdAt: kitchens.createdAt,
+          createdBy: kitchens.createdBy,
+          updatedAt: kitchens.updatedAt,
+          updatedBy: kitchens.updatedBy,
+          userId: userKitchens.userId,
+        })
+        .from(kitchens)
+        .innerJoin(
+          userKitchens,
+          and(
+            eq(userKitchens.kitchenId, kitchens.id),
+            eq(userKitchens.isDeleted, false)
+          )
+        )
+        .where(
+          and(
+            eq(kitchens.id, kitchenId),
+            eq(kitchens.isDeleted, false)
+          )
+        );
+
+      const kitchen: KitchenWithUsers | null = kitchenWithUsers.reduce((result, row) => {
+        const { userId, ...kitchenData } = row;
+
+        if (!result) {
+          return {
+            ...kitchenData,
+            users: [userId],
+          };
+        }
+
+        result.users.push(userId);
+        return result;
+      }, null as KitchenWithUsers | null);
 
       const createdPlans: MenuPlan[] = [];
 
@@ -85,10 +201,10 @@ export async function createMenuPlan(
         console.log(`[SAGA ${sagaId}] Plan created: ${plan.id} for ${dateStr}`);
       }
 
-      return { menuPlans: createdPlans, beneficiaries };
+      return { menuPlans: createdPlans, beneficiaries, kitchen };
     });
 
-    const { menuPlans: createdPlans, beneficiaries } = result;
+    const { menuPlans: createdPlans, beneficiaries, kitchen } = result;
 
     if (isEmpty(createdPlans)) {
       console.warn(`[SAGA ${sagaId}] No menu plans created (all duplicates)`);
@@ -104,6 +220,56 @@ export async function createMenuPlan(
 
       return { menuPlans: [], sagaId };
     }
+
+
+    beneficiaries.forEach(({ name, users }) => {
+      users.forEach((userId) => {
+        processStatus.completed({
+          status: "COMPLETED",
+          entityType: "MENU_PLAN",
+          entityId: createdPlans[0].id,
+          kitchenId: kitchenId,
+          beneficiaryId: undefined,
+          relatedId: undefined,
+          relatedType: undefined,
+          jobId: sagaId,
+          date: new Date().toISOString().split('T')[0],
+          progress: 100,
+          step: "Berhasil Membuat Menu",
+          result: result,
+          error: undefined,
+          userActorId: createdPlans[0].createdBy,
+          userReceivedId: userId,
+          title: "Menu Plan Berhasil Dibuat",
+          message: `Menu untuk ${name} tanggal ${createdPlans[0].planStartDate} telah selesai dibuat`,
+          timestamp: new Date().toISOString(),
+        });
+      });
+    });
+
+
+    kitchen?.users.forEach((userId) => {
+      processStatus.completed({
+        status: "COMPLETED",
+        entityType: "MENU_PLAN",
+        entityId: createdPlans[0].id,
+        kitchenId: kitchenId,
+        beneficiaryId: undefined,
+        relatedId: undefined,
+        relatedType: undefined,
+        jobId: sagaId,
+        date: new Date().toISOString().split('T')[0],
+        progress: 100,
+        step: "Berhasil Membuat Menu",
+        result: result,
+        error: undefined,
+        userActorId: createdPlans[0].createdBy,
+        userReceivedId: userId,
+        title: "Menu Plan Berhasil Dibuat",
+        message: `Menu tanggal ${createdPlans[0].planStartDate} telah selesai dibuat`,
+        timestamp: new Date().toISOString(),
+      });
+    });
 
     await db.update(sagaOrchestration)
       .set({

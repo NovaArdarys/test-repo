@@ -154,16 +154,6 @@ export const updateMenuPlanHandler = catchAsync(async (c: Context) => {
 
   const jobId = `menu-plan-update-${audit.kitchenId?.[0]}-${body.planStartDate}`;
 
-  await processStatus.queued({
-    entityType: "MENU_PLAN",
-    kitchenId: audit.kitchenId?.[0] ?? "",
-    jobId,
-    date: body.planStartDate,
-    message: "Menu plan sedang diantrikan",
-    status: "QUEUED",
-    timestamp: ""
-  });
-
   await menuPlanQueue.add(
     "menuplan-update",
     {
