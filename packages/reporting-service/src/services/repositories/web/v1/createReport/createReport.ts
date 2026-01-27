@@ -7,22 +7,9 @@ import createKitchenDailyReport from "./createKitchenDailyReport";
 import createBeneficiaryDailyReports from "./createBeneficiaryDailyReports";
 import { updateSagaProgress } from "@/services/repositories/jobProgress/updateSagaProgress";
 import { publishReportEvent } from "@/messaging/publishers/reporting.publisher";
+import { MenuPlanCreatedEventType } from "@/jobs/types/report.type";
 
-interface MenuPlanCreatedEvent {
-  sagaId: string;
-  jobId: string;
-  menuPlanId: string;
-  kitchenId: string;
-  planStartDate?: string;
-  beneficiaries?: any[];
-  eventType: string;
-  _meta?: {
-    eventId?: string;
-    timestamp?: string;
-  };
-}
-
-export async function handleMenuPlanCreated(data: MenuPlanCreatedEvent) {
+export async function handleMenuPlanCreated(data: MenuPlanCreatedEventType) {
   const { sagaId, jobId, menuPlanId, kitchenId, beneficiaries = [] } = data;
 
   try {

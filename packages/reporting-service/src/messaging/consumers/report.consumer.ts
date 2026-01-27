@@ -5,6 +5,7 @@ import { entityTypeEnum } from "@/db/schemas";
 import { updateStepReport } from "@/services/repositories/daily.report.service";
 import { resetQueuesIfDev, safeConsume } from "../utils/consumerHelper";
 import { handleMenuPlanCreated } from "@/services/repositories/web/v1/createReport/createReport";
+import { reportQueue } from "@/jobs/queue/report";
 
 // ===== VALIDATORS =====
 const entityTypeValidator = z.enum(entityTypeEnum.enumValues);
@@ -124,9 +125,27 @@ export async function setupConsumer(channel: Channel) {
 
   channel.prefetch(10);
 
+  // channel.consume(
+  //   menuPlanQueue.queue,
+  //   safeConsume(handleMenuPlanCreated, channel),
+  //   { noAck: false }
+  // );
   channel.consume(
     menuPlanQueue.queue,
-    safeConsume(handleMenuPlanCreated, channel),
+    safeConsume(async (data: any) => {
+      await reportQueue.add(
+        "report-create",
+        {
+          type: "create",
+          data: data
+        },
+        {
+          removeOnComplete: { age: 3600 * 24 * 7 },
+          removeOnFail: { age: 3600 * 24 * 7 }
+        }
+      );
+      // handleMenuPlanCreated
+    }, channel),
     { noAck: false }
   );
 
