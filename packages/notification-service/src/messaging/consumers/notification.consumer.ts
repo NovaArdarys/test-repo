@@ -3,8 +3,8 @@ import { Channel } from "amqplib";
 import { z } from "zod";
 import { EXCHANGES } from "../events/exchanges";
 import { resetQueuesIfDev, safeConsume } from "../utils/consumerHelper";
-import { sendSseToChannel } from "@/controllers/public/notification.controller";
-import { createNotification } from "@/services/repositories/create.notification.service";
+import { sendSseToChannel } from "@/controllers/public/notification.sse.controller";
+import { createNotification } from "@/services/repositories/notification.service";
 
 const processStatusSchema = z.object({
   status: z.enum(["QUEUED", "PROCESSING", "COMPLETED", "FAILED", "CANCELLED"]),

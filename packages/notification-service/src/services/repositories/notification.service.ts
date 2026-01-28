@@ -1,0 +1,220 @@
+// services/repositories/notification.service.ts
+import { db } from "@/db";
+import { notifications } from "@/db/schemas/notification.schema";
+import {
+  eq,
+  and,
+  desc,
+  InferSelectModel,
+  InferInsertModel,
+  sql,
+  gte,
+} from "drizzle-orm";
+
+export type Notification = InferSelectModel<typeof notifications>;
+
+export type NotificationInputType = Omit<
+  InferInsertModel<typeof notifications>,
+  "id" | "createdAt"
+>;
+export async function createNotification(
+  data: NotificationInputType
+): Promise<Notification> {
+  const [newNotification] = await db
+    .insert(notifications)
+    .values(data)
+    .returning();
+
+  return newNotification;
+}
+
+export async function createBulkNotifications(
+  data: NotificationInputType[]
+): Promise<Notification[]> {
+  if (data.length === 0) return [];
+
+  return db
+    .insert(notifications)
+    .values(data)
+    .returning();
+}
+export async function getNotificationsByUserId(
+  userId: string,
+  options?: {
+    isRead?: boolean;
+    limit?: number;
+    offset?: number;
+  }
+): Promise<Notification[]> {
+  const { isRead, limit = 50, offset = 0 } = options ?? {};
+
+  return db.query.notifications.findMany({
+    where: (n, { eq, and }) => {
+      const conditions = [eq(n.userReceivedId, userId)];
+
+      if (isRead !== undefined) {
+        conditions.push(eq(n.isRead, isRead));
+      }
+
+      return and(...conditions);
+    },
+    orderBy: (n, { desc }) => desc(n.createdAt),
+    limit,
+    offset,
+  });
+}
+
+export async function getUnreadNotificationsCount(
+  userId: string
+): Promise<number> {
+  const result = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(notifications)
+    .where(
+      and(
+        eq(notifications.userReceivedId, userId),
+        eq(notifications.isRead, false)
+      )
+    );
+
+  return Number(result[0]?.count ?? 0);
+}
+
+export async function getNotificationById(
+  notificationId: string,
+  userId: string
+): Promise<Notification | null> {
+  const notification = await db.query.notifications.findFirst({
+    where: (n, { eq, and }) =>
+      and(
+        eq(n.id, notificationId),
+        eq(n.userReceivedId, userId)
+      ),
+  });
+
+  return notification ?? null;
+}
+
+export async function getNotificationsByType(
+  userId: string,
+  type: string,
+  options?: {
+    limit?: number;
+    offset?: number;
+  }
+): Promise<Notification[]> {
+  const { limit = 50, offset = 0 } = options ?? {};
+
+  return db.query.notifications.findMany({
+    where: (n, { eq, and }) =>
+      and(
+        eq(n.userReceivedId, userId),
+        eq(n.type, type)
+      ),
+    orderBy: (n, { desc }) => desc(n.createdAt),
+    limit,
+    offset,
+  });
+}
+
+export async function getNotificationsByEntity(
+  userId: string,
+  entityType: string,
+  entityId: string
+): Promise<Notification[]> {
+  return db.query.notifications.findMany({
+    where: (n, { eq, and }) =>
+      and(
+        eq(n.userReceivedId, userId),
+        sql`${n.payload}->>'entityType' = ${entityType}`,
+        sql`${n.payload}->>'entityId' = ${entityId}`
+      ),
+    orderBy: (n, { desc }) => desc(n.createdAt),
+  });
+}
+
+export async function getRecentNotifications(
+  userId: string,
+  hoursAgo: number = 24
+): Promise<Notification[]> {
+  const cutoffDate = new Date();
+  cutoffDate.setHours(cutoffDate.getHours() - hoursAgo);
+
+  return db.query.notifications.findMany({
+    where: (n, { eq, and }) =>
+      and(
+        eq(n.userReceivedId, userId),
+        gte(n.createdAt, cutoffDate)
+      ),
+    orderBy: (n, { desc }) => desc(n.createdAt),
+  });
+}
+
+export async function getNotificationsSentByUser(
+  userActorId: string,
+  options?: {
+    limit?: number;
+    offset?: number;
+  }
+): Promise<Notification[]> {
+  const { limit = 50, offset = 0 } = options ?? {};
+
+  return db.query.notifications.findMany({
+    where: (n, { eq }) => eq(n.userActorId, userActorId),
+    orderBy: (n, { desc }) => desc(n.createdAt),
+    limit,
+    offset,
+  });
+}
+
+export async function markNotificationAsRead(
+  notificationId: string,
+  userId: string
+): Promise<Notification | null> {
+  const [updated] = await db
+    .update(notifications)
+    .set({ isRead: true })
+    .where(
+      and(
+        eq(notifications.id, notificationId),
+        eq(notifications.userReceivedId, userId)
+      )
+    )
+    .returning();
+
+  return updated ?? null;
+}
+
+export async function markAllNotificationsAsRead(
+  userId: string
+): Promise<number> {
+  const updated = await db
+    .update(notifications)
+    .set({ isRead: true })
+    .where(
+      and(
+        eq(notifications.userReceivedId, userId),
+        eq(notifications.isRead, false)
+      )
+    )
+    .returning();
+
+  return updated.length;
+}
+
+export async function deleteNotification(
+  notificationId: string,
+  userId: string
+): Promise<boolean> {
+  const [deleted] = await db
+    .delete(notifications)
+    .where(
+      and(
+        eq(notifications.id, notificationId),
+        eq(notifications.userReceivedId, userId)
+      )
+    )
+    .returning();
+
+  return Boolean(deleted);
+}

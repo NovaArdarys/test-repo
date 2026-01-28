@@ -1,109 +1,170 @@
-import { Context } from 'hono';
-import { streamSSE } from 'hono/streaming';
+import { Context } from "hono";
+import { catchAsync } from "@/utils/catchAsync";
+import {
+  createNotification,
+  getNotificationsByUserId,
+  getUnreadNotificationsCount,
+  getNotificationById,
+  getNotificationsByType,
+  getNotificationsByEntity,
+  getRecentNotifications,
+  getNotificationsSentByUser,
+  markNotificationAsRead,
+  markAllNotificationsAsRead,
+  deleteNotification,
+} from "@/services/repositories/notification.service";
 
-const channels = new Map<string, Set<any>>();
+export const listNotificationsHandler = catchAsync(async (c: Context) => {
+  const userId = c.get("userId") as string;
+  const query = c.req.query();
 
-export const sseController = (c: Context) => {
-  const channelKey = c.req.query("channel");
-  if (!channelKey) return c.text("Missing channel", 400);
+  const isRead =
+    query.isRead !== undefined ? query.isRead === "true" : undefined;
 
-  c.header("Access-Control-Allow-Origin", "*");
-  c.header("Content-Type", "text/event-stream");
-  c.header("Cache-Control", "no-cache");
-  c.header("Connection", "keep-alive");
-  c.header("X-Accel-Buffering", "no");
+  const limit = Number(query.limit ?? 50);
+  const offset = Number(query.offset ?? 0);
 
-  return streamSSE(c, async (stream) => {
-    if (!channels.has(channelKey)) {
-      channels.set(channelKey, new Set());
-    }
-
-    const group = channels.get(channelKey)!;
-    group.add(stream);
-
-    console.log("[SSE CONNECT]", channelKey, "Total clients:", group.size);
-
-    await stream.writeSSE({
-      event: "init",
-      data: "connected",
-    });
-
-    const heartbeat = setInterval(async () => {
-      try {
-        await stream.writeSSE({ data: ':heartbeat' });
-      } catch (err) {
-        console.error("[HEARTBEAT ERROR]", err);
-        clearInterval(heartbeat);
-        group.delete(stream);
-      }
-    }, 6000);
-
-    await new Promise<void>((resolve) => {
-      c.req.raw.signal.addEventListener('abort', () => {
-        console.log("[SSE DISCONNECT]", channelKey, "Remaining:", group.size - 1);
-        clearInterval(heartbeat);
-        group.delete(stream);
-        resolve();
-      });
-    });
+  const notifications = await getNotificationsByUserId(userId, {
+    isRead,
+    limit,
+    offset,
   });
-};
 
-function safeEncode(data: unknown): string {
-  if (typeof data === "string") {
-    return data
-      .replace(/\r/g, "\\r")
-      .replace(/\n/g, "\\n")
-      .replace(/\u0000/g, "")
-      .replace(/[\u0001-\u001F]/g, "")
-      .replace(/\u2028|\u2029/g, "");
+  return c.json({ data: notifications }, 200);
+});
+
+
+export const getUnreadNotificationCountHandler = catchAsync(
+  async (c: Context) => {
+    const userId = c.get("userId") as string;
+
+    const count = await getUnreadNotificationsCount(userId);
+
+    return c.json({ data: { count } }, 200);
+  }
+);
+
+export const getNotificationByIdHandler = catchAsync(async (c: Context) => {
+  const userId = c.get("userId") as string;
+  const { id } = c.req.param();
+
+  const notification = await getNotificationById(id, userId);
+
+  if (!notification) {
+    return c.json({ message: "Notification not found" }, 404);
   }
 
-  let json = "";
-  try {
-    json = JSON.stringify(data);
-  } catch (e) {
-    json = String(data);
+  return c.json({ data: notification }, 200);
+});
+
+export const getNotificationsByTypeHandler = catchAsync(
+  async (c: Context) => {
+    const userId = c.get("userId") as string;
+    const { type } = c.req.param();
+    const query = c.req.query();
+
+    const limit = Number(query.limit ?? 50);
+    const offset = Number(query.offset ?? 0);
+
+    const notifications = await getNotificationsByType(userId, type, {
+      limit,
+      offset,
+    });
+
+    return c.json({ data: notifications }, 200);
   }
+);
 
-  return json
-    .replace(/\r/g, "\\r")
-    .replace(/\n/g, "\\n")
-    .replace(/\u0000/g, "")
-    .replace(/[\u0001-\u001F]/g, "")
-    .replace(/\u2028|\u2029/g, "");
-}
+export const getNotificationsByEntityHandler = catchAsync(
+  async (c: Context) => {
+    const userId = c.get("userId") as string;
+    const { entityType, entityId } = c.req.param();
 
-export const sendSseToChannel = async (
-  channelKey: string,
-  event: string,
-  data: unknown
-) => {
-  const group = channels.get(channelKey);
+    const notifications = await getNotificationsByEntity(
+      userId,
+      entityType,
+      entityId
+    );
 
-  if (!group || group.size === 0) {
-    console.log(`[SSE] No clients for channel: ${channelKey}`);
-    return;
+    return c.json({ data: notifications }, 200);
   }
+);
 
-  console.log(`[SSE] Sending to ${group.size} clients on ${channelKey}`);
+export const getRecentNotificationsHandler = catchAsync(
+  async (c: Context) => {
+    const userId = c.get("userId") as string;
+    const query = c.req.query();
 
-  const deadClients: any[] = [];
+    const hoursAgo = Number(query.hoursAgo ?? 24);
 
-  for (const client of Array.from(group)) {
-    try {
-      const safeJson = safeEncode(data);
+    const notifications = await getRecentNotifications(userId, hoursAgo);
 
-      await client.writeSSE({
-        event,
-        data: safeJson,
-        id: String(Date.now()),
-      });
-    } catch (error) {
-      console.error("[SSE SEND ERROR]", error);
-      deadClients.push(client);
+    return c.json({ data: notifications }, 200);
+  }
+);
+
+export const getSentNotificationsHandler = catchAsync(
+  async (c: Context) => {
+    const userActorId = c.get("userId") as string;
+    const query = c.req.query();
+
+    const limit = Number(query.limit ?? 50);
+    const offset = Number(query.offset ?? 0);
+
+    const notifications = await getNotificationsSentByUser(userActorId, {
+      limit,
+      offset,
+    });
+
+    return c.json({ data: notifications }, 200);
+  }
+);
+
+export const markNotificationAsReadHandler = catchAsync(
+  async (c: Context) => {
+    const userId = c.get("userId") as string;
+    const { id } = c.req.param();
+
+    const updated = await markNotificationAsRead(id, userId);
+
+    if (!updated) {
+      return c.json({ message: "Notification not found" }, 404);
     }
-  }
 
-  deadClients.forEach((client) => group.delete(client));
-};
+    return c.json(
+      { data: updated, message: "Notification marked as read" },
+      200
+    );
+  }
+);
+
+export const markAllNotificationsAsReadHandler = catchAsync(
+  async (c: Context) => {
+    const userId = c.get("userId") as string;
+
+    const count = await markAllNotificationsAsRead(userId);
+
+    return c.json(
+      {
+        data: { count },
+        message: "All notifications marked as read",
+      },
+      200
+    );
+  }
+);
+
+export const deleteNotificationHandler = catchAsync(
+  async (c: Context) => {
+    const userId = c.get("userId") as string;
+    const { id } = c.req.param();
+
+    const success = await deleteNotification(id, userId);
+
+    if (!success) {
+      return c.json({ message: "Notification not found" }, 404);
+    }
+
+    return c.json({ message: "Notification deleted" }, 200);
+  }
+);

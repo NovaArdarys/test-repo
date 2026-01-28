@@ -13,7 +13,7 @@ import { checkDatabase } from '@/db';
 import { eventMonitorRoute } from './routes/event.monitor.route';
 import { swaggerUI } from '@hono/swagger-ui';
 import { initializeConsumers } from './messaging/consumers';
-import { sseController } from './controllers/public/notification.controller';
+import { sseController } from './controllers/public/notification.sse.controller';
 
 type Variables = JwtVariables;
 
