@@ -1,4 +1,3 @@
-// services/repositories/notification.service.ts
 import { db } from "@/db";
 import { notifications } from "@/db/schemas/notification.schema";
 import {
@@ -13,61 +12,63 @@ import {
 
 export type Notification = InferSelectModel<typeof notifications>;
 
-export type NotificationInputType = Omit<
+export type NotificationInput = Omit<
   InferInsertModel<typeof notifications>,
   "id" | "createdAt"
 >;
+
+export type PaginationOptions = {
+  limit: number;
+  offset: number;
+};
+
+export type NotificationFilterOptions = PaginationOptions & {
+  isRead?: boolean;
+};
+
 export async function createNotification(
-  data: NotificationInputType
+  data: NotificationInput
 ): Promise<Notification> {
-  const [newNotification] = await db
+  const [created] = await db
     .insert(notifications)
     .values(data)
     .returning();
 
-  return newNotification;
+  return created;
 }
 
 export async function createBulkNotifications(
-  data: NotificationInputType[]
+  data: NotificationInput[]
 ): Promise<Notification[]> {
   if (data.length === 0) return [];
 
-  return db
-    .insert(notifications)
-    .values(data)
-    .returning();
+  return db.insert(notifications).values(data).returning();
 }
+
 export async function getNotificationsByUserId(
   userId: string,
-  options?: {
-    isRead?: boolean;
-    limit?: number;
-    offset?: number;
-  }
+  options: NotificationFilterOptions
 ): Promise<Notification[]> {
-  const { isRead, limit = 50, offset = 0 } = options ?? {};
-
   return db.query.notifications.findMany({
     where: (n, { eq, and }) => {
       const conditions = [eq(n.userReceivedId, userId)];
 
-      if (isRead !== undefined) {
-        conditions.push(eq(n.isRead, isRead));
+      if (options.isRead !== undefined) {
+        conditions.push(eq(n.isRead, options.isRead));
       }
 
       return and(...conditions);
     },
     orderBy: (n, { desc }) => desc(n.createdAt),
-    limit,
-    offset,
+    limit: options.limit,
+    offset: options.offset,
   });
 }
 
 export async function getUnreadNotificationsCount(
   userId: string
 ): Promise<number> {
-  const result = await db
+  const [result] = await db
     .select({ count: sql<number>`count(*)` })
     .from(notifications)
     .where(
@@ -77,34 +78,29 @@ export async function getUnreadNotificationsCount(
       )
     );
 
-  return Number(result[0]?.count ?? 0);
+  return Number(result?.count ?? 0);
 }
 
 export async function getNotificationById(
   notificationId: string,
   userId: string
 ): Promise<Notification | null> {
-  const notification = await db.query.notifications.findFirst({
-    where: (n, { eq, and }) =>
-      and(
-        eq(n.id, notificationId),
-        eq(n.userReceivedId, userId)
-      ),
-  });
-
-  return notification ?? null;
+  return (
+    (await db.query.notifications.findFirst({
+      where: (n, { eq, and }) =>
+        and(
+          eq(n.id, notificationId),
+          eq(n.userReceivedId, userId)
+        ),
+    })) ?? null
+  );
 }
 
 export async function getNotificationsByType(
   userId: string,
   type: string,
-  options?: {
-    limit?: number;
-    offset?: number;
-  }
+  options: PaginationOptions
 ): Promise<Notification[]> {
-  const { limit = 50, offset = 0 } = options ?? {};
-
   return db.query.notifications.findMany({
     where: (n, { eq, and }) =>
       and(
@@ -112,8 +108,8 @@ export async function getNotificationsByType(
         eq(n.type, type)
       ),
     orderBy: (n, { desc }) => desc(n.createdAt),
-    limit,
-    offset,
+    limit: options.limit,
+    offset: options.offset,
   });
 }
 
@@ -135,10 +131,11 @@ export async function getNotificationsByEntity(
 
 export async function getRecentNotifications(
   userId: string,
-  hoursAgo: number = 24
+  hoursAgo: number
 ): Promise<Notification[]> {
-  const cutoffDate = new Date();
-  cutoffDate.setHours(cutoffDate.getHours() - hoursAgo);
+  const cutoffDate = new Date(
+    Date.now() - hoursAgo * 60 * 60 * 1000
+  );
 
   return db.query.notifications.findMany({
     where: (n, { eq, and }) =>
@@ -152,18 +149,14 @@ export async function getRecentNotifications(
 
 export async function getNotificationsSentByUser(
   userActorId: string,
-  options?: {
-    limit?: number;
-    offset?: number;
-  }
+  options: PaginationOptions
 ): Promise<Notification[]> {
-  const { limit = 50, offset = 0 } = options ?? {};
-
   return db.query.notifications.findMany({
-    where: (n, { eq }) => eq(n.userActorId, userActorId),
+    where: (n, { eq }) =>
+      eq(n.userActorId, userActorId),
     orderBy: (n, { desc }) => desc(n.createdAt),
-    limit,
-    offset,
+    limit: options.limit,
+    offset: options.offset,
   });
 }
 
@@ -216,5 +209,5 @@ export async function deleteNotification(
     )
     .returning();
 
-  return Boolean(deleted);
+  return !!deleted;
 }
