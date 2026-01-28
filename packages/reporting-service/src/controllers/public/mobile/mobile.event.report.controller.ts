@@ -17,6 +17,8 @@ import { publishEventReportCommit } from "@/messaging/publishers/reporting.publi
 import { isEmpty } from "lodash";
 import { resolveKitchenId } from "@/services/repositories/additional/get.kitchen.by.user.service";
 import { resolveEntityId } from "@/utils/resolveEntity";
+import { getListUsersByKitchen } from "@/services/repositories/additional/get.user.by.kitchen.service";
+import { sendProcessStatusNotification } from "@/utils/notificationHelper";
 
 const getAuditFields = (c: Context) => ({
   createdBy: c.get('userId'),
@@ -92,6 +94,66 @@ export const createEventReportHandler = catchAsync(async (c: Context) => {
     date: body.date,
     createdBy,
   });
+
+
+  if (newReport) {
+
+    if (actorDomain === "beneficiary") {
+      const users = await getListUsersByKitchen({ kitchenId: kitchenByUser, entityTypes: ["kitchen", "driver"] });
+      users.forEach((userId) => {
+        sendProcessStatusNotification({
+          status: "COMPLETED",
+          basePayload: {
+            entityType: "KITCHEN_REPORT",
+            entityId: newReport.id,
+            kitchenId: kitchenByUser,
+            beneficiaryId: undefined,
+            relatedId: undefined,
+            relatedType: undefined,
+            jobId: undefined,
+            date: new Date().toISOString().split("T")[0],
+            progress: 100,
+            result: newReport,
+            error: undefined,
+            userActorId: newReport.createdBy,
+          },
+          config: {
+            step: "Berhasil Membuat Menu",
+            title: "Laporan Kejadian",
+            message: `Laporan ${body.name}`,
+          },
+          recipientUserIds: [userId],
+        });
+      });
+    } else {
+      const users = await getListUsersByKitchen({ kitchenId: kitchenByUser, entityTypes: ["kitchen", "beneficiary"] });
+      users.forEach((userId) => {
+        sendProcessStatusNotification({
+          status: "COMPLETED",
+          basePayload: {
+            entityType: "KITCHEN_REPORT",
+            entityId: newReport.id,
+            kitchenId: kitchenByUser,
+            beneficiaryId: undefined,
+            relatedId: undefined,
+            relatedType: undefined,
+            jobId: undefined,
+            date: new Date().toISOString().split("T")[0],
+            progress: 100,
+            result: newReport,
+            error: undefined,
+            userActorId: newReport.createdBy,
+          },
+          config: {
+            step: "Berhasil Membuat Menu",
+            title: "Laporan Kejadian",
+            message: `Laporan ${body.name}`,
+          },
+          recipientUserIds: [userId],
+        });
+      });
+    }
+  }
 
   return c.json({ data: newReport, message: "Event report created" }, 201);
 });

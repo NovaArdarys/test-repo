@@ -15,6 +15,7 @@ import {
 } from "@/validator/event.report.validator";
 import { publishEventReportCommit } from "@/messaging/publishers/reporting.publisher";
 import { isEmpty } from "lodash";
+import { resolveEntityId } from "@/utils/resolveEntity";
 
 const getAuditFields = (c: Context) => ({
   createdBy: c.get('userId'),
@@ -62,9 +63,20 @@ export const createEventReportHandler = catchAsync(async (c: Context) => {
   const body = await c.req.parseBody() as unknown as CreateEventReportSchemaType;
   const { createdBy, domain, driverId, kitchenId, beneficiaryId } = getAuditFields(c);
 
+  const entityId = resolveEntityId({
+    actorDomain: domain,
+    kitchenId,
+    beneficiaryId,
+    driverId,
+  });
+
+  if (isEmpty(entityId)) {
+    return c.json({ message: "User belum punya lokasi penempatan" }, 400);
+  }
+
   const newReport = await createEventReport({
     ...body,
-    entityId: domain === "kitchen" ? !isEmpty(driverId) ? driverId?.[0] ?? null : kitchenId?.[0] ?? null : domain === "beneficiary" ? beneficiaryId?.[0] ?? null : null,
+    entityId: entityId,
     date: body.date,
     createdBy,
   });

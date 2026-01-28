@@ -7,7 +7,7 @@ export const processStatusSchema = z.object({
     "DELIVERY",
     "KITCHEN_REPORT",
     "BENEFICIARY_REPORT",
-    "STOCK_ADJUSTMENT",
+    "SYSTEM_REPORT",
     "AI_GENERATION",
   ]),
   entityId: z.string().optional(),

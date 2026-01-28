@@ -33,32 +33,6 @@ async function planEntity(entityType: string) {
   return db.query.masterSteps.findMany({ where: eq(masterSteps.entityType, entityType as any) });
 }
 
-async function getMenuPlanDate(
-  date: string,
-  entityType: "school" | "kitchen" | "beneficiary",
-  entityId: string
-) {
-  const menuPlanByEntity = await db.query.menuPlanBeneficiaries.findFirst({
-    where:
-      (entityType === "school" || entityType === "beneficiary")
-        ? eq(menuPlanBeneficiaries.beneficiaryId, entityId)
-        : undefined,
-  });
-
-  if (!menuPlanByEntity) return null;
-
-  const menuPlan = await db.query.menuPlans.findFirst({
-    where: and(
-      eq(menuPlans.id, menuPlanByEntity.menuPlanId),
-      eq(menuPlans.kitchenId, entityId),
-      gte(menuPlans.planStartDate, sql`${date}`),
-      lte(menuPlans.planEndDate, sql`${date}`)
-    ),
-  });
-
-  return menuPlan;
-}
-
 export async function createDailyReport(data: DailyReportInsert) {
   return await db.transaction(async (tx) => {
     const entity = await validateEntity(data.entityType, data.entityId);
