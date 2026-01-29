@@ -23,28 +23,28 @@ const app = new Hono();
 app.use(checkAccessToken);
 app.get(
   '/',
-  permission(),
+  // permission(),
   validate(listMenusQuerySchema, 'query'),
   listMenusHandler
 );
 
 app.post(
   '/',
-  permission(),
+  // permission(),
   validate(createMenuSchema),
   createMenuHandler
 );
 
 app.get(
   '/:id',
-  permission(),
+  // permission(),
   validate(idParamSchema, 'param'),
   getMenuByIdHandler
 );
 
 app.put(
   '/:id',
-  permission(),
+  // permission(),
   validate(idParamSchema, 'param'),
   validate(updateMenuSchema),
   updateMenuHandler
@@ -52,7 +52,7 @@ app.put(
 
 app.delete(
   '/:id',
-  permission(),
+  // permission(),
   validate(idParamSchema, 'param'),
   deleteMenuHandler
 );

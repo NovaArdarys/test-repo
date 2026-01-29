@@ -20,28 +20,28 @@ const app = new Hono();
 app.use(checkAccessToken);
 app.get(
   '/',
-  permission(),
+  // permission(),
   validate(listKitchensQuerySchema, 'query'),
   listKitchensHandler
 );
 
 app.post(
   '/',
-  permission(),
+  // permission(),
   validate(createKitchenSchema),
   createKitchenHandler
 );
 
 app.get(
   '/:id',
-  permission(),
+  // permission(),
   validate(idParamSchema, 'param'),
   getKitchenByIdHandler
 );
 
 app.put(
   '/:id',
-  permission(),
+  // permission(),
   validate(idParamSchema, 'param'),
   validate(createKitchenSchema),
   updateKitchenHandler
@@ -49,14 +49,14 @@ app.put(
 
 app.delete(
   '/:id',
-  permission(),
+  // permission(),
   validate(idParamSchema, 'param'),
   deleteKitchenHandler
 );
 
 app.post(
   '/:id/users',
-  permission(),
+  // permission(),
   validate(idParamSchema, 'param'),
   validate(assignUserToKitchenSchema),
   assignUserToKitchenHandler
@@ -64,7 +64,7 @@ app.post(
 
 app.delete(
   '/:id/users/:userId',
-  permission(),
+  // permission(),
   validate(idParamSchema, 'param'),
   validate(userIdParamSchema, 'param'),
   unassignUserFromKitchenHandler

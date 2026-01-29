@@ -56,30 +56,32 @@ export const registerHandler = catchAsync(async (c) => {
 
     const role = await getRoleById(roleId);
 
-    if (role?.domain === "kitchen" && domainId) {
-      await publishAssignUserToKitchen({
-        kitchenId: domainId,
-        userId: result.userId,
-        createdBy: createdBy || ""
-      });
-    }
+    console.log(role, " ======role=====");
 
-    if (role?.domain === "beneficiary" && domainId) {
-      await publishAssignUserToBeneficiary({
-        beneficiaryId: domainId,
-        userId: result.userId,
-        createdBy: createdBy || ""
-      });
-    }
+    // if (role?.domain === "kitchen" && domainId) {
+    //   await publishAssignUserToKitchen({
+    //     kitchenId: domainId,
+    //     userId: result.userId,
+    //     createdBy: createdBy || ""
+    //   });
+    // }
 
-    if (role?.domain === "driver" && domainId) {
-      await publishAssignProfileDriver({
-        kitchenId: domainId,
-        userId: result.userId,
-        createdBy: createdBy || "",
-        driverCapacity: Number(driverCapacity ?? 0)
-      });
-    }
+    // if (role?.domain === "beneficiary" && domainId) {
+    //   await publishAssignUserToBeneficiary({
+    //     beneficiaryId: domainId,
+    //     userId: result.userId,
+    //     createdBy: createdBy || ""
+    //   });
+    // }
+
+    // if (role?.domain === "driver" && domainId) {
+    //   await publishAssignProfileDriver({
+    //     kitchenId: domainId,
+    //     userId: result.userId,
+    //     createdBy: createdBy || "",
+    //     driverCapacity: Number(driverCapacity ?? 0)
+    //   });
+    // }
 
     return c.json({ data: { ...result, [role?.domain || "domainId"]: domainId } });
   }

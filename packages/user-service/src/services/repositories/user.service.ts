@@ -53,6 +53,8 @@ export async function getUser({ email }: { email: string; phone?: string; }) {
       where: (users, { eq }) => eq(users.email, email.toLowerCase()),
     });
 
+  console.log(email, user);
+
   return user ? user : null;
 }
 

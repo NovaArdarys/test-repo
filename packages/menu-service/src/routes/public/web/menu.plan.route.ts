@@ -37,28 +37,28 @@ app.use(checkAccessToken);
 
 app.get(
   '/',
-  permission(),
+  // permission(),
   validate(listMenuPlansQuerySchema, 'query'),
   listMenuPlansHandler
 );
 
 app.post(
   '/',
-  permission(),
+  // permission(),
   validate({ body: createMenuPlanSchema }),
   createMenuPlanHandler
 );
 
 app.get(
   '/:id',
-  permission(),
+  // permission(),
   validate(idParamSchema, 'param'),
   getMenuPlanByIdHandler
 );
 
 app.put(
   '/:id',
-  permission(),
+  // permission(),
   validate(idParamSchema, 'param'),
   validate(updateMenuPlanSchema),
   updateMenuPlanHandler
@@ -66,14 +66,14 @@ app.put(
 
 app.delete(
   '/:id',
-  permission(),
+  // permission(),
   validate(idParamSchema, 'param'),
   deleteMenuPlanHandler
 );
 
 app.patch(
   '/:id/status',
-  permission(),
+  // permission(),
   validate(idParamSchema, 'param'),
   validate(updateMenuPlanStatusSchema),
   updateMenuPlanStatusHandler
@@ -81,14 +81,14 @@ app.patch(
 
 app.get(
   '/:id/food-items',
-  permission(),
+  // permission(),
   validate(idParamSchema, 'param'),
   listFoodItemsInPlanHandler
 );
 
 app.post(
   '/:id/food-items',
-  permission(),
+  // permission(),
   validate(idParamSchema, 'param'),
   validate(assignFoodToMenuPlanSchema),
   assignFoodToMenuPlanHandler
@@ -96,21 +96,21 @@ app.post(
 
 app.delete(
   '/:id/food-items/:foodItemId',
-  permission(),
+  // permission(),
   validate(idParamSchema, 'param'),
   unassignFoodFromMenuPlanHandler
 );
 
 app.get(
   '/:id/distribution',
-  permission(),
+  // permission(),
   validate(idParamSchema, 'param'),
   listPlanDistributionHandler
 );
 
 app.post(
   '/:id/distribution',
-  permission(),
+  // permission(),
   validate(idParamSchema, 'param'),
   validate(assignPlanDistributionSchema),
   assignPlanDistributionHandler
@@ -118,7 +118,7 @@ app.post(
 
 app.delete(
   '/:id/distribution',
-  permission(),
+  // permission(),
   validate(idParamSchema, 'param'),
   validate(unassignPlanDistributionQuerySchema, 'query'),
   unassignPlanDistributionHandler

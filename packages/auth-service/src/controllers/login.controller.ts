@@ -120,6 +120,8 @@ export const loginHandler = catchAsync(async (c) => {
     roleId: roleId,
   };
 
+  console.log(context, "====context====", findUser.userRoles);
+
   const accessToken = await generateToken({ ...payload, data: context });
   const { token, tmpExp } = await generateRefreshToken(payload);
   const deviceInfo = parseDeviceInfo(c);

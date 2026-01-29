@@ -10,6 +10,6 @@ const app = new Hono()
     .post('/revoke-refresh-token', validate(refreshTokenSchema), removeTokenHandler)
     .post('/validate-refresh-token', validate(refreshTokenSchema), validateTokenHandler)
     .post('/update-password', updatePasswordUserHandler)
-    .post('/create-user', validate(registerSchema), registerHandler);
+    .post('/create-user', validate({ body: registerSchema }), registerHandler);
 
 export default app;

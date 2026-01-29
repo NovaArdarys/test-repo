@@ -19,14 +19,14 @@ app.use(checkAccessToken);
 
 app.get(
   '/',
-  permission(),
+  // permission(),
   validate({ query: ListDeliveriesQuerySchema }),
   listDeliveriesHandler
 );
 
 app.get(
   '/:id',
-  permission(),
+  // permission(),
   validate({ param: idParamSchema }),
   getDeliveryByIdHandler
 );

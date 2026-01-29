@@ -83,6 +83,7 @@ export const validate = (
         validatedData[src] = parsed;
       } catch (err: any) {
         const details = err.errors ?? JSON.parse(err.message);
+
         return c.json({ error: "Validation Error", source: src, details }, 400);
       }
     }

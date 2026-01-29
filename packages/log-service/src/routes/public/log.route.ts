@@ -12,13 +12,13 @@ const app = new Hono();
 app.use(checkAccessToken);
 app.get(
   '/app',
-  // permission(),
+  // // permission(),
   listAppLogsHandler
 );
 
 app.get(
   '/token',
-  // permission(),
+  // // permission(),
   listTokenLogsHandler
 );
 export default app;

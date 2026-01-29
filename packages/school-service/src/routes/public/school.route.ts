@@ -22,49 +22,49 @@ app.use(checkAccessToken);
 
 app.get(
   '/',
-  permission(),
+  // permission(),
   validate({ query: ListBeneficiaryQuerySchema }),
   listBeneficiaryHandler
 );
 
 app.post(
   '/',
-  permission(),
+  // permission(),
   validate({ body: CreateBeneficiarySchema }),
   createBeneficiaryHandler
 );
 
 app.get(
   '/:id',
-  permission(),
+  // permission(),
   validate({ param: idParamSchema }),
   getBeneficiaryByIdHandler
 );
 
 app.put(
   '/:id',
-  permission(),
+  // permission(),
   validate({ param: idParamSchema, body: CreateBeneficiarySchema }),
   updateBeneficiaryHandler
 );
 
 app.delete(
   '/:id',
-  permission(),
+  // permission(),
   validate({ param: idParamSchema }),
   deleteBeneficiaryHandler
 );
 
 app.post(
   '/:id/users',
-  permission(),
+  // permission(),
   validate({ param: idParamSchema, body: AssignUserToBeneficiarySchema }),
   assignUserToBeneficiaryHandler
 );
 
 app.delete(
   '/:id/users/:userId',
-  permission(),
+  // permission(),
   validate({ param: idParamSchema.merge(userIdParamSchema) }),
   unassignUserFromBeneficiaryHandler
 );

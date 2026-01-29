@@ -26,21 +26,21 @@ const app = new Hono();
 app.use(checkAccessToken);
 app.get(
   '/',
-  permission(),
+  // permission(),
   validate(listFoodItemsQuerySchema, 'query'),
   listFoodItemsHandler
 );
 
 app.post(
   '/',
-  permission(),
+  // permission(),
   validate(createFoodItemSchema),
   createFoodItemHandler
 );
 
 app.get(
   '/:id/menus',
-  permission(),
+  // permission(),
   validate(idParamSchema, 'param'),
   listMenuPlansByFoodItemIdHandler
 );
@@ -48,14 +48,14 @@ app.get(
 
 app.get(
   '/:id',
-  permission(),
+  // permission(),
   validate(idParamSchema, 'param'),
   getFoodItemByIdHandler
 );
 
 app.put(
   '/:id',
-  permission(),
+  // permission(),
   validate(idParamSchema, 'param'),
   validate(updateFoodItemSchema),
   updateFoodItemHandler
@@ -63,14 +63,14 @@ app.put(
 
 app.delete(
   '/:id',
-  permission(),
+  // permission(),
   validate(idParamSchema, 'param'),
   deleteFoodItemHandler
 );
 
 app.patch(
   '/:id/availability',
-  permission(),
+  // permission(),
   validate(idParamSchema, 'param'),
   validate(toggleAvailabilitySchema),
   toggleFoodItemAvailabilityHandler

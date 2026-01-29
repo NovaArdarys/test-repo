@@ -11,28 +11,28 @@ const app = new Hono();
 
 app.use(checkAccessToken)
   .get('/',
-    permission(),
+    // permission(),
     validate(PermissionListQuerySchema, 'query'),
     listPermissionsHandler
   )
   .post('/',
-    permission(),
+    // permission(),
     validate(CreatePermissionSchema),
     createPermissionHandler
   )
   .get('/:id',
-    permission(),
+    // permission(),
     validate(idParamSchema, 'param'),
     getPermissionByIdHandler
   )
   .put('/:id',
-    permission(),
+    // permission(),
     validate(idParamSchema, 'param'),
     validate(UpdatePermissionSchema),
     updatePermissionHandler
   )
   .delete('/:id',
-    permission(),
+    // permission(),
     validate(idParamSchema, 'param'),
     deletePermissionHandler
   );

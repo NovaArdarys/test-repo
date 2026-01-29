@@ -15,7 +15,7 @@ const app = new Hono();
 
 app.use(checkAccessToken)
   .get('/',
-    permission(),
+    // permission(),
     validate(UserListQuerySchema, 'query'),
     listUsersHandler
   )
@@ -31,12 +31,12 @@ app.use(checkAccessToken)
     getUserByIdHandler
   )
   .put('/:id',
-    permission(),
+    // permission(),
     validate({ body: registerSchema, param: idParamSchema }),
     updateUserHandler
   )
   .delete('/:id',
-    permission(),
+    // permission(),
     validate(idParamSchema, 'param'),
     deleteUserHandler
   );
