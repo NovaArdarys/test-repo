@@ -1,5 +1,6 @@
 import { db } from "@/db";
 import { notifications } from "@/db/schemas/notification.schema";
+import { buildPaginatedWhere } from "@/utils/pagination";
 import {
   eq,
   and,
@@ -45,24 +46,40 @@ export async function createBulkNotifications(
   return db.insert(notifications).values(data).returning();
 }
 
-export async function getNotificationsByUserId(
-  userId: string,
-  options: NotificationFilterOptions
-): Promise<Notification[]> {
-  return db.query.notifications.findMany({
-    where: (n, { eq, and }) => {
-      const conditions = [eq(n.userReceivedId, userId)];
-
-      if (options.isRead !== undefined) {
-        conditions.push(eq(n.isRead, options.isRead));
-      }
-
-      return and(...conditions);
+export async function getNotificationsByUserId({
+  userId,
+  page,
+  limit,
+  isRead,
+}: {
+  userId: string;
+  page: number;
+  limit: number;
+  isRead?: boolean;
+}) {
+  const { where, meta } = await buildPaginatedWhere({
+    table: notifications,
+    tableName: "notifications",
+    base: {
+      userReceivedId: userId,
+      isRead: isRead !== undefined ? isRead : undefined,
     },
-    orderBy: (n, { desc }) => desc(n.createdAt),
-    limit: options.limit,
-    offset: options.offset,
+    extra: [],
+    page,
+    limit,
   });
+
+  const data = await db.query.notifications.findMany({
+    where: () => where,
+    orderBy: (table) => sql`${table.createdAt} DESC`,
+    offset: (page - 1) * limit,
+    limit,
+  });
+
+  return {
+    data,
+    meta,
+  };
 }
 
 export async function getUnreadNotificationsCount(

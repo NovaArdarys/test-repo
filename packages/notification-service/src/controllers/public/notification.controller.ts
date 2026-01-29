@@ -8,14 +8,15 @@ export const listNotificationsHandler = catchAsync(async (c: Context) => {
   const userId = c.get("userId") as string;
   const query = await c.get("validatedData").query as z.infer<typeof listNotificationQuerySchema>;
 
-  const notifications =
-    await notificationService.getNotificationsByUserId(userId, {
-      isRead: query.isRead,
-      limit: query.limit,
-      offset: (query.page - 1) * query.limit,
+  const data =
+    await notificationService.getNotificationsByUserId({
+      userId,
+      isRead: query?.isRead ?? false,
+      limit: query?.limit ?? 10,
+      page: query.page
     });
 
-  return c.json({ data: notifications });
+  return c.json({ data: data, meta: data.meta });
 });
 
 export const getUnreadNotificationCountHandler = catchAsync(async (c) => {
