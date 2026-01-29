@@ -36,45 +36,63 @@ app.get("/sse-test/:key", async (c) => {
 app.use(checkAccessToken);
 app.get(
   "/",
-  validate(listNotificationQuerySchema, "query"),
+  validate({
+    query: listNotificationQuerySchema
+  }),
   listNotificationsHandler
 );
 app.get("/unread/count", getUnreadNotificationCountHandler);
 app.get(
   "/recent",
-  validate(recentNotificationQuerySchema, "query"),
+  validate({
+    query: recentNotificationQuerySchema
+  }),
   getRecentNotificationsHandler
 );
 app.get(
   "/sent",
-  validate(listNotificationQuerySchema, "query"),
+  validate({
+    query: listNotificationQuerySchema
+  }),
   getSentNotificationsHandler
 );
 app.get(
   "/type/:type",
-  validate(typeParamSchema, "param"),
-  validate(listNotificationQuerySchema, "query"),
+  validate({
+    param: typeParamSchema
+  }),
+  validate({
+    query: listNotificationQuerySchema
+  }),
   getNotificationsByTypeHandler
 );
 app.get(
   "/entity/:entityType/:entityId",
-  validate(entityParamSchema, "param"),
+  validate({
+    param: entityParamSchema
+  }),
   getNotificationsByEntityHandler
 );
 app.get(
   "/:id",
-  validate(idParamSchema, "param"),
+  validate({
+    param: idParamSchema
+  }),
   getNotificationByIdHandler
 );
 app.patch(
   "/:id/read",
-  validate(idParamSchema, "param"),
+  validate({
+    param: idParamSchema
+  }),
   markNotificationAsReadHandler
 );
 app.patch("/read-all", markAllNotificationsAsReadHandler);
 app.delete(
   "/:id",
-  validate(idParamSchema, "param"),
+  validate({
+    param: idParamSchema
+  }),
   deleteNotificationHandler
 );
 
