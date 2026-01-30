@@ -329,6 +329,7 @@ export async function createMenuPlan(
           id: b.id,
           name: b.name,
         })),
+        createdBy: plan.createdBy,
         eventType: 'REPORT_CREATION',
         _meta: {
           eventId: crypto.randomUUID(),
