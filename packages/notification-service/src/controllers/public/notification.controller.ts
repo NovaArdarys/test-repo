@@ -16,7 +16,7 @@ export const listNotificationsHandler = catchAsync(async (c: Context) => {
       page: query.page
     });
 
-  return c.json({ data: data, meta: data.meta });
+  return c.json({ data: data.data, meta: data.meta });
 });
 
 export const getUnreadNotificationCountHandler = catchAsync(async (c) => {

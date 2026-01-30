@@ -70,6 +70,14 @@ export async function getNotificationsByUserId({
   });
 
   const data = await db.query.notifications.findMany({
+    columns: {
+      id: true,
+      isRead: true,
+      message: true,
+      createdAt: true,
+      title: true,
+      type: true
+    },
     where: () => where,
     orderBy: (table) => sql`${table.createdAt} DESC`,
     offset: (page - 1) * limit,
