@@ -11,6 +11,8 @@ export const reportWorker = new Worker(
     try {
       console.log("▶️ MenuPlan Worker processing:", job.name, job.data);
 
+      console.log(job.data, "=====report======");
+
       const input = ReportQueueSchema.parse(job.data);
 
       if (input.type === "create") {

@@ -317,11 +317,13 @@ export async function createMenuPlan(
         maxAttempts: 3,
       }).returning();
 
+
+      // saga/menuPlanSaga.ts
       console.log(`[SAGA ${sagaId}] Jobs created for plan ${plan.id}`);
 
+      // ✅ ONE EVENT TO RULE THEM ALL
       await publishMenuEvent("menu-plan.created", {
         sagaId,
-        jobId: reportJob[0].id,
         menuPlanId: plan.id,
         kitchenId: plan.kitchenId!,
         planStartDate: plan.planStartDate,
@@ -330,30 +332,53 @@ export async function createMenuPlan(
           name: b.name,
         })),
         createdBy: plan.createdBy,
-        eventType: 'REPORT_CREATION',
+        jobId: reportJob[0].id,
+        eventType: "MENU-CREATION",
         _meta: {
           eventId: crypto.randomUUID(),
           timestamp: new Date().toISOString(),
         }
       });
 
-      console.log(`[SAGA ${sagaId}] Report event published for plan ${plan.id}`);
+      console.log(`[SAGA ${sagaId}] Menu plan created event published for plan ${plan.id}`);
 
-      await publishMenuEvent("menu-plan.created", {
-        sagaId,
-        jobId: deliveryJob[0].id,
-        menuPlanId: plan.id,
-        kitchenId: plan.kitchenId!,
-        planStartDate: plan.planStartDate,
-        createdBy: plan.createdBy,
-        eventType: 'DELIVERY_CREATION',
-        _meta: {
-          eventId: crypto.randomUUID(),
-          timestamp: new Date().toISOString(),
-        }
-      });
+      // console.log(`[SAGA ${sagaId}] Jobs created for plan ${plan.id}`);
 
-      console.log(`[SAGA ${sagaId}] Delivery event published for plan ${plan.id}`);
+      // await publishMenuEvent("menu-plan.created", {
+      //   sagaId,
+      //   jobId: reportJob[0].id,
+      //   menuPlanId: plan.id,
+      //   kitchenId: plan.kitchenId!,
+      //   planStartDate: plan.planStartDate,
+      //   beneficiaries: beneficiaries.map(b => ({
+      //     id: b.id,
+      //     name: b.name,
+      //   })),
+      //   createdBy: plan.createdBy,
+      //   eventType: 'REPORT_CREATION',
+      //   _meta: {
+      //     eventId: crypto.randomUUID(),
+      //     timestamp: new Date().toISOString(),
+      //   }
+      // });
+
+      // console.log(`[SAGA ${sagaId}] Report event published for plan ${plan.id}`);
+
+      // await publishMenuEvent("menu-plan.created", {
+      //   sagaId,
+      //   jobId: deliveryJob[0].id,
+      //   menuPlanId: plan.id,
+      //   kitchenId: plan.kitchenId!,
+      //   planStartDate: plan.planStartDate,
+      //   createdBy: plan.createdBy,
+      //   eventType: 'DELIVERY_CREATION',
+      //   _meta: {
+      //     eventId: crypto.randomUUID(),
+      //     timestamp: new Date().toISOString(),
+      //   }
+      // });
+
+      // console.log(`[SAGA ${sagaId}] Delivery event published for plan ${plan.id}`);
     }
 
     console.log(`[SAGA ${sagaId}] All events published successfully`);

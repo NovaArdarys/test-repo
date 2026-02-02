@@ -16,7 +16,7 @@ export function safeConsume<T extends Record<string, any>>(
     let parsed: any;
     try {
       parsed = JSON.parse(msg.content.toString());
-    } catch {
+    } catch (err) {
       console.log("[SAFE CONSUME] Invalid JSON. DROP.");
       return channel.nack(msg, false, false);
     }
@@ -37,28 +37,35 @@ export function safeConsume<T extends Record<string, any>>(
         return channel.ack(msg);
       }
 
-      const locked = await redis.set(lockKey, "1", "EX", LOCK_TTL, "NX");
+      const locked = await redis.setnx(lockKey, "1");
 
-      if (locked !== "OK") {
+      if (!locked) {
         const lockTTL = await redis.ttl(lockKey);
 
+        console.log(`[SAFE CONSUME] Lock check for ${eventId}: TTL=${lockTTL}`);
+
         if (lockTTL === -1) {
-          console.log(`[SAFE CONSUME] Orphaned lock detected, cleaning: ${eventId}`);
+          console.log(`[SAFE CONSUME] ⚠️ Orphaned lock detected, cleaning: ${eventId}`);
           await redis.del(lockKey);
+          await new Promise(resolve => setTimeout(resolve, 500));
           return channel.nack(msg, false, true); // requeue
         }
 
-        if (lockTTL > 0) {
-          console.log(`[SAFE CONSUME] Lock active (TTL: ${lockTTL}s), requeue: ${eventId}`);
+        if (lockTTL > 0 && lockTTL < LOCK_TTL) {
+          console.log(`[SAFE CONSUME] ⏳ Lock active (TTL: ${lockTTL}s), requeue: ${eventId}`);
 
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          await new Promise(resolve => setTimeout(resolve, 2000));
           return channel.nack(msg, false, true); // requeue
         }
 
+        console.log(`[SAFE CONSUME] 🔄 Lock race condition, retry: ${eventId}`);
+        await new Promise(resolve => setTimeout(resolve, 100));
         return channel.nack(msg, false, true);
       }
 
-      console.log(`[SAFE CONSUME] Processing: ${eventId}`);
+      await redis.expire(lockKey, LOCK_TTL);
+
+      console.log(`[SAFE CONSUME] 🔒 Lock acquired, processing: ${eventId}`);
       await handler(parsed, msg, channel);
 
       await redis.set(processedKey, "done", "EX", PROCESSED_TTL);
@@ -69,25 +76,26 @@ export function safeConsume<T extends Record<string, any>>(
       console.log(`[SAFE CONSUME] ✅ Success: ${eventId}`);
 
     } catch (err: any) {
-      console.error(`[SAFE CONSUME] Error processing ${eventId}:`, err.message);
+      console.error(`[SAFE CONSUME] ❌ Error processing ${eventId}:`, err.message);
 
       await redis.del(lockKey);
 
       const retryCount = getRetryCount(msg);
       if (retryCount >= MAX_RETRY) {
         console.error(
-          `[SAFE CONSUME] Max retry reached (${retryCount}). ACK & DROP.`,
+          `[SAFE CONSUME] 💀 Max retry reached (${retryCount}). ACK & DROP.`,
           { eventId, error: err.message }
         );
-        channel.ack(msg);
+        channel.ack(msg); // DROP message
         return;
       }
 
-      console.log(`[SAFE CONSUME] Retry (${retryCount + 1}/${MAX_RETRY}): ${eventId}`);
+      console.log(`[SAFE CONSUME] 🔄 Retry (${retryCount + 1}/${MAX_RETRY}): ${eventId}`);
 
-      await new Promise(resolve => setTimeout(resolve, Math.min(1000 * Math.pow(2, retryCount), 30000)));
+      const backoffMs = Math.min(1000 * Math.pow(2, retryCount), 30000);
+      await new Promise(resolve => setTimeout(resolve, backoffMs));
 
-      return channel.nack(msg, false, true); // requeue dengan requeue=true
+      return channel.nack(msg, false, true); // requeue
     }
   };
 }
@@ -106,41 +114,60 @@ export async function resetQueuesIfDev(
     return;
   }
 
-  console.log("[RABBITMQ] DEV MODE → Reset queues and locks");
+  console.log("[RABBITMQ] 🧹 DEV MODE → Reset queues and locks");
 
-  const keys = await redis.keys("processing:*");
+  // Hapus semua lock dan processed keys di development
+  const lockKeys = await redis.keys("processing:*");
   const processedKeys = await redis.keys("processed:*");
+  const outboxKeys = await redis.keys("outbox:*");
 
-  if (keys.length > 0) {
-    await redis.del(...keys);
-    console.log(`   Deleted ${keys.length} lock keys`);
+  if (lockKeys.length > 0) {
+    await redis.del(...lockKeys);
+    console.log(`   🗑️  Deleted ${lockKeys.length} lock keys`);
   }
 
   if (processedKeys.length > 0) {
     await redis.del(...processedKeys);
-    console.log(`   Deleted ${processedKeys.length} processed keys`);
+    console.log(`   🗑️  Deleted ${processedKeys.length} processed keys`);
+  }
+
+  if (outboxKeys.length > 0) {
+    await redis.del(...outboxKeys);
+    console.log(`   🗑️  Deleted ${outboxKeys.length} outbox keys`);
   }
 
   for (const q of queues) {
     try {
       await channel.deleteQueue(q);
-      console.log(`   Deleted queue: ${q}`);
+      console.log(`   ✅ Deleted queue: ${q}`);
     } catch (err: any) {
       if (err?.code === 404) {
-        console.log(`   Queue not found (skip): ${q}`);
+        console.log(`   ⚠️  Queue not found (skip): ${q}`);
       } else {
-        console.error(`   Failed deleting queue ${q}:`, err);
+        console.error(`   ❌ Failed deleting queue ${q}:`, err);
       }
     }
   }
 }
 
-export async function cleanRedisLocks() {
-  const locks = await redis.keys("processing:*");
-  const processed = await redis.keys("processed:*");
+// Utility untuk manual clean (panggil saat startup di dev)
+export async function cleanRedisLocksOnStartup() {
+  if (process.env.NODE_ENV !== "DEVELOPMENT") {
+    return;
+  }
 
-  if (locks.length > 0) await redis.del(...locks);
-  if (processed.length > 0) await redis.del(...processed);
+  console.log("[REDIS] 🧹 Cleaning stale locks on startup...");
 
-  console.log(`Cleaned ${locks.length} locks, ${processed.length} processed keys`);
+  const lockKeys = await redis.keys("processing:*");
+  const processedKeys = await redis.keys("processed:*");
+
+  if (lockKeys.length > 0) {
+    await redis.del(...lockKeys);
+    console.log(`[REDIS] 🗑️  Cleaned ${lockKeys.length} stale locks`);
+  }
+
+  if (processedKeys.length > 0) {
+    await redis.del(...processedKeys);
+    console.log(`[REDIS] 🗑️  Cleaned ${processedKeys.length} processed keys`);
+  }
 }
