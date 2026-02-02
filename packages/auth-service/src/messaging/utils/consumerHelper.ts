@@ -8,7 +8,8 @@ const PROCESSED_TTL = 60 * 60 * 24; // 24 hours
 
 export function safeConsume<T extends Record<string, any>>(
   handler: (data: T, msg: ConsumeMessage, channel: Channel) => Promise<void> | void,
-  channel: Channel
+  channel: Channel,
+  options?: { serviceName?: string; }
 ) {
   return async (msg: ConsumeMessage | null) => {
     if (!msg) return;
@@ -27,8 +28,9 @@ export function safeConsume<T extends Record<string, any>>(
       return channel.nack(msg, false, false);
     }
 
-    const processedKey = `processed:${eventId}`;
-    const lockKey = `processing:${eventId}`;
+    const serviceName = options?.serviceName || 'default';
+    const processedKey = `processed:${serviceName}:${eventId}`;
+    const lockKey = `processing:${serviceName}:${eventId}`;
 
     try {
       const alreadyProcessed = await redis.get(processedKey);

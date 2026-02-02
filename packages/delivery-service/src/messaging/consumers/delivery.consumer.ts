@@ -104,7 +104,7 @@ export async function setupConsumer(channel: Channel) {
           removeOnFail: { age: 3600 * 24 * 7 }
         }
       );
-    }, channel),
+    }, channel, { serviceName: 'delivery' }),
     { noAck: false }
   );
 

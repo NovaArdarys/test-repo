@@ -143,10 +143,12 @@ export async function setupConsumer(channel: Channel) {
         {
           removeOnComplete: { age: 3600 * 24 * 7 },
           removeOnFail: { age: 3600 * 24 * 7 }
-        }
+        },
       );
       // handleMenuPlanCreated
-    }, channel),
+    }, channel, {
+      serviceName: "report"
+    }),
     { noAck: false }
   );
 
