@@ -122,6 +122,8 @@ export const updateStepReportHandler = catchAsync(async (c: Context) => {
   const report = await getDailyReportWithoutMaskById(updated.dailyReportId);
 
   if (report) {
+    console.log("sending to publisher");
+
     const allCompleted = every(report.steps, 'isCompleted');
     await publishStepUpdate({
       id,

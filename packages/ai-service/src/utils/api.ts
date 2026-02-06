@@ -10,7 +10,7 @@ const aiClient = axios.create({
     'X-API-Key': API_KEY,
     'Content-Type': 'application/json'
   },
-  timeout: 20000
+  timeout: 60000
 });
 
 aiClient.interceptors.response.use(
