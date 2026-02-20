@@ -5,12 +5,21 @@
 export function buildUIReport(rawSteps: any[], menuItems: any[] = []) {
   const grouped = groupBySubDomain(rawSteps);
 
+  const orderDomain = {
+    persiapan: 1,
+    memasak: 2,
+    pemorsian: 3,
+  } as const;
+
+  type OrderKey = keyof typeof orderDomain;
+
   return grouped.map((domain: any) => ({
     name: domain.subDomain,
+    order: orderDomain[domain?.subDomain as OrderKey] ?? 0,
     steps: domain.steps.map((step: any) =>
       buildUIStepFromStepLevel(step, menuItems)
-    ),
-  }));
+    ).sort((a: any, b: any) => a.order - b.order),
+  })).sort((a, b) => a.order - b.order);
 }
 
 // ========================================================
@@ -106,6 +115,7 @@ function buildAPDStep(step: any, ai: any[]) {
     title: "Seragam APD",
     image: step.imageURL ?? null,
     timestamp: step.updatedAt ?? null,
+    order: step.stepOrder ?? 0,
     status,
     storageMeta: normalizeMeta(step.storageMeta),
     storageCreatedBy: step.storageCreatedBy,
@@ -160,6 +170,7 @@ function buildCleanlinessStep(step: any, ai: any[], pos: "before" | "after") {
     title: pos === "before" ? "Kebersihan Sebelum" : "Kebersihan Sesudah",
     image: step.imageURL ?? null,
     timestamp: step.updatedAt ?? null,
+    order: step.stepOrder ?? 0,
     storageMeta: normalizeMeta(step.storageMeta),
     storageCreatedBy: step.storageCreatedBy,
     storageCreatedAt: step.storageCreatedAt,
@@ -217,6 +228,7 @@ function buildServingStep(step: any, ai: any[], menuItems: any[]) {
     title: "Foto Menu",
     image: step.imageURL ?? null,
     timestamp: step.updatedAt ?? null,
+    order: step.stepOrder ?? 0,
     storageMeta: normalizeMeta(step.storageMeta),
     storageCreatedBy: step.storageCreatedBy,
     storageCreatedAt: step.storageCreatedAt,
