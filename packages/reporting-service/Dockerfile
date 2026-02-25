@@ -16,10 +16,17 @@ ENV SERVICE_NAME=${SERVICE_NAME}
 COPY package.json bun.lock* ./
 
 # Copy package.json service
-COPY ./package.json ./packages/${SERVICE_NAME}/
+COPY ./packages/${SERVICE_NAME}/package.json ./packages/${SERVICE_NAME}/
 
+# Change owner root dir 
+RUN chown -R bun:bun /app
+
+USER bun
 # Install dependencies
 RUN bun install
+
+# fix dependencies
+RUN chown -R bun:bun /app/node_modules
 
 # ------------------------
 # Runner stage (final image)
@@ -31,13 +38,15 @@ ENV SERVICE_NAME=${SERVICE_NAME}
 
 WORKDIR /app
 
+RUN chown -R bun:bun /app
+
 # Copy dependencies
-COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/package.json ./package.json
-COPY --from=deps /app/bun.lock ./bun.lock
+COPY --from=deps --chown=bun:bun /app/node_modules ./node_modules
+COPY --from=deps --chown=bun:bun /app/package.json ./package.json
+COPY --from=deps --chown=bun:bun /app/bun.lock ./bun.lock
 
 # Copy full source code service dari build context
-COPY ./ ./packages/${SERVICE_NAME}
+COPY --chown=bun:bun ./packages/${SERVICE_NAME} ./packages/${SERVICE_NAME}
 
 # Gunakan user non-root
 USER bun
