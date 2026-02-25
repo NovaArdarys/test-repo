@@ -41,6 +41,13 @@ app.get(
   }),
   listNotificationsHandler
 );
+app.get(
+  "/:id",
+  validate({
+    param: idParamSchema
+  }),
+  getNotificationByIdHandler
+);
 app.get("/unread/count", getUnreadNotificationCountHandler);
 app.get(
   "/recent",
@@ -72,13 +79,6 @@ app.get(
     param: entityParamSchema
   }),
   getNotificationsByEntityHandler
-);
-app.get(
-  "/:id",
-  validate({
-    param: idParamSchema
-  }),
-  getNotificationByIdHandler
 );
 app.patch(
   "/:id/read",

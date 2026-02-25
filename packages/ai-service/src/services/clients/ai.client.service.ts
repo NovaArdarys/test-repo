@@ -16,10 +16,15 @@ export type AIAnalysisType =
 
 export interface BaseAIInput {
   image: string;
+  image_url?: string;
+  analysis_type?: AIAnalysisType;
 }
 
 export interface DetectInput extends BaseAIInput {
   labels?: Array<{ id: string; en: string; }>;
+  image_url?: string;
+  analysis_type?: AIAnalysisType;
+  food_items?: Array<{ id: string; en: string; }>;
 }
 
 type RuleWhen = {
@@ -83,8 +88,15 @@ export async function detectAI<T extends AIAnalysisType>(
   data: T extends "food" ? DetectInput : BaseAIInput
 ): Promise<any> {
   try {
-    const res = await aiClient.post(`/detect/${type}`, data);
-    return res.data;
+    console.log(JSON.stringify(data), "======data=======");
+
+    const res = await aiClient.post(`/detect/external-vision`, data);
+    const { result, ...rest } = res.data;
+
+    return {
+      ...rest,
+      data: result
+    };
   } catch (error: any) {
     if (error.response) {
       throw new Error(

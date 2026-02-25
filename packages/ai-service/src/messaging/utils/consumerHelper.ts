@@ -1,4 +1,3 @@
-// consumerHelper.ts
 import { ConsumeMessage, Channel } from "amqplib";
 import redis from "@/constants/redis";
 

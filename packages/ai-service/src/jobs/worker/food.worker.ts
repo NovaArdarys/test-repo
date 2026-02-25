@@ -15,7 +15,7 @@ import {
   detectAI,
   getAITypeFromStepOrder,
 } from '@/services/clients/ai.client.service';
-import { aiStatus } from '@/messaging/publishers/notification.publisher';
+import { processStatus } from '@/messaging/publishers/notification.publisher';
 
 const SKIPPABLE_ERRORS = ["ECONNREFUSED", "ECONNRESET", "ETIMEDOUT"];
 
@@ -42,8 +42,6 @@ export const foodWorker = new Worker<z.infer<typeof stepCommittedSchema>>(
         return null;
       }
 
-      console.log(job.data, "=====jobdata=====");
-
       const stepReport = await getStepReportDetail(job.data.id);
 
       if (isEmpty(stepReport)) {
@@ -51,24 +49,7 @@ export const foodWorker = new Worker<z.infer<typeof stepCommittedSchema>>(
         return null;
       }
 
-      await job.updateData({
-        ...job.data,
-        dailyReportId: stepReport.dailyReportId,
-        storageId: stepReport.storageId || "",
-        stepKey: stepReport.step.stepKey
-      });
-
       storageId = stepReport.storageId ?? null;
-
-      await aiStatus.processing({
-        channel: `dailyReport:${stepReport.dailyReportId}`,
-        status: "PROCESSING",
-        stepId: stepReport.id,
-        storageId: stepReport.storageId ?? "",
-        dailyReportId: stepReport.dailyReportId,
-        stepKey: stepReport.step.stepKey,
-        jobId: String(job.id),
-      });
 
       if (stepReport.step?.analysisType) {
         analysisType = stepReport.step.analysisType;
@@ -92,7 +73,7 @@ export const foodWorker = new Worker<z.infer<typeof stepCommittedSchema>>(
 
       imageURL = stepReport.imageURL;
 
-      const image = await compressImageToBase64(imageURL);
+      const image = aiType !== "food" ? await compressImageToBase64(imageURL) : imageURL;
       let labels: { id: string; en: string; }[] = [];
 
       if (aiType === "food") {
@@ -111,15 +92,17 @@ export const foodWorker = new Worker<z.infer<typeof stepCommittedSchema>>(
       }
 
       const result = await detectAI(aiType, {
+        analysis_type: aiType,
         image,
+        image_url: imageURL,
+        food_items: labels,
         labels,
       });
 
       const end = performance.now();
       const processingTime = (end - start) / 1000;
 
-
-      await insertAiLog({
+      const aiResult = await insertAiLog({
         entityId: job.data.id ?? null,
         storageId,
         analysisType,
@@ -136,6 +119,17 @@ export const foodWorker = new Worker<z.infer<typeof stepCommittedSchema>>(
           timestamp: new Date().toISOString(),
         },
       });
+
+
+      await job.updateData({
+        ...job.data,
+        dailyReportId: stepReport.dailyReportId,
+        storageId: stepReport.storageId || "",
+        stepKey: stepReport.step.stepKey,
+        createdBy: stepReport.dailyReport.createdBy,
+        aiResultId: aiResult?.[0].id
+      });
+
 
       console.log(
         `✅ [Worker] Job ${job.id} completed in ${processingTime.toFixed(2)}s`
@@ -190,35 +184,69 @@ export const foodWorker = new Worker<z.infer<typeof stepCommittedSchema>>(
   }
 );
 
+function buildBasePayload(job: any) {
+  return {
+    entityType: "AI_GENERATION" as const,
+    entityId: job.data.id,
+    kitchenId: job.data.entityId,
+    beneficiaryId: undefined,
+    relatedId: undefined,
+    relatedType: undefined,
+    date: new Date().toISOString().split("T")[0],
+    jobId: String(job.id),
+    userActorId: job?.data?.createdBy ?? "",
+    userReceivedId: job?.data?.createdBy ?? "",
+  };
+}
+
+
+foodWorker.on("active", async (job) => {
+  console.log(`🚀 [Worker] Job ${job.id} started`);
+
+  if (job.data.entityType === "kitchen") {
+    const base = buildBasePayload(job);
+
+    await processStatus.processing({
+      ...base,
+      progress: 10,
+      step: "Sedang menganalisa",
+      title: "Laporan Sedang Diproses",
+      message:
+        "Permintaan Anda sedang kami proses. Mohon tunggu beberapa saat.",
+    });
+  }
+});
+
 foodWorker.on("completed", async (job, result) => {
   console.log(`🎉 [Worker] Job ${job.id} completed successfully`);
+  if (job.data.entityType === "kitchen") {
+    const base = buildBasePayload(job);
 
-  await aiStatus.done({
-    channel: `dailyReport:${job.data.dailyReportId}`,
-    status: "DONE",
-    stepId: job.data.id,
-    storageId: job.data.storageId ?? "",
-    dailyReportId: job.data.dailyReportId || "",
-    stepKey: job.data.stepKey,
-    jobId: String(job.id),
-  });
+    await processStatus.completed({
+      ...base,
+      progress: 100,
+      step: "Selesai",
+      title: "Laporan Siap",
+      message: "Laporan Anda berhasil dibuat dan siap untuk ditinjau.",
+      result,
+    });
+  }
 });
 
 foodWorker.on("failed", async (job, err) => {
-  if (!job) {
-    console.error(`💥 [Worker] Job failed:`, err);
-    return;
+  if (!job) return;
+
+  if (job.data.entityType === "kitchen") {
+    const base = buildBasePayload(job);
+
+    await processStatus.failed({
+      ...base,
+      step: "Gagal",
+      title: "Pembuatan Laporan Gagal",
+      message:
+        "Terjadi kendala saat memproses laporan. Silakan coba kembali.",
+      error: err?.message,
+    });
   }
-
-  console.error(`💥 [Worker] Job ${job.id} failed:`, err);
-
-  await aiStatus.failed({
-    channel: `dailyReport:${job.data.dailyReportId}`,
-    status: "FAILED",
-    stepId: job.data.id,
-    storageId: job.data.storageId ?? "",
-    dailyReportId: job.data.dailyReportId || "",
-    stepKey: job.data.stepKey,
-    jobId: String(job.id),
-  });
 });
+

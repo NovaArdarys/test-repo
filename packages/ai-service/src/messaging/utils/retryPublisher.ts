@@ -1,4 +1,3 @@
-// retryPublisher.worker.ts
 import redis from "@/constants/redis";
 import { getRabbitMQChannel } from "../broker";
 
@@ -33,4 +32,3 @@ export async function retryOutboxPublishes() {
     }
   }
 }
-// setInterval(retryOutboxPublishes, 60_000);

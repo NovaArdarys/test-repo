@@ -33,7 +33,6 @@ async function handleStepEvent(data: z.infer<typeof stepCommittedSchema>) {
   }
 }
 
-
 // ================= SETUP =================
 export async function setupConsumer(channel: Channel) {
   await resetQueuesIfDev(channel, [

@@ -11,5 +11,7 @@ export const stepCommittedSchema = z.object({
   allStepCompleted: z.boolean(),
   dailyReportId: z.string().optional(),
   storageId: z.string().optional(),
-  stepKey: z.string().optional()
+  stepKey: z.string().optional(),
+  createdBy: z.string().optional(),
+  aiResultId: z.string().optional(),
 });

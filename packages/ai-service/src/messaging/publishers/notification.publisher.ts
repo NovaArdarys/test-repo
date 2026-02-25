@@ -1,42 +1,63 @@
 import { safePublish } from "../utils/publisherHelper";
 import { EXCHANGES } from "../events/exchanges";
-import { z } from "zod";
+import {
+  processStatusSchema,
+  ProcessStatusPayload,
+  ProcessStatus,
+  EntityType,
+} from "@/validator/event/process.status.event";
 
-export const aiStatusSchema = z.object({
-  status: z.enum(["QUEUED", "PROCESSING", "DONE", "FAILED"]),
-  channel: z.string(),
-  stepId: z.string(),
-  storageId: z.string(),
-  dailyReportId: z.string(),
-  stepKey: z.string().optional(),
-  jobId: z.string().optional(),
-  result: z.any().optional(),
-  error: z.string().optional()
-});
+function buildRoutingKey(
+  entityType: EntityType,
+  status: ProcessStatus
+): string {
+  return `process.${entityType.toLowerCase()}.status.${status.toLowerCase()}`;
+}
 
-type AiStatusPayload = z.infer<typeof aiStatusSchema>;
-
-async function publishAiStatus(routingKey: string, data: AiStatusPayload): Promise<void> {
+async function publishProcessStatus(
+  status: ProcessStatus,
+  payload: Omit<ProcessStatusPayload, "status" | "timestamp">
+): Promise<void> {
   try {
-    aiStatusSchema.parse(data);
-    await safePublish(EXCHANGES.AI, routingKey, data);
+    const validated = processStatusSchema.parse({
+      ...payload,
+      status,
+      timestamp: new Date().toISOString(),
+    });
 
-    console.log(`[AI STATUS PUBLISH] ✅ Sent: ${routingKey}`);
+    const routingKey = buildRoutingKey(
+      validated.entityType,
+      validated.status
+    );
+
+    await safePublish(EXCHANGES.NOTIFICATION, routingKey, validated);
+
+    console.log(
+      `[PROCESS STATUS] ✅ ${routingKey} | ${validated.entityType} | ${validated.status} | kitchen:${validated.kitchenId} | to:${validated.userReceivedId}`
+    );
   } catch (err) {
-    console.error(`[AI STATUS PUBLISH FAILED] ❌ ${routingKey}:`, err);
+    console.error(`[PROCESS STATUS PUBLISH FAILED] ❌`, err);
   }
 }
 
-export const aiStatus = {
-  queued: (data: AiStatusPayload) =>
-    publishAiStatus("ai.status.queued", { ...data, status: "QUEUED" }),
+export const processStatus = {
+  queued: (data: Omit<ProcessStatusPayload, "status" | "timestamp">) =>
+    publishProcessStatus("QUEUED", data),
 
-  processing: (data: AiStatusPayload) =>
-    publishAiStatus("ai.status.processing", { ...data, status: "PROCESSING" }),
+  processing: (data: Omit<ProcessStatusPayload, "status" | "timestamp">) =>
+    publishProcessStatus("PROCESSING", data),
 
-  done: (data: AiStatusPayload) =>
-    publishAiStatus("ai.status.done", { ...data, status: "DONE" }),
+  completed: (data: Omit<ProcessStatusPayload, "status" | "timestamp">) =>
+    publishProcessStatus("COMPLETED", data),
 
-  failed: (data: AiStatusPayload) =>
-    publishAiStatus("ai.status.failed", { ...data, status: "FAILED" }),
+  failed: (data: Omit<ProcessStatusPayload, "status" | "timestamp">) =>
+    publishProcessStatus("FAILED", data),
+
+  cancelled: (data: Omit<ProcessStatusPayload, "status" | "timestamp">) =>
+    publishProcessStatus("CANCELLED", data),
+
+  emit: (
+    status: ProcessStatus,
+    data: Omit<ProcessStatusPayload, "status" | "timestamp">
+  ) => publishProcessStatus(status, data),
 };

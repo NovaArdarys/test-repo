@@ -2,7 +2,7 @@ import { Queue } from "bullmq";
 import { redisBull } from "@/constants/redis";
 import type { ReportQueueType } from "@/jobs/types/report.type";
 
-export const REPORT_QUEUE = "report";
+export const REPORT_QUEUE = "report-queue";
 
 export const reportQueue = new Queue<ReportQueueType>(REPORT_QUEUE, {
   connection: redisBull,

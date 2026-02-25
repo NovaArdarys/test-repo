@@ -29,7 +29,7 @@ export const getUnreadNotificationCountHandler = catchAsync(async (c) => {
 
 export const getNotificationByIdHandler = catchAsync(async (c) => {
   const userId = c.get("userId") as string;
-  const { id } = c.req.valid("param");
+  const { id } = c.get("validatedData").param;
 
   const notification =
     await notificationService.getNotificationById(id, userId);
@@ -43,7 +43,7 @@ export const getNotificationByIdHandler = catchAsync(async (c) => {
 
 export const getNotificationsByTypeHandler = catchAsync(async (c) => {
   const userId = c.get("userId") as string;
-  const { type } = c.req.valid("param");
+  const { type } = c.get("validatedData").param;
   const query = c.req.valid("query");
 
   const notifications =
@@ -57,7 +57,7 @@ export const getNotificationsByTypeHandler = catchAsync(async (c) => {
 
 export const getNotificationsByEntityHandler = catchAsync(async (c) => {
   const userId = c.get("userId") as string;
-  const { entityType, entityId } = c.req.valid("param");
+  const { entityType, entityId } = c.get("validatedData").param;
 
   const notifications =
     await notificationService.getNotificationsByEntity(
@@ -94,7 +94,7 @@ export const getSentNotificationsHandler = catchAsync(async (c) => {
 
 export const markNotificationAsReadHandler = catchAsync(async (c) => {
   const userId = c.get("userId") as string;
-  const { id } = c.req.valid("param");
+  const { id } = c.get("validatedData").param;
 
   const updated =
     await notificationService.markNotificationAsRead(id, userId);
@@ -122,7 +122,7 @@ export const markAllNotificationsAsReadHandler = catchAsync(async (c) => {
 
 export const deleteNotificationHandler = catchAsync(async (c) => {
   const userId = c.get("userId") as string;
-  const { id } = c.req.valid("param");
+  const { id } = c.get("validatedData").param;
 
   const success =
     await notificationService.deleteNotification(id, userId);

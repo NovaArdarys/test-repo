@@ -1,6 +1,5 @@
 import * as amqp from "amqplib";
 import { EXCHANGES } from "./events/exchanges";
-
 interface RabbitMQConnection {
   connection: amqp.Connection | null;
   channel: amqp.ConfirmChannel | null;

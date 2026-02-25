@@ -34,7 +34,7 @@ app.get(
 app.post(
   '/',
   // permission(),
-  validate(createFoodItemSchema),
+  validate({ body: createFoodItemSchema }),
   createFoodItemHandler
 );
 
@@ -57,7 +57,7 @@ app.put(
   '/:id',
   // permission(),
   validate(idParamSchema, 'param'),
-  validate(updateFoodItemSchema),
+  validate({ body: updateFoodItemSchema }),
   updateFoodItemHandler
 );
 
@@ -72,7 +72,7 @@ app.patch(
   '/:id/availability',
   // permission(),
   validate(idParamSchema, 'param'),
-  validate(toggleAvailabilitySchema),
+  validate({ body: toggleAvailabilitySchema }),
   toggleFoodItemAvailabilityHandler
 );
 

@@ -1,0 +1,54 @@
+import { z } from "zod";
+
+export const PROCESS_STATUSES = [
+  "QUEUED",
+  "PROCESSING",
+  "COMPLETED",
+  "FAILED",
+  "CANCELLED",
+] as const;
+
+export type ProcessStatus = typeof PROCESS_STATUSES[number];
+
+export const ENTITY_TYPES = [
+  "MENU_PLAN",
+  "DELIVERY",
+  "KITCHEN_REPORT",
+  "BENEFICIARY_REPORT",
+  "SYSTEM_REPORT",
+  "AI_GENERATION",
+] as const;
+
+export type EntityType = typeof ENTITY_TYPES[number];
+
+export const processStatusSchema = z.object({
+  status: z.enum(PROCESS_STATUSES),
+  entityType: z.enum(ENTITY_TYPES),
+
+  entityId: z.string().optional(),
+
+  kitchenId: z.string().min(1),
+  beneficiaryId: z.string().optional(),
+
+  relatedId: z.string().optional(),
+  relatedType: z.string().optional(),
+
+  jobId: z.string().optional(),
+  date: z.string().optional(),
+
+  progress: z.number().min(0).max(100).optional(),
+  step: z.string().optional(),
+
+  result: z.any().optional(),
+  error: z.string().optional(),
+
+  userActorId: z.string().min(1),
+  userReceivedId: z.string().min(1),
+
+  title: z.string().min(1),
+  message: z.string().optional(),
+
+  timestamp: z.string().default(() => new Date().toISOString()),
+});
+
+export type ProcessStatusPayload = z.infer<typeof processStatusSchema>;

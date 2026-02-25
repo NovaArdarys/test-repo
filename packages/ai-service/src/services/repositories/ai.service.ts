@@ -12,7 +12,6 @@ export interface InsertAiLogParams extends Partial<AiAnalysisLogInsert> {
   entityId: string | null;
 }
 
-
 export async function insertAiLog(params: InsertAiLogParams) {
   const {
     entityId,
@@ -51,7 +50,7 @@ export async function insertAiLog(params: InsertAiLogParams) {
       storageId,
       metadata: metadata ?? {},
     },
-  });
+  }).returning();
 }
 
 export async function getStepReportDetail(entityId?: string) {

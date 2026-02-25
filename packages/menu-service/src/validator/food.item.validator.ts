@@ -2,13 +2,21 @@ import { z } from "zod";
 import { paginationSchema } from "./globa.validator";
 import { foodTypeEnum } from "@/db/schemas";
 
+const ingredientSchema = z.object({
+  name: z.string().min(1, "Nama bahan makanan wajib diisi"),
+  nameEn: z.string().optional().default(""),
+});
+
 const foodItemBaseSchema = z.object({
   name: z.string().min(3).max(100),
   type: z.enum(foodTypeEnum.enumValues, {
-    error: () => ({ message: `Invalid type: ${foodTypeEnum.enumValues.join(', ')}` }),
+    error: () => ({ message: `type: ${foodTypeEnum.enumValues.join(', ')}` }),
   }),
-  description: z.string().optional(),
+  nameEn: z.string().optional().default(""),
+  description: z.string().optional().default(""),
+  descriptionEn: z.string().optional().default(""),
   isAvailable: z.coerce.boolean().optional(),
+  ingredients: z.array(ingredientSchema).min(1, "Setidaknya ada 1 bahan makanan"),
 });
 
 export const createFoodItemSchema = foodItemBaseSchema.extend({

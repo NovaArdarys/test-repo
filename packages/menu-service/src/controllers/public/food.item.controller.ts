@@ -48,7 +48,7 @@ export const listFoodItemsHandler = catchAsync(async (c: Context) => {
 });
 
 export const createFoodItemHandler = catchAsync(async (c: Context) => {
-  const body = await c.req.parseBody() as unknown as CreateFoodItemSchemaType;
+  const body = await c.get("validatedData").body as unknown as CreateFoodItemSchemaType;
   const audit = getAuditFields(c);
 
   const newFoodItem = await createFoodItem({
@@ -77,7 +77,7 @@ export const getFoodItemByIdHandler = catchAsync(async (c: Context) => {
 
 export const updateFoodItemHandler = catchAsync(async (c: Context) => {
   const { id } = c.req.param();
-  const body = await c.req.parseBody() as unknown as UpdateFoodItemSchemaType;
+  const body = await c.get("validatedData").body as unknown as UpdateFoodItemSchemaType;
   const audit = getAuditFields(c);
 
   const updatedFoodItem = await updateFoodItem(id, {
@@ -99,7 +99,7 @@ export const deleteFoodItemHandler = catchAsync(async (c: Context) => {
 
 export const toggleFoodItemAvailabilityHandler = catchAsync(async (c: Context) => {
   const { id } = c.req.param();
-  const { isAvailable } = await c.req.parseBody() as unknown as ToggleAvailabilitySchemaType;
+  const { isAvailable } = await c.get("validatedData").body as unknown as ToggleAvailabilitySchemaType;
   const audit = getAuditFields(c);
 
   const updatedFoodItem = await updateFoodItemAvailability(id, isAvailable, audit.updatedBy);

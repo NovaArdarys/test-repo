@@ -5,7 +5,6 @@ export type PaginationMeta = {
   totalPages: number;
 };
 
-
 export type APIPagination<T> = {
   data: T[];
   meta: PaginationMeta;
