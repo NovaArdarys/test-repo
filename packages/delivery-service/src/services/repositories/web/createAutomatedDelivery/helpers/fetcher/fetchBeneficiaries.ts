@@ -2,7 +2,7 @@ import {
   beneficiaries,
   menuPlanBeneficiaries
 } from "@/db/schemas";
-import { and, eq, or } from "drizzle-orm";
+import { and, eq, or, sql, isNull } from "drizzle-orm";
 import { MenuPlanBeneficiariesRow, Trx } from "../../types/domain";
 
 export default async function fetchBeneficiaries(
@@ -21,8 +21,11 @@ export default async function fetchBeneficiaries(
       and(
         eq(menuPlanBeneficiaries.menuPlanId, menuPlanId),
         eq(menuPlanBeneficiaries.isDeleted, false),
-        eq(beneficiaries.isDeleted, false),
-        or(eq(beneficiaries.status, "ACTIVE"), eq(beneficiaries.status, "AKTIF")
+        or(eq(beneficiaries.isDeleted, false), isNull(beneficiaries.isDeleted)),
+        or(
+          eq(sql`LOWER(${beneficiaries.status}::text)`, 'active'),
+          eq(sql`LOWER(${beneficiaries.status}::text)`, 'aktif'),
+          isNull(beneficiaries.status)
         )
       )
     )

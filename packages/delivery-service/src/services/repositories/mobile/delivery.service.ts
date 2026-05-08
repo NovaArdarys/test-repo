@@ -56,7 +56,7 @@ export async function getExpectedDeliveryOrder(
 ): Promise<number> {
   const deliveries = await getDeliveriesByKitchenDate(params);
 
-  if (deliveries.length === 0) return 1;
+  if (deliveries.length === 0) return 0;
 
   return Math.max(
     ...deliveries.map(d => d.deliveryOrder ?? 0)
@@ -87,7 +87,7 @@ export async function isDeliveryOrderSequential(
   const deliveries = await getDeliveriesByKitchenDate(params);
 
   for (let i = 0; i < deliveries.length; i++) {
-    const expectedOrder = i + 1;
+    const expectedOrder = i;
     const currentOrder = deliveries[i].deliveryOrder ?? 0;
 
     if (currentOrder !== expectedOrder) {
@@ -101,7 +101,7 @@ export async function isDeliveryOrderSequential(
 
   return {
     isSequential: true,
-    expected: deliveries.length + 1,
+    expected: deliveries.length,
   };
 }
 
@@ -175,4 +175,20 @@ export async function getDriverUserId(
   });
 
   return driver?.userId ?? null;
+}
+
+export async function getMissingPreviousDeliveries(delivery: Delivery): Promise<Delivery[]> {
+  const allDeliveries = await getDeliveriesByKitchenDate({
+    kitchenId: delivery.kitchenId,
+    deliveryDate: delivery.deliveryDate!,
+    portionType: delivery.portionType || undefined,
+  });
+
+  const currentOrder = delivery.deliveryOrder ?? 0;
+
+  return allDeliveries.filter(d =>
+    d.driverId === delivery.driverId &&
+    (d.deliveryOrder ?? 0) < currentOrder &&
+    d.status !== 'DELIVERED'
+  );
 }

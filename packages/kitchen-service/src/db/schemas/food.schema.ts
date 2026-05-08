@@ -117,4 +117,3 @@ export const foodConsumptionNotes = pgTable("food_consumption_notes", {
   updatedBy: uuid("updated_by"),
 });
 
-

@@ -17,6 +17,27 @@ export type MenuPlanBeneficiariesRow = InferSelectModel<typeof menuPlanBeneficia
 export type DeliveryRow = InferSelectModel<typeof deliveries>;
 export type MenuPlanRow = InferSelectModel<typeof menuPlans>;
 
+/**
+ * Merged row for delivery planning: fields from menuPlanBeneficiaries
+ * enriched with real coordinates from the beneficiaries table.
+ * lat/lon come from the junction table when explicitly set (not '0'),
+ * otherwise fall back to beneficiaries.lat/lon.
+ */
+export interface BeneficiaryDeliveryRow {
+  id: string;
+  menuPlanId: string;
+  beneficiaryId: string;
+  smallPortion: number | null;
+  largePortion: number | null;
+  smallDeliveryTime: string | null;
+  largeDeliveryTime: string | null;
+  lat: string | null;
+  lon: string | null;
+  isDeleted: boolean;
+  createdAt: Date;
+  createdBy: string | null;
+}
+
 export interface DeliveryUnit {
   clusterId: number;
   beneficiaryId: string;
@@ -28,6 +49,7 @@ export interface DeliveryUnit {
   lon?: string | null;
   kitchenLat?: string | null;
   kitchenLon?: string | null;
+  deliveryDate: string;
   deliveryTime?: string;
   distance?: number | null;
   driverId?: string | null;

@@ -51,6 +51,7 @@ export async function getGroupDailyReportService({
   page = 1,
   limit = 20,
   entity,
+  search,
 }: StepReportFilter) {
   const offset = (page - 1) * limit;
   const conditions: any[] = [];
@@ -58,6 +59,30 @@ export async function getGroupDailyReportService({
   if (startDate && endDate) conditions.push(between(dailyReports.date, startDate, endDate));
   if (startDate && !endDate) conditions.push(gte(dailyReports.date, startDate));
   if (!startDate && endDate) conditions.push(lte(dailyReports.date, endDate));
+
+  if (search) {
+    const like = `%${search}%`;
+    const searchLower = search.toLowerCase();
+    const orConditions = [
+      ilike(kitchens.name, like),
+      ilike(beneficiaries.name, like),
+      ilike(userDetails.firstName, like),
+      ilike(sql`cast(${dailyReports.entityType} as text)`, like),
+      ilike(dailyReports.portionType, like),
+    ];
+
+    if (searchLower.includes("besar") || searchLower.includes("kecil")) {
+      orConditions.push(ilike(dailyReports.portionType, "DEFAULT"));
+    }
+    if (searchLower.includes("kecil")) {
+      orConditions.push(ilike(dailyReports.portionType, "SMALL"));
+    }
+    if (searchLower.includes("besar")) {
+      orConditions.push(ilike(dailyReports.portionType, "LARGE"));
+    }
+
+    conditions.push(or(...orConditions));
+  }
 
   if (!isAppManager && kitchenIds?.length) {
     conditions.push(

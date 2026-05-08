@@ -28,6 +28,7 @@ export interface DeliveryUnit {
   lon?: string | null;
   kitchenLat?: string | null;
   kitchenLon?: string | null;
+  deliveryDate: string;
   deliveryTime?: string;
   distance?: number | null;
   driverId?: string | null;
@@ -48,3 +49,16 @@ export interface CreateAutoDeliveryInput {
   status?: string;
   createdBy: string;
 }
+
+// 
+
+
+export type Beneficiary = InferSelectModel<typeof beneficiaries>;
+
+export interface DailyReport {
+  id: string;
+  [key: string]: unknown;
+}
+
+export type PortionType = "SMALL" | "LARGE" | "DEFAULT";
+

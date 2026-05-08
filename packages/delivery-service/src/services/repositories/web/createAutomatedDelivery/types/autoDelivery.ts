@@ -10,7 +10,8 @@ import {
 
 
 export interface ETAUnit extends DeliveryUnit {
-  eta: Date;
+  eta: Date;       // waktu TIBA driver di beneficiary (estimated_delivery_time)
+  startTime: Date; // waktu BERANGKAT driver menuju stop ini (start_time)
   legDistance: number;
   legDurationMinutes: number;
 }

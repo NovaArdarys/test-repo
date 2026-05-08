@@ -70,7 +70,10 @@ export async function setupConsumer(channel: Channel) {
 
   channel.consume(
     reportQueue.queue,
-    safeConsume(handleStepEvent, channel),
+    safeConsume(handleStepEvent, channel, {
+      serviceName: "ai-report",
+      getIdempotencyKey: (data) => `${data.entityId}:${data.menuPlanId}:${(data as any)?._meta?.eventId ?? "none"}`
+    }),
     { noAck: false }
   );
 

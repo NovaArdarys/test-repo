@@ -24,6 +24,7 @@ export type EntityType = typeof ENTITY_TYPES[number];
 export const processStatusSchema = z.object({
   status: z.enum(PROCESS_STATUSES),
   entityType: z.enum(ENTITY_TYPES),
+  variant: z.enum(["information", "success", "warning"]).optional().default("information"),
 
   entityId: z.string().optional(),
 

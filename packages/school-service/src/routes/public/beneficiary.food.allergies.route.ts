@@ -51,7 +51,8 @@ app.put(
 
 app.put(
   "/:id",
-  validate({ param: idParamSchema, body: UpdateBeneficiaryFoodAllergySchema }),
+  validate({ param: idParamSchema }),
+  validate({ body: UpdateBeneficiaryFoodAllergySchema }),
   updateBeneficiaryFoodAllergyHandler
 );
 

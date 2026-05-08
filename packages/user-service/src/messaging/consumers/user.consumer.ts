@@ -81,7 +81,10 @@ export async function setupConsumer(channel: Channel) {
 
   channel.consume(
     storageQueue.queue,
-    safeConsume(handleStorageEvent, channel),
+    safeConsume(handleStorageEvent, channel, {
+      serviceName: "user-storage",
+      getIdempotencyKey: (data: z.infer<typeof storageCommittedSchema>) => `${data.entityId}:${data?.storageId}:${data.entityType}:${(data as any)?._meta?.eventId ?? "none"}`
+    }),
     { noAck: false }
   );
 

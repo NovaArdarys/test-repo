@@ -21,6 +21,18 @@ export type UpdateMenuPlan = Partial<Omit<NewMenuPlan, 'createdBy'>> & { updated
 
 export type PlanStatus = MenuPlan['status'];
 
+export async function checkMenuPlanExists(kitchenId: string, date: string): Promise<boolean> {
+    const existing = await db.query.menuPlans.findFirst({
+        where: (menuPlans, { eq, and }) =>
+            and(
+                eq(menuPlans.kitchenId, kitchenId),
+                eq(menuPlans.planStartDate, date as any),
+                eq(menuPlans.isDeleted, false)
+            ),
+    });
+    return !!existing;
+}
+
 export async function getMenuPlansList({
     page,
     limit,
@@ -220,6 +232,7 @@ export async function getMenuPlanById(
             name: true,
             planEndDate: true,
             planStartDate: true,
+            kitchenId: true,
         },
         with: {
             consumptionNote: {
@@ -406,7 +419,7 @@ export async function getMenuPlanById(
         foodWasteNote: data.consumptionNote?.[0]?.note,
         foodWasteReason: data.consumptionNote?.[0]?.reason,
         date: planStartDate,
-        kitchenId: kitchenIds?.[0] ?? null,
+        kitchenId: data.kitchenId,
         foodItems: Array.from(foodItemMap.values()),
         beneficiaries: Array.from(beneficiaryMap.values()),
     };

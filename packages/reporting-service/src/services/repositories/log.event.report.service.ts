@@ -203,7 +203,8 @@ export async function getEventReportsWithFilter({
         ilike(userDetails.phoneNumber, like),
         sql`CONCAT(${userDetails.firstName}, ' ', COALESCE(${userDetails.lastName}, '')) ILIKE ${like}`,
         ilike(eventReports.name, like),
-        ilike(eventReports.location, like)
+        ilike(eventReports.location, like),
+        ilike(roles.name, like)
       )
     );
   }

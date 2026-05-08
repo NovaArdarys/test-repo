@@ -1,5 +1,5 @@
 {
-  "id": "6c56aace-ca2d-4c32-b44f-271b9d9bb421",
+  "id": "a0c5bfca-058d-4002-9402-e97e6cf1d92c",
   "prevId": "52d5629b-f478-46ae-b06e-3d04a3007c55",
   "version": "7",
   "dialect": "postgresql",
@@ -1298,7 +1298,15 @@
       "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
+      "uniqueConstraints": {
+        "food_items_name_unique": {
+          "name": "food_items_name_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "name"
+          ]
+        }
+      },
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
@@ -4872,6 +4880,13 @@
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
+        },
+        "variant": {
+          "name": "variant",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'info'"
         }
       },
       "indexes": {},

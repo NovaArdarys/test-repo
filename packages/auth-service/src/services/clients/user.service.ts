@@ -115,7 +115,7 @@ export const createUserServiceClient = (data: { driverCapacity: number, domainId
     "createUserServiceClient",
     "/private/user/create-user",
     "POST",
-    { ...data, password: "Password1", confirmationPassword: "Password1" }
+    { ...data, password: "Password@1", confirmationPassword: "Password@1" }
   );
 };
 
@@ -143,6 +143,9 @@ export const startUserServiceRetryWorker = async (stopSignal?: () => boolean) =>
         break;
       case "createUserServiceClient":
         path = "/private/user/create-user";
+        break;
+      case "updateUserPasswordServiceClient":
+        path = "/private/user/update-password";
         break;
       default:
         console.error("[Retry] Unknown job function:", fn);

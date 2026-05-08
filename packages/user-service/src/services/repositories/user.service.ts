@@ -36,18 +36,40 @@ export async function getUser({ email }: { email: string; phone?: string; }) {
         userKitchens: {
           columns: {
             kitchenId: true,
-          }
+          },
+          with: {
+            kitchen: {
+              columns: {
+                status: true,
+              },
+            },
+          },
         },
         drivers: {
           columns: {
             id: true,
-            kitchenId: true
-          }
+            kitchenId: true,
+            isActive: true,
+          },
+          with: {
+            kitchen: {
+              columns: {
+                status: true,
+              },
+            },
+          },
         },
         userBeneficiaries: {
           columns: {
             beneficiaryId: true,
-          }
+          },
+          with: {
+            beneficiary: {
+              columns: {
+                status: true,
+              },
+            },
+          },
         },
       },
       where: (users, { eq }) => eq(users.email, email.toLowerCase()),
@@ -127,7 +149,7 @@ export async function updateUserAll(
       .update(users)
       .set({
         ...(data.email && { email: data.email.toLowerCase() }),
-        // ...(hashedPassword && { password: hashedPassword }),
+        ...(hashedPassword && { password: hashedPassword }),
         ...(data.isActive !== undefined && { isActive: data.isActive }),
         updatedAt: new Date(),
       })
@@ -137,10 +159,10 @@ export async function updateUserAll(
     await tx
       .update(userDetails)
       .set({
-        ...(userDetail.firstName && { firstName: userDetail.firstName }),
-        ...(userDetail.lastName && { lastName: userDetail.lastName }),
-        ...(phoneFormatted && { phoneNumber: phoneFormatted }),
-        ...(userDetail.address && { address: userDetail.address }),
+        ...(userDetail.firstName !== undefined && { firstName: userDetail.firstName }),
+        ...(userDetail.lastName !== undefined && { lastName: userDetail.lastName }),
+        ...(phoneFormatted !== undefined && { phoneNumber: phoneFormatted }),
+        ...(userDetail.address !== undefined && { address: userDetail.address }),
 
         ...(userDetail.dateOfBirth && {
           dateOfBirth: new Date(userDetail.dateOfBirth)

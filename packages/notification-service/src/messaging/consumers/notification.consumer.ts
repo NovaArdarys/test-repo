@@ -8,6 +8,8 @@ import { createNotification } from "@/services/repositories/notification.service
 
 const processStatusSchema = z.object({
   status: z.enum(["QUEUED", "PROCESSING", "COMPLETED", "FAILED", "CANCELLED"]),
+  variant: z.enum(["information", "success", "warning"]).optional().default("information"),
+
   entityType: z.string(),
   entityId: z.string().optional(),
   kitchenId: z.string().min(1),
@@ -27,7 +29,6 @@ const processStatusSchema = z.object({
   timestamp: z.string(),
 });
 
-export type ProcessStatusPayload = z.infer<typeof processStatusSchema>;
 export type ProcessStatusType = z.infer<typeof processStatusSchema>;
 
 const NOTIFICATION_QUEUE = "notification_status_queue";
@@ -49,6 +50,7 @@ async function handleStatusEvent(data: unknown) {
       type: `process.${payload.entityType.toLowerCase()}.${payload.status.toLowerCase()}`,
       title: payload.title,
       message: payload.message || null,
+      variant: payload.variant,
       payload: {
         entityId: payload.entityId,
         entityType: payload.entityType,
@@ -108,7 +110,6 @@ export async function setupConsumer(channel: Channel) {
 
   await channel.bindQueue(queue.queue, EXCHANGES.AI, "ai.status.#");
   await channel.bindQueue(queue.queue, EXCHANGES.NOTIFICATION, "process.#.status.#");
-  await channel.bindQueue(queue.queue, EXCHANGES.NOTIFICATION, "#.status.#");
 
   await channel.bindQueue(
     `${NOTIFICATION_QUEUE}.retry`,
@@ -120,7 +121,10 @@ export async function setupConsumer(channel: Channel) {
 
   channel.consume(
     queue.queue,
-    safeConsume(handleStatusEvent, channel),
+    safeConsume(handleStatusEvent, channel, {
+      serviceName: "notification-listener",
+      getIdempotencyKey: (data: ProcessStatusType) => `${data.entityId}:${data.userActorId}:${data.userReceivedId}:${(data as any)?._meta?.eventId ?? "none"}`
+    }),
     { noAck: false }
   );
 

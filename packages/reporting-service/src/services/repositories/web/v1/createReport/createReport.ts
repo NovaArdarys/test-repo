@@ -103,3 +103,4 @@ export async function handleMenuPlanCreated(data: MenuPlanCreatedEventType) {
     throw error;
   }
 }
+

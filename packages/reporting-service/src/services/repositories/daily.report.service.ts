@@ -320,6 +320,8 @@ export async function getDailyReportsList(params?: {
   // const tomorrow = toISO(addDays(new Date(endDate), 1));
   // const threeDaysAfterTomorrow = toISO(addDays(new Date(endDate), 3));
 
+  console.log(schoolIds, domain, "======ok=======");
+
   const uuidArray = (ids: string[]) =>
     sql.raw(`ARRAY[${ids.map((id) => `'${id}'`).join(",")}]::uuid[]`);
 
@@ -327,20 +329,19 @@ export async function getDailyReportsList(params?: {
     table: dailyReports,
     tableName: "daily_reports",
     base: {
-      entityType: domain,
-      entityId,
+      entityType: (schoolIds.length || kitchenIds.length || driversIds.length) ? undefined : domain,
+      entityId: (schoolIds.length || kitchenIds.length || driversIds.length) ? undefined : entityId,
       status,
       date: { gte: startDate, lte: endDate },
     },
     extra: [
-      driversIds.length && domain === "driver"
+      driversIds.length
         ? sql`${dailyReports.entityId} = ANY(${uuidArray(driversIds)})`
         : undefined,
-      kitchenIds.length && domain === "kitchen"
+      kitchenIds.length
         ? sql`${dailyReports.entityId} = ANY(${uuidArray(kitchenIds)})`
         : undefined,
-      schoolIds.length &&
-        (domain === "school" || domain === "beneficiary")
+      schoolIds.length
         ? sql`${dailyReports.entityId} = ANY(${uuidArray(schoolIds)})`
         : undefined,
       menuPlanName
@@ -393,6 +394,7 @@ export async function getDailyReportsList(params?: {
                 WHERE mpb.menu_plan_id = ${menuPlans.id}
                   AND mpb.is_deleted = false
                   AND b.is_deleted = false
+                  ${schoolIds.length ? sql`AND b.id = ANY(${uuidArray(schoolIds)})` : sql``}
               )
             `,
         targetPortion: sql`
@@ -407,6 +409,7 @@ export async function getDailyReportsList(params?: {
             WHERE mpb.menu_plan_id = ${menuPlans.id}
               AND mpb.is_deleted = false
               AND b.is_deleted = false
+              ${schoolIds.length ? sql`AND b.id = ANY(${uuidArray(schoolIds)})` : sql``}
           )
         `,
       },
@@ -628,7 +631,7 @@ export async function updateStepReport(
 ) {
   const [updated] = await db
     .update(stepReports)
-    .set({ ...updates, isCompleted: true })
+    .set({ ...updates, updatedAt: new Date(), isCompleted: true })
     .where(eq(stepReports.id, id))
     .returning();
   return updated;

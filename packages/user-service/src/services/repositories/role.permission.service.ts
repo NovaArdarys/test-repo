@@ -55,10 +55,12 @@ export async function getRolesList({ page, limit, userId }: {
 
   const currentUserLevel = await getCurrentUserLevel(userId || "");
 
-  const whereCondition = and(
-    eq(roles.isDeleted, false),
-    gt(roles.level, currentUserLevel)
-  );
+  const conditions = [eq(roles.isDeleted, false)];
+  if (currentUserLevel !== 0) {
+    conditions.push(gt(roles.level, currentUserLevel));
+  }
+
+  const whereCondition = and(...conditions);
 
   const dataPromise = db
     .select({

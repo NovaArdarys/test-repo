@@ -21,7 +21,7 @@ export default async function resolveDriverDailyReport(
     const [dailyReport] = await trx
       .insert(dailyReports)
       .values({
-        date: format(new Date(), "yyyy-MM-dd"),
+        date: unit.date || format(new Date(), "yyyy-MM-dd"),
         entityId: driver.id,
         entityType: "driver",
         menuPlanId: unit.menuPlanId,

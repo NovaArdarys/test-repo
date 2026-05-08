@@ -1,13 +1,13 @@
 import { deliveries } from "@/db/schemas";
 import { ProcessSingleDriverArgs } from "../../types/autoDelivery";
-import { DeliveryUnit } from "../../types/domain";
+import { ETAUnit } from "../../types/autoDelivery";
 import { generateDeliveryCode } from "../../lib/generateDeliveryCode";
 import { sql } from "drizzle-orm";
 
 export default async function insertDeliveryDropoff(
   trx: any,
   args: ProcessSingleDriverArgs,
-  unit: DeliveryUnit
+  unit: ETAUnit
 ) {
 
   const now = new Date();
@@ -28,11 +28,11 @@ export default async function insertDeliveryDropoff(
       driverCapacity: args.driver.portionCapacity,
 
       deliveryDate: args.menuPlan.planStartDate,
-      startTime: sql`NULL`,
+      startTime: unit.startTime,       // kapan driver BERANGKAT menuju stop ini
       endTime: sql`NULL`,
-      estimatedDeliveryTime: sql`NULL`,
+      estimatedDeliveryTime: unit.eta, // kapan driver TIBA (estimasi pengantaran makanan)
 
-      notes: `DROPOFF | ${args.menuPlan.name} | portion: ${unit.portion}-${unit.type}`,
+      notes: `Pengantaran Makanan: ${args.menuPlan.name} (${unit.portion} Porsi ${unit.type === 'SMALL' ? 'Kecil' : 'Besar'})`,
       deliveryCode: deliveryCode,
 
       status: "PENDING",

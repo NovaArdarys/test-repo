@@ -4,6 +4,7 @@ import user from '@/routes/public/web/user.detai.route';
 import permissions from '@/routes/public/web/permission.route';
 import roles from '@/routes/public/web/role.route';
 import region from '@/routes/public/web/region.route';
+import menus from '@/routes/public/web/menu.route';
 import { generateOpenAPIDoc } from '@/utils/autoRoute';
 
 const app = new Hono();
@@ -12,6 +13,7 @@ app.route('/users', user);
 app.route('/permissions', permissions);
 app.route('/roles', roles);
 app.route('/regions', region);
+app.route('/menus', menus);
 
 
 app.get("/openapi.json", async (c) => {

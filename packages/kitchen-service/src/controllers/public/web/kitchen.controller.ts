@@ -1,6 +1,6 @@
 import { Context } from "hono";
 import ApiError from "@/utils/ApiError";
-import { createKitchen, getKitchenById, getKitchensList, softDeleteKitchen, updateKitchen } from "@/services/repositories/kitchen.service";
+import { createKitchen, getKitchenById, getKitchensList, softDeleteKitchen, updateKitchen, getPaginatedDeliveriesByKitchenId } from "@/services/repositories/kitchen.service";
 import { catchAsync } from "@/utils/catchAsync";
 import { assignUserToKitchen, isUserAssignedToKitchen, syncUserKitchenByMerge, unassignUserFromKitchen } from "@/services/repositories/user.kitchen.service";
 import { paginationSchema, AssignUserToKitchenSchemaType, CreateKitchenSchemaType } from "@/validator";
@@ -64,7 +64,7 @@ export const listKitchensHandler = catchAsync(async (c: Context) => {
 });
 
 export const createKitchenHandler = catchAsync(async (c: Context) => {
-  const body = await c.req.parseBody();
+  const body = c.get('validatedData')?.body;
   const audit = getAuditFields(c);
 
   const newKitchen = await createKitchen({
@@ -104,7 +104,7 @@ export const getKitchenByIdHandler = catchAsync(async (c: Context) => {
 
 export const updateKitchenHandler = catchAsync(async (c: Context) => {
   const { id } = c.req.param();
-  const body = await c.req.parseBody();
+  const body = c.get('validatedData')?.body;
   const audit = getAuditFields(c);
 
   const schoolsArray = body.schools as unknown as string[] || body["schools[]"] || [];
@@ -147,7 +147,7 @@ export const deleteKitchenHandler = catchAsync(async (c: Context) => {
 
 export const assignUserToKitchenHandler = catchAsync(async (c: Context) => {
   const { id: kitchenId } = c.req.param();
-  const { userId } = await c.req.parseBody() as unknown as AssignUserToKitchenSchemaType;
+  const { userId } = c.get('validatedData')?.body as unknown as AssignUserToKitchenSchemaType;
 
   const alreadyAssigned = await isUserAssignedToKitchen(userId, kitchenId);
   if (alreadyAssigned) {
@@ -177,4 +177,19 @@ export const unassignUserFromKitchenHandler = catchAsync(async (c: Context) => {
   await unassignUserFromKitchen(userId, kitchenId);
 
   return c.json({ message: "User Unassigned from Kitchen" }, 200);
+});
+
+export const getKitchenDeliveriesHandler = catchAsync(async (c: Context) => {
+  const { id } = c.req.param();
+  const query = c.req.query();
+
+  const { page, limit } = buildPaginationAndSort(
+    query,
+    paginationSchema,
+    {} 
+  );
+
+  const data = await getPaginatedDeliveriesByKitchenId(id, page, limit);
+
+  return c.json({ data: data.data, meta: data.meta }, 200);
 });

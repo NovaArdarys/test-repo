@@ -10,6 +10,7 @@ import { handleStepCommit } from "@/services/repositories/web/handlers/stepCommi
 import { dropoffJobSchema } from "@/validators/jobs/delivery.schema";
 import { handleMenuPlanCreated } from "@/services/repositories/web/handlers/menuPlanHandler";
 import { deliveryQueue } from "@/jobs/queue/delivery.queue";
+import { MenuPlanCreatedEventType } from "@/jobs/types/report.type";
 
 const MENU_PLAN_QUEUE_NAME = "delivery_service_menu_plan_queue";
 const STEP_QUEUE_NAME = "delivery_service_step_queue";
@@ -92,7 +93,13 @@ export async function setupConsumer(channel: Channel) {
 
   channel.consume(
     menuPlanQueue.queue,
-    safeConsume(async (data: any) => {
+    safeConsume(async (data: MenuPlanCreatedEventType) => {
+      const allowedEventTypes = ["DELIVERY_CREATION", "MENU-CREATION"];
+      if (data.eventType && !allowedEventTypes.includes(data.eventType)) {
+        console.log(`[REPORT CONSUMER] Skipped eventType: ${data.eventType}`);
+        return;
+      }
+
       await deliveryQueue.add(
         "delivery-create",
         {
@@ -104,16 +111,18 @@ export async function setupConsumer(channel: Channel) {
           removeOnFail: { age: 3600 * 24 * 7 }
         }
       );
-    }, channel, { serviceName: 'delivery' }),
+    }, channel, { serviceName: 'delivery', getIdempotencyKey: (data) => `${data.planStartDate}:${data.kitchenId}:${data.menuPlanId}:${(data as any)?._meta?.eventId ?? "none"}` }),
     { noAck: false }
   );
 
   channel.consume(
     stepQueue.queue,
-    safeConsume(async (rawData: any) => {
+    safeConsume(async (rawData: z.infer<typeof dropoffJobSchema>) => {
       const validated = dropoffJobSchema.parse(rawData);
       await handleStepCommit(validated);
-    }, channel),
+    }, channel, {
+      serviceName: 'step-commit-delivery', getIdempotencyKey: (data) => `${data.entityId}:${data.menuPlanId}:${(data as any)?._meta?.eventId ?? "none"}`
+    }),
     { noAck: false }
   );
 

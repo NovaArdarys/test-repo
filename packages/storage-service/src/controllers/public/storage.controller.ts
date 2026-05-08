@@ -22,7 +22,7 @@ const getAuditFields = (c: Context) => ({
 
 
 export const storageHandler = catchAsync(async (c) => {
-  const body = (await c.req.parseBody()) as unknown as uploadBodyType;
+  const body = (c.get('validatedData')?.body) as unknown as uploadBodyType;
   const audit = getAuditFields(c);
 
   const files = Array.isArray(body.file) ? body.file : [body.file!];

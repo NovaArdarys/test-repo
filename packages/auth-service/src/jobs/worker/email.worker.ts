@@ -13,6 +13,8 @@ export const emailWorker = new Worker(
 
       const input = emailJobSchema.parse(job.data);
 
+      console.log(input, "=====input=====");
+
       const result = await sendEmail(input);
 
       return { status: "sent", result };

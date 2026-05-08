@@ -6,7 +6,7 @@ import { updateKitchen } from "@/services/repositories/kitchen.service";
 import { updateSupplier } from "@/services/repositories/suppliers.service";
 import { resetQueuesIfDev, safeConsume } from "../utils/consumerHelper";
 import { assignUserToKitchen, isUserAssignedToKitchen } from "@/services/repositories/user.kitchen.service";
-import { createDriver, isDriverAssignedToKitchen, isUserAlreadyHaveDriverRole, updateDriver } from "@/services/repositories/driver.service";
+import { createDriver, getDriverByUserId, isDriverAssignedToKitchen, isUserAlreadyHaveDriverRole, updateDriver } from "@/services/repositories/driver.service";
 
 // ===== VALIDATORS =====
 const entityTypeValidator = z.enum(entityTypeEnum.enumValues);
@@ -82,26 +82,25 @@ async function handleAssignToKitchen(data: z.infer<typeof baseUserKitchen>) {
 async function handleAssignProfileDriver(data: z.infer<typeof baseUserKitchen>) {
   const parsed = baseUserKitchen.parse(data);
 
-  const { assignment, isAssigned } = await isDriverAssignedToKitchen(parsed.userId, parsed.kitchenId);
-  if (!isAssigned) {
+  const existingDriver = await getDriverByUserId(parsed.userId);
+
+  if (!existingDriver) {
     await createDriver({
       kitchenId: parsed.kitchenId,
       userId: parsed.userId,
       createdBy: parsed.createdBy || "11111111-1111-1111-1111-111111111111",
       portionCapacity: parsed.driverCapacity
     });
+    console.log(`[USER EVENT] Created NEW driver record for user ${parsed.userId} at kitchen ${parsed.kitchenId}`);
   } else {
-    if (assignment?.id) {
-      await updateDriver(assignment?.id, {
-        kitchenId: parsed.kitchenId,
-        userId: parsed.userId,
-        portionCapacity: parsed.driverCapacity,
-        updatedBy: parsed.createdBy || "11111111-1111-1111-1111-111111111111",
-      });
-    }
+    await updateDriver(existingDriver.id, {
+      kitchenId: parsed.kitchenId,
+      userId: parsed.userId,
+      portionCapacity: parsed.driverCapacity,
+      updatedBy: parsed.createdBy || "11111111-1111-1111-1111-111111111111",
+    });
+    console.log(`[USER EVENT] Updated EXISTING driver ${existingDriver.id} for user ${parsed.userId} (Kitchen: ${parsed.kitchenId})`);
   }
-
-  console.log(`[USER EVENT] Assign user ${parsed.userId} to kitchen ${parsed.kitchenId}`);
 }
 
 // ================= SETUP =================
@@ -154,7 +153,10 @@ export async function setupConsumer(channel: Channel) {
 
     channel.consume(
       storageQueue.queue,
-      safeConsume(handleStorageEvent, channel),
+      safeConsume(handleStorageEvent, channel, {
+        serviceName: "kitchen-storage",
+        getIdempotencyKey: (data) => `${data.entityId}:${data.storageId}:${(data as any)?._meta?.eventId ?? "none"}`
+      }),
       { noAck: false }
     );
 
@@ -197,7 +199,12 @@ export async function setupConsumer(channel: Channel) {
 
     channel.consume(
       userQueue.queue,
-      safeConsume(handleAssignToKitchen, channel),
+      safeConsume(handleAssignToKitchen, channel,
+        {
+          serviceName: "assign-user-kitchen",
+          getIdempotencyKey: (data) => `${data.kitchenId}:${data.userId}:${(data as any)?._meta?.eventId ?? "none"}`
+        }
+      ),
       { noAck: false }
     );
 
@@ -243,7 +250,10 @@ export async function setupConsumer(channel: Channel) {
 
     channel.consume(
       userDriverQueue.queue,
-      safeConsume(handleAssignProfileDriver, channel),
+      safeConsume(handleAssignProfileDriver, channel, {
+        serviceName: "assign-profile-driver-kitchen",
+        getIdempotencyKey: (data) => `${data.kitchenId}:${data.userId}:${data.driverCapacity}:${(data as any)?._meta?.eventId ?? "none"}`
+      }),
       { noAck: false }
     );
 

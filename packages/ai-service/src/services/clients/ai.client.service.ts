@@ -1,5 +1,6 @@
 import aiClient from "@/utils/api";
 import { EntityType } from "@/validator/storage.validator";
+import { ReportResponse } from "../mapper/daily.report.mapper";
 
 /* =========================
  *  TYPES
@@ -85,17 +86,29 @@ export function getAITypeFromStepOrder(
 
 export async function detectAI<T extends AIAnalysisType>(
   type: T,
-  data: T extends "food" ? DetectInput : BaseAIInput
+  data: T extends "food" ? DetectInput : BaseAIInput,
+  dataInfo: ReportResponse,
 ): Promise<any> {
   try {
-    console.log(JSON.stringify(data), "======data=======");
+    const payload =
+      type === "food"
+        ? {
+          analysis_type: data.analysis_type,
+          image_url: data.image_url,
+          food_items: (data as DetectInput).food_items,
+        }
+        : {
+          analysis_type: data.analysis_type,
+          image_url: data.image_url,
+        };
 
-    const res = await aiClient.post(`/detect/external-vision`, data);
+    const res = await aiClient.post(`/detect/external-vision`, payload);
     const { result, ...rest } = res.data;
 
     return {
       ...rest,
-      data: result
+      data: result,
+      info: dataInfo
     };
   } catch (error: any) {
     if (error.response) {

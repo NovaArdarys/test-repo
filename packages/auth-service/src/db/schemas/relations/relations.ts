@@ -1,7 +1,8 @@
 import { relations } from "drizzle-orm";
 import {
-  menusApp,
+  appMenus,
   permissions,
+  roleMenus,
   rolePermissions,
   roles,
   userDetails,
@@ -30,11 +31,12 @@ import {
 import { suppliers, suppliersFoodItems, suppliersProducts } from "../supplier.schema";
 import { deliveries, deliveryBeneficiaries, deliveryStepReports } from "../delivery.schema";
 import { districts, provinces, regencies, villages } from "../master.schema";
-import { dailyReports, eventReports, stepReports } from "../reporting.Schema";
+import { dailyReports, eventReports, stepReports } from "../report.schema";
 import { masterSteps } from "../stepPlan.schema";
 import { storage } from "../storage.schema";
 import { notifications } from "../notification.schema";
 import { jobStatus, sagaOrchestration } from "../jobStatus.schema";
+import { qnaQuestions, qnaAnswers, qnaVotes } from "../qna.schema";
 
 /**
  * Users relations
@@ -61,8 +63,8 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   createdUserRoles: many(userRoles, { relationName: "createdByUserRoles" }),
 
   createdRolePermissions: many(rolePermissions, { relationName: "created_by" }),
-  createdMenusApp: many(menusApp, { relationName: "created_by" }),
-  updatedMenusApp: many(menusApp, { relationName: "updated_by" }),
+  createdAppMenus: many(appMenus, { relationName: "created_by" }),
+  updatedAppMenus: many(appMenus, { relationName: "updated_by" }),
   userKitchens: many(userKitchens, { relationName: "user_kitchens_user" }),
   userBeneficiaries: many(userBeneficiaries, { relationName: "user_beneficiaries_user" }),
   drivers: many(drivers, { relationName: "drivers_user" }),
@@ -79,6 +81,10 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   dailyReports: many(dailyReports, { relationName: "user_daily_reports" }),
 
   stepReports: many(stepReports, { relationName: "user_step_reports" }),
+  
+  qnaQuestions: many(qnaQuestions, { relationName: "qna_question_author" }),
+  qnaAnswers: many(qnaAnswers, { relationName: "qna_answer_author" }),
+  qnaVotes: many(qnaVotes, { relationName: "qna_vote_user" }),
 }));
 
 /**
@@ -239,6 +245,7 @@ export const appLogsRelations = relations(appLogs, ({ one }) => ({
 export const rolesRelations = relations(roles, ({ many, one }) => ({
   userRoles: many(userRoles),
   rolePermissions: many(rolePermissions),
+  roleMenus: many(roleMenus),
   createdBy: one(users, {
     fields: [roles.createdBy],
     references: [users.id],
@@ -304,20 +311,34 @@ export const rolePermissionsRelations = relations(rolePermissions, ({ one }) => 
 }));
 
 /**
- * Menus App
+ * App Menus
  */
-export const menusAppRelations = relations(menusApp, ({ one, many }) => ({
-  parent: one(menusApp, { fields: [menusApp.parentId], references: [menusApp.id] }),
-  children: many(menusApp),
+export const appMenusRelations = relations(appMenus, ({ one, many }) => ({
+  parent: one(appMenus, { fields: [appMenus.parentId], references: [appMenus.id] }),
+  children: many(appMenus),
+  roleMenus: many(roleMenus),
   createdBy: one(users, {
-    fields: [menusApp.createdBy],
+    fields: [appMenus.createdBy],
     references: [users.id],
     relationName: "created_by",
   }),
   updatedBy: one(users, {
-    fields: [menusApp.updatedBy],
+    fields: [appMenus.updatedBy],
     references: [users.id],
     relationName: "updated_by",
+  }),
+}));
+
+/**
+ * Role Menus
+ */
+export const roleMenusRelations = relations(roleMenus, ({ one }) => ({
+  role: one(roles, { fields: [roleMenus.roleId], references: [roles.id] }),
+  menu: one(appMenus, { fields: [roleMenus.menuId], references: [appMenus.id] }),
+  createdBy: one(users, {
+    fields: [roleMenus.createdBy],
+    references: [users.id],
+    relationName: "created_by",
   }),
 }));
 
@@ -672,4 +693,43 @@ export const jobStatusRelations = relations(jobStatus, ({ one, many }) => ({
   childJobs: many(jobStatus, {
     relationName: 'jobHierarchy',
   }),
+}));
+
+export const qnaQuestionsRelations = relations(qnaQuestions, ({ one, many }) => ({
+  author: one(users, {
+    fields: [qnaQuestions.authorId],
+    references: [users.id],
+    relationName: "qna_question_author"
+  }),
+  answers: many(qnaAnswers),
+  votes: many(qnaVotes)
+}));
+
+export const qnaAnswersRelations = relations(qnaAnswers, ({ one, many }) => ({
+  author: one(users, {
+    fields: [qnaAnswers.authorId],
+    references: [users.id],
+    relationName: "qna_answer_author"
+  }),
+  question: one(qnaQuestions, {
+    fields: [qnaAnswers.questionId],
+    references: [qnaQuestions.id]
+  }),
+  votes: many(qnaVotes)
+}));
+
+export const qnaVotesRelations = relations(qnaVotes, ({ one }) => ({
+  user: one(users, {
+    fields: [qnaVotes.userId],
+    references: [users.id],
+    relationName: "qna_vote_user"
+  }),
+  question: one(qnaQuestions, {
+    fields: [qnaVotes.questionId],
+    references: [qnaQuestions.id]
+  }),
+  answer: one(qnaAnswers, {
+    fields: [qnaVotes.answerId],
+    references: [qnaAnswers.id]
+  })
 }));

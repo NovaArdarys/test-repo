@@ -78,6 +78,7 @@ export async function getBeneficiaryList({
                 columns: {
                   id: true,
                   email: true,
+                  isActive: true,
                 },
                 with: {
                   userDetails: true,
@@ -98,6 +99,7 @@ export async function getBeneficiaryList({
             columns: {
               id: true,
               email: true,
+              isActive: true,
             },
             with: {
               userDetails: true,
@@ -151,6 +153,7 @@ export async function getBeneficiaryById(id: string): Promise<Beneficiary | null
                 columns: {
                   id: true,
                   email: true,
+                  isActive: true,
                 },
                 with: {
                   userDetails: true,
@@ -171,6 +174,7 @@ export async function getBeneficiaryById(id: string): Promise<Beneficiary | null
             columns: {
               id: true,
               email: true,
+              isActive: true,
             },
             with: {
               userDetails: true,
@@ -183,6 +187,12 @@ export async function getBeneficiaryById(id: string): Promise<Beneficiary | null
           },
         },
       },
+      beneficiaryAllergies: {
+        with: {
+          allergicFood: true,
+          alternativeFood: true,
+        }
+      }
     },
     where: (beneficiary, { eq, and }) => and(
       eq(beneficiary.id, id),

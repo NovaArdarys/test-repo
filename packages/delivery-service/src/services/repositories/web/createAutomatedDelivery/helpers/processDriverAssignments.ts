@@ -25,6 +25,7 @@ export default async function processDriverAssignments(
 
 
     processStatus.completed({
+      variant: "information",
       status: "COMPLETED",
       entityType: "MENU_PLAN",
       entityId: args.menuPlan.id,

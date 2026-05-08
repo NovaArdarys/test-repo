@@ -195,9 +195,8 @@ export async function getDailyReportsListSPPG(params?: {
             `ARRAY[${ORentityIds.map(id => `'${id}'`).join(",")}]::uuid[]`
           )})`
           : sql``}
-            AND er.date::date >= ${graphReportStartDate}
             AND er.date::date <= ${today}
-          ORDER BY er.date DESC
+          ORDER BY er.date DESC, er.created_at DESC
           LIMIT 3
         ) inner_er
       ), '[]'::jsonb)
@@ -246,17 +245,23 @@ export async function getDailyReportsListSPPG(params?: {
     const [eventReportsByDate, deliveriesByDate, threeDaysMenuData, eventReportsData] =
       await Promise.all([
         db.execute(sql`
-          SELECT dr.date::text AS date, COUNT(DISTINCT dr.id) AS total_reports
-          FROM event_reports dr
-          WHERE dr.date >= ${graphReportStartDate}
-            AND dr.date <= ${today}
-            ${ORentityIds.length > 0
+          WITH top_reports AS (
+            SELECT dr.id, dr.date::text AS date
+            FROM event_reports dr
+            WHERE dr.date <= ${today}
+              AND dr.is_deleted = false
+              ${ORentityIds.length > 0
             ? sql`AND dr.domain_id = ANY(${sql.raw(
               `ARRAY[${ORentityIds.map(id => `'${id}'`).join(",")}]::uuid[]`
             )})`
             : sql``}
-          GROUP BY dr.date
-          ORDER BY dr.date ASC
+            ORDER BY dr.date DESC, dr.created_at DESC
+            LIMIT 10
+          )
+          SELECT date, COUNT(*) AS total_reports
+          FROM top_reports
+          GROUP BY date
+          ORDER BY date ASC
         `),
         // db.execute(sql`
         //   SELECT

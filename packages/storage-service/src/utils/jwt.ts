@@ -80,7 +80,7 @@ export const generateRefreshToken = async ({ email, national_id, id, roleId }: t
 };
 
 export const verifyToken = async (token: string) => {
-  const result = await jwt.verify(token, currentKey!.privateKey, {
+  const result = await jwt.verify(token, currentKey!.publicKey, {
     algorithms: ["RS256"],
     allowInvalidAsymmetricKeyTypes: true,
   });

@@ -36,7 +36,7 @@ export const createBulkLocationHandler = catchAsync(async (c: Context) => {
 });
 
 export const createSingleLocationHandler = catchAsync(async (c: Context) => {
-  const body = await c.req.parseBody() as unknown as RecordLocationSchemaType;
+  const body = c.get('validatedData')?.body as unknown as RecordLocationSchemaType;
   const { createdBy } = getAuditFields(c);
   const { id: deliveryId } = c.req.param();
 

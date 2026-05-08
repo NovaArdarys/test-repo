@@ -4,15 +4,23 @@ import { EXCHANGES } from "../events/exchanges";
 import { resetQueuesIfDev, safeConsume } from "../utils/consumerHelper";
 import { storageClientCommittedSchema } from "@/validator/storage.validator";
 import { storageQueue } from "@/jobs/queue/storage.queue";
+import { deleteFileFromMinio } from "@/utils/minioClient";
 
 // ===== QUEUES =====
 const CLIENT_STORAGE_QUEUE_NAME = "client_storage_commit_queue";
 const CLIENT_STORAGE_ROUTING_KEY = "client.storage.commit";
 
+const STORAGE_DELETE_QUEUE_NAME = "storage_delete_queue";
+const STORAGE_DELETE_ROUTING_KEY = "storage.delete";
+
 const LOG_QUEUE_NAME = "storage_service_log_queue";
 const LOG_ROUTING_KEY = "log.#";
 
 // ================= HANDLERS =================
+async function handleStorageDelete(data: { storageIds: string[]; paths: string[] }) {
+  await Promise.all(data.paths.map((path) => deleteFileFromMinio(path)));
+}
+
 async function handleClientStorageCommit(data: z.infer<typeof storageClientCommittedSchema>) {
   const parsed = storageClientCommittedSchema.parse(data);
 
@@ -35,6 +43,7 @@ export async function setupConsumer(channel: Channel) {
   await resetQueuesIfDev(channel, [
     CLIENT_STORAGE_QUEUE_NAME,
     `${CLIENT_STORAGE_QUEUE_NAME}.retry`,
+    STORAGE_DELETE_QUEUE_NAME,
     LOG_QUEUE_NAME,
     `${LOG_QUEUE_NAME}.retry`,
   ]);
@@ -141,11 +150,31 @@ export async function setupConsumer(channel: Channel) {
 
   channel.consume(
     clientQueue.queue,
-    safeConsume(handleClientStorageCommit, channel),
+    safeConsume(handleClientStorageCommit, channel, {
+      serviceName: "storage-listener",
+      getIdempotencyKey: (data: z.infer<typeof storageClientCommittedSchema>) => `${data.entityId}:${data?.storageId}:${data.entityType}:${(data as any)?._meta?.eventId ?? "none"}`
+    }),
     { noAck: false }
   );
 
   console.log(
     `[*] Storage Service listening for CLIENT STORAGE commits from multiple exchanges`
   );
+
+  /* =====================================================
+   * STORAGE DELETE LISTENER
+   * ===================================================== */
+  await channel.assertExchange(EXCHANGES.STORAGE, "topic", { durable: true });
+
+  const deleteQueue = await channel.assertQueue(STORAGE_DELETE_QUEUE_NAME, { durable: true });
+
+  await channel.bindQueue(deleteQueue.queue, EXCHANGES.STORAGE, STORAGE_DELETE_ROUTING_KEY);
+
+  channel.consume(
+    deleteQueue.queue,
+    safeConsume(handleStorageDelete, channel),
+    { noAck: false }
+  );
+
+  console.log(`[*] Storage Service listening for DELETE events in ${deleteQueue.queue}`);
 }

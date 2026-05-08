@@ -72,3 +72,19 @@ export const unassignPlanDistributionQuerySchema = z.object({
 });
 
 export type UnassignPlanDistributionQuerySchemaType = z.infer<typeof unassignPlanDistributionQuerySchema>;
+
+export const retryFailedMenuJobsSchema = z.object({
+  jobId: z.string().optional()
+});
+export type RetryFailedMenuJobsSchemaType = z.infer<typeof retryFailedMenuJobsSchema>;
+
+export const fixBrokenMenuPlansSchema = z.object({
+  kitchenId: z.string().optional()
+});
+export type FixBrokenMenuPlansSchemaType = z.infer<typeof fixBrokenMenuPlansSchema>;
+
+export const overrideDriverSchema = z.object({
+  driverId: z.string().nonempty("Driver ID required"),
+  oldDriverUserId: z.string().optional(),
+});
+export type OverrideDriverSchemaType = z.infer<typeof overrideDriverSchema>;

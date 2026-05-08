@@ -78,7 +78,7 @@ export const getDailyReportHandler = catchAsync(async (c: Context) => {
 });
 
 export const createDailyReportHandler = catchAsync(async (c: Context) => {
-  const body = await c.req.parseBody() as unknown as CreateDailyReportSchemaType;
+  const body = c.get('validatedData')?.body as unknown as CreateDailyReportSchemaType;
   const audit = getAuditFields(c);
   const newReport = await createDailyReport({ ...body, ...audit });
   return c.json({ data: newReport }, 201);
@@ -86,7 +86,7 @@ export const createDailyReportHandler = catchAsync(async (c: Context) => {
 
 export const updateDailyReportHandler = catchAsync(async (c: Context) => {
   const id = c.req.param("id");
-  const body = await c.req.parseBody();
+  const body = c.get('validatedData')?.body;
   const updated = await updateDailyReport(id, { ...body, updatedBy: c.get("userId") });
   return c.json({ data: updated });
 });
@@ -105,7 +105,7 @@ export const listStepReportsHandler = catchAsync(async (c: Context) => {
 
 export const createStepReportHandler = catchAsync(async (c: Context) => {
   const dailyReportId = c.req.param("dailyReportId");
-  const body = await c.req.parseBody() as unknown as CreateStepReportSchemaType;
+  const body = c.get('validatedData')?.body as unknown as CreateStepReportSchemaType;
   const audit = getAuditFields(c);
 
   const newStep = await createStepReport({
@@ -119,7 +119,7 @@ export const createStepReportHandler = catchAsync(async (c: Context) => {
 
 export const updateStepReportHandler = catchAsync(async (c: Context) => {
   const id = c.req.param("id");
-  const body = await c.req.parseBody();
+  const body = c.get('validatedData')?.body;
   const updated = await updateStepReport(id, { ...body, updatedBy: c.get("userId") });
   const report = await getDailyReportWithoutMaskById(updated.dailyReportId);
 
@@ -142,3 +142,5 @@ export const deleteStepReportHandler = catchAsync(async (c: Context) => {
   const result = await deleteStepReport(id);
   return c.json(result);
 });
+
+

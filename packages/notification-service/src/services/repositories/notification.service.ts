@@ -76,7 +76,8 @@ export async function getNotificationsByUserId({
       message: true,
       createdAt: true,
       title: true,
-      type: true
+      type: true,
+      variant: true,
     },
     where: () => where,
     orderBy: (table) => sql`${table.createdAt} DESC`,

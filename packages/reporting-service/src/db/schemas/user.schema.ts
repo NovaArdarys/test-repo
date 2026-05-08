@@ -74,7 +74,6 @@ export const roles = pgTable('roles', {
     .notNull(),
 });
 
-
 export const permissions = pgTable('permissions', {
   id: uuid('id').primaryKey().defaultRandom(),
   name: varchar('name', { length: 100 }).notNull(),
@@ -104,19 +103,45 @@ export const rolePermissions = pgTable('role_permissions', {
   createdBy: uuid('created_by'),
 });
 
-export const menusApp = pgTable('menus_app', {
+export const appMenus = pgTable('app_menus', {
   id: uuid('id').primaryKey().defaultRandom(),
   name: varchar('name', { length: 100 }).notNull().unique(),
   path: varchar('path', { length: 255 }).notNull(),
   parentId: uuid('parent_id'),
   icon: varchar('icon', { length: 100 }),
-  displayOrder: integer('display_order').default(0),
+  displayOrder: integer('display_order').default(0).notNull(),
   isDeleted: boolean('is_deleted').default(false).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   createdBy: uuid('created_by').notNull(),
   updatedAt: timestamp('updated_at').notNull(),
   updatedBy: uuid('updated_by'),
 });
+
+export const roleMenus = pgTable('role_menus', {
+  roleId: uuid('role_id').notNull(),
+  menuId: uuid('menu_id').notNull(),
+  isDeleted: boolean('is_deleted').default(false).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  createdBy: uuid('created_by'),
+});
+
+export type CreateAppMenusInput = InferInsertModel<typeof appMenus>;
+
+export type UpdateAppMenusInput = Partial<
+  Omit<
+    InferInsertModel<typeof appMenus>,
+    'id' | 'createdAt' | 'createdBy' | 'updatedAt' | 'updatedBy' | 'isDeleted'
+  >
+>;
+
+export type CreateRoleMenuInput = InferInsertModel<typeof roleMenus>;
+
+export type UpdateRoleMenuInput = Partial<
+  Omit<
+    InferInsertModel<typeof roleMenus>,
+    'roleId' | 'menuId' | 'createdAt' | 'createdBy' | 'isDeleted'
+  >
+>;
 
 export type CreateUserInput = InferInsertModel<typeof users>;
 

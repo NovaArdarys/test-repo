@@ -8,7 +8,7 @@ import { publishAssignProfileDriver, publishAssignUserToKitchen, publishAssignUs
 import { getRoleById } from "@/services/repositories/role.permission.service";
 
 export const userInfoHandler = catchAsync(async (c) => {
-  const { username }: UserInfoShemaType = await c.req.parseBody();
+  const { username }: UserInfoShemaType = c.get('validatedData')?.body;
 
   const findUser = await getUser({ email: username, phone: username });
 
@@ -22,7 +22,7 @@ export const userInfoHandler = catchAsync(async (c) => {
 });
 
 export const userSaveTokenHandler = catchAsync(async (c) => {
-  const { expiresAt, token, userId, deviceInfo, ipAddress }: SaveTokenType = await c.req.parseBody() as unknown as SaveTokenType;
+  const { expiresAt, token, userId, deviceInfo, ipAddress }: SaveTokenType = c.get('validatedData')?.body as unknown as SaveTokenType;
 
   const result = await saveRefreshToken(userId, token, expiresAt, deviceInfo, ipAddress);
 
@@ -34,7 +34,7 @@ export const userSaveTokenHandler = catchAsync(async (c) => {
 
 export const registerHandler = catchAsync(async (c) => {
 
-  const { email, password, address, dateOfBirth, firstName, lastName, phoneNumber, roleId, isActive, domainId, createdBy, driverCapacity } = await c.req.parseBody() as unknown as registerSchemaType;
+  const { email, password, address, dateOfBirth, firstName, lastName, phoneNumber, roleId, isActive, domainId, createdBy, driverCapacity } = c.get('validatedData')?.body as unknown as registerSchemaType;
 
   const result = await createUser({
     email,
@@ -90,7 +90,7 @@ export const registerHandler = catchAsync(async (c) => {
 
 export const removeTokenHandler = catchAsync(async (c) => {
 
-  const { refreshToken, isDeleted }: refreshTokenSchemaType = await c.req.parseBody() as unknown as refreshTokenSchemaType;
+  const { refreshToken, isDeleted }: refreshTokenSchemaType = c.get('validatedData')?.body as unknown as refreshTokenSchemaType;
 
   const result = await revokeTokenStatus(refreshToken, isDeleted);
 
@@ -99,7 +99,7 @@ export const removeTokenHandler = catchAsync(async (c) => {
 
 export const validateTokenHandler = catchAsync(async (c) => {
 
-  const { refreshToken }: refreshTokenSchemaType = await c.req.parseBody() as unknown as refreshTokenSchemaType;
+  const { refreshToken }: refreshTokenSchemaType = c.get('validatedData')?.body as unknown as refreshTokenSchemaType;
 
   const result = await validateTokenStatus(refreshToken);
 
@@ -107,13 +107,12 @@ export const validateTokenHandler = catchAsync(async (c) => {
 });
 
 export const updatePasswordUserHandler = catchAsync(async (c) => {
-  try {
-    const data = await c.req.parseBody() as any;
+  const data = c.get('validatedData')?.body as any;
 
-    const result = await updateUser(data.id, { ...data, updated_by: data.id });
-    return c.json({ message: 'User updated successfully', data: { ...result, ...data } }, 200);
-  } catch (error) {
-    if (error instanceof ApiError) return c.json({ error: error.message }, error.statusCode);
-    return c.json({ error: 'Internal Server Error' }, 500);
+  const result = await updateUser(data.id, { ...data, updated_by: data.id });
+  if (isEmpty(result)) {
+    throw new ApiError(HttpStatus.default.INTERNAL_SERVER_ERROR, { message: "Failed to update password" });
   }
+
+  return c.json({ message: 'User updated successfully', data: { ...result, ...data } }, 200);
 });

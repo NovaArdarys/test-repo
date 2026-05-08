@@ -34,7 +34,7 @@ export const listRolesHandler = catchAsync(async (c) => {
 });
 
 export const createRoleHandler = catchAsync(async (c) => {
-  const data = await c.req.parseBody() as unknown as UpdateRoleSchemaType;
+  const data = c.get('validatedData')?.body as unknown as UpdateRoleSchemaType;
   const audit = getAuditFields(c);
 
   if (!data.name || typeof data.name !== 'string') {
@@ -64,7 +64,7 @@ export const getRoleByIdHandler = catchAsync(async (c) => {
 
 export const updateRoleHandler = catchAsync(async (c) => {
   const id = c.req.param('id');
-  const data = await c.req.parseBody();
+  const data = c.get('validatedData')?.body;
   const audit = getAuditFields(c);
 
   const result = await AuthManagementService.updateRole(id, { ...data, updatedBy: audit.updatedBy });
@@ -94,7 +94,7 @@ export const listPermissionsHandler = catchAsync(async (c) => {
 
 
 export const createPermissionHandler = catchAsync(async (c) => {
-  const data = await c.req.parseBody() as unknown as CreatePermissionSchemaType;
+  const data = c.get('validatedData')?.body as unknown as CreatePermissionSchemaType;
   const audit = getAuditFields(c);
 
   const newPermission = await AuthManagementService.createPermission({
@@ -113,7 +113,7 @@ export const getPermissionByIdHandler = catchAsync(async (c) => {
 
 export const updatePermissionHandler = catchAsync(async (c) => {
   const id = c.req.param('id');
-  const data = await c.req.parseBody();
+  const data = c.get('validatedData')?.body;
   const audit = getAuditFields(c);
 
   const result = await AuthManagementService.updatePermission(id, { ...data, updatedBy: audit.updatedBy });
@@ -127,4 +127,27 @@ export const deletePermissionHandler = catchAsync(async (c) => {
 
   const result = await AuthManagementService.deletePermission(id, audit.updatedBy);
   return c.json({ message: 'Permission soft deleted successfully', data: { id: result.id } }, 200);
+});
+
+// --- role-permission assignment ---
+
+export const getPermissionsByRoleIdHandler = catchAsync(async (c) => {
+  const roleId = c.req.param('roleId');
+  const permissions = await AuthManagementService.getPermissionsByRoleId(roleId);
+
+  return c.json({
+    data: permissions,
+  }, 200);
+});
+
+export const syncPermissionsToRoleHandler = catchAsync(async (c) => {
+  const roleId = c.req.param('roleId');
+  const { permissionIds } = await c.req.json();
+
+  const result = await AuthManagementService.syncPermissionsToRole(roleId, permissionIds);
+
+  return c.json({
+    message: result.message,
+    data: { roleId: result.roleId }
+  }, 200);
 });

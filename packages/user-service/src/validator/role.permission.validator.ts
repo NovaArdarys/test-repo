@@ -28,5 +28,8 @@ export const RolePermissionSyncSchema = z.object({
 });
 
 export const UserListQuerySchema = paginationSchema.extend({
-  isActive: z.preprocess((a) => a === 'true', z.boolean()).optional(),
-});
+  isActive: z.preprocess((a) => a === 'true' ? true : a === 'false' ? false : undefined, z.boolean()).optional(),
+  name: z.string().optional(),
+  role: z.string().optional(),
+  kitchenId: z.string().uuid().optional(),
+});

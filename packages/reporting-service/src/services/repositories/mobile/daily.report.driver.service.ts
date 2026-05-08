@@ -18,7 +18,36 @@ function restructureAgenda(rawAgenda: any[]) {
     const stepMap: Record<string, any> = {};
 
     for (const delivery of agenda.deliveries) {
-      for (const step of delivery.steps ?? []) {
+      if (!delivery.steps || delivery.steps.length === 0) {
+        // If no steps, add to a "default" step to prevent data loss
+        const stepKey = "no-step-" + delivery.portionType;
+        if (!stepMap[stepKey]) {
+          stepMap[stepKey] = {
+            id: "no-step-" + delivery.portionType,
+            isCompleted: false,
+            stepKey: "no-step",
+            stepName: "Belum Ada Laporan",
+            stepOrder: 99,
+            portionType: delivery.portionType,
+            deliveries: [],
+          };
+        }
+        stepMap[stepKey].deliveries.push({
+          id: delivery.id,
+          beneficiary: delivery.beneficiary,
+          status: delivery.status,
+          deliveredAt: delivery.deliveredAt,
+          portionType: delivery.portionType,
+          targetPortion: delivery.targetPortion,
+          receivedPortion: delivery.receivedPortion,
+          takenTray: delivery.takenTray,
+          type: delivery.type,
+          deliverySchedule: delivery.deliverySchedule,
+        });
+        continue;
+      }
+
+      for (const step of delivery.steps) {
         const stepKey = step.stepKey + "-" + step.portionType; // include portionType
         if (!stepMap[stepKey]) {
           stepMap[stepKey] = {
@@ -70,7 +99,7 @@ export async function getDriverDeliveriesV2(params: {
   schoolIds?: string[];
   driversIds?: string[];
 }) {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = new Date().toLocaleDateString('sv-SE');
   const {
     driverId,
     startDate = today,
@@ -110,6 +139,7 @@ export async function getDriverDeliveriesV2(params: {
       receivedPortion: deliveries.receivedPortion,
       takenTray: deliveries.takenTray,
       type: deliveries.type,
+      driverId: deliveries.driverId,
       deliverySchedule: sql`
       (
         SELECT
@@ -133,12 +163,12 @@ export async function getDriverDeliveriesV2(params: {
     .leftJoin(beneficiaries, eq(deliveryBeneficiaries.beneficiaryId, beneficiaries.id))
     .where(
       and(
-        eq(deliveries.driverId, driverId),
+        driversIds.length > 0 ? inArray(deliveries.driverId, driversIds) : eq(deliveries.driverId, driverId),
         gte(menuPlans.planStartDate, startDate),
         lte(menuPlans.planStartDate, endDate),
       )
     )
-    .orderBy(desc(menuPlans.planStartDate))
+    .orderBy(desc(menuPlans.planStartDate), deliveries.id)
     .limit(limit)
     .offset((page - 1) * limit);
 
@@ -157,20 +187,21 @@ export async function getDriverDeliveriesV2(params: {
     .select({
       dailyReportId: dailyReports.id,
       portionType: dailyReports.portionType,
+      entityId: dailyReports.entityId,
     })
     .from(dailyReports)
     .where(
       and(
-        eq(dailyReports.entityId, driverId),
+        driversIds.length > 0 ? inArray(dailyReports.entityId, driversIds) : eq(dailyReports.entityId, driverId),
         inArray(dailyReports.portionType, portionTypes as any),
         gte(dailyReports.date, startDate),
         lte(dailyReports.date, endDate)
       )
     );
 
-  const dailyReportMap: Record<string, string> = {}; // portionType -> dailyReportId
+  const dailyReportMap: Record<string, string> = {}; // portionType + entityId -> dailyReportId
   dailyReportsRows.forEach(dr => {
-    dailyReportMap[dr.portionType as any] = dr.dailyReportId;
+    dailyReportMap[`${dr.portionType}-${dr.entityId}`] = dr.dailyReportId;
   });
 
   // Ambil semua step report terkait daily report
@@ -235,7 +266,7 @@ export async function getDriverDeliveriesV2(params: {
       };
     }
 
-    const dailyReportId = dailyReportMap[row.portionType as any];
+    const dailyReportId = dailyReportMap[`${row.portionType}-${row.driverId}`];
     const steps =
       dailyReportId && stepsMap[dailyReportId]
         ? Array.from(stepsMap[dailyReportId].values()).sort(
@@ -268,11 +299,18 @@ export async function getDriverDeliveriesV2(params: {
 
   const agenda = restructureAgenda(Object.values(agendaMap));
 
-  const [{ count }] =
-    (await db
-      .select({ count: sql<number>`COUNT(*)` })
-      .from(deliveries)
-      .where(eq(deliveries.driverId, driverId))) || [];
+  const [{ count }] = await db
+    .select({ count: sql<number>`COUNT(*)` })
+    .from(deliveries)
+    .leftJoin(deliveryBeneficiaries, eq(deliveries.id, deliveryBeneficiaries.deliveryId))
+    .leftJoin(menuPlans, eq(deliveryBeneficiaries.menuPlanId, menuPlans.id))
+    .where(
+      and(
+        driversIds.length > 0 ? inArray(deliveries.driverId, driversIds) : eq(deliveries.driverId, driverId),
+        gte(menuPlans.planStartDate, startDate),
+        lte(menuPlans.planStartDate, endDate),
+      )
+    );
 
   return {
     data: { agenda, ...widgets },

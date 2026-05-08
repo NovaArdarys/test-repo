@@ -9,14 +9,14 @@ import {
   AssignPlanDistributionSchemaType,
   UnassignPlanDistributionQuerySchemaType
 } from "@/validator/menu.plan.validator";
-import { getDistributionByMenuPlanId, getFoodItemsByMenuPlanId, getMenuPlanById, getMenuPlansList, softDeleteMenuPlan, updatePlanStatus } from "@/services/repositories/menu.plan.service";
+import { getDistributionByMenuPlanId, getFoodItemsByMenuPlanId, getMenuPlanById, getMenuPlansList, softDeleteMenuPlan, updatePlanStatus, checkMenuPlanExists } from "@/services/repositories/menu.plan.service";
 import { assignFoodToMenuPlan, unassignFoodFromMenuPlan } from "@/services/repositories/menu.food.service";
 import { assignPlanDistribution, unassignPlanDistribution } from "@/services/repositories/menu.plan.schools.kitchen.service";
 import { isEmpty } from "lodash";
 import { menuPlanQueue } from "@/jobs/queue/menuplan.queue";
 import { getPriorityByDate } from "@/utils/jobPriority";
 import { getActiveDriversByKitchen } from "@/services/repositories/web/driver.service";
-import { processStatus } from "@/messaging/publishers/notification.publisher";
+import { getActiveBeneficiariesByKitchen } from "@/services/repositories/web/beneficiary.service";
 
 const getAuditFields = (c: Context) => ({
   createdBy: c.get('userId'),
@@ -63,19 +63,19 @@ export const listMenuPlansHandler = catchAsync(async (c: Context) => {
 });
 
 export const createMenuPlanHandler = catchAsync(async (c: Context) => {
-  const body = await c.req.parseBody() as unknown as CreateMenuPlanSchemaType;
+  const body = c.get('validatedData')?.body as CreateMenuPlanSchemaType;
   const audit = getAuditFields(c);
 
-  const foodIdArray = body.foodIds as string[] || (body as any)["foodIds[]"] || [];
-  const dateArray = body.dates as string[] || (body as any)["dates[]"] || [];
+  const foodIdArray = body.foodIds || [];
+  const dateArray = body.dates || [];
 
   const kitchenId = !isEmpty(body?.kitchenId) ? body.kitchenId : audit.kitchenId?.[0] || null;
 
   if (!kitchenId) {
-    return c.json({ message: "kitchenId dibutuhkan" }, 400);
+    return c.json({ message: "User tidak punya dapur" }, 400);
   }
 
-  const activeDrivers = await getActiveDriversByKitchen(audit.kitchenId);
+  const activeDrivers = await getActiveDriversByKitchen([kitchenId]);
   if (activeDrivers.length < 2) {
     return c.json(
       { message: "Minimal 2 pengemudi aktif dibutuhkan untuk membuat plan" },
@@ -83,9 +83,38 @@ export const createMenuPlanHandler = catchAsync(async (c: Context) => {
     );
   }
 
+  const activeBeneficiaries = await getActiveBeneficiariesByKitchen([kitchenId]);
+  if (activeBeneficiaries.length === 0) {
+    return c.json(
+      { message: "Tidak dapat membuat rencana menu. Dapur tidak memiliki target penerima yang aktif." },
+      400
+    );
+  }
+
+  // ── Capacity Validation ──────────────────────────────────────────────────
+  const totalCapacity = activeDrivers.reduce((acc, d) => acc + (d.portionCapacity || 0), 0);
+  const totalPortions = activeBeneficiaries.reduce((acc, b) => acc + (b.smallPortion || 0) + (b.largePortion || 0), 0);
+
+  if (totalCapacity < totalPortions) {
+    return c.json(
+      { 
+        message: `Kapasitas driver tidak mencukupi untuk pengiriman paralel satu kali jalan.`,
+        detail: `Total Kapasitas: ${totalCapacity}, Total Porsi: ${totalPortions}. Silakan tambahkan driver atau kurangi target porsi.`
+      },
+      400
+    );
+  }
+  // ─────────────────────────────────────────────────────────────────────────
+
   const jobIds: string[] = [];
 
   for (const date of dateArray) {
+    const isExists = await checkMenuPlanExists(kitchenId, date);
+    if (isExists) {
+      console.log(`[MENU] Skipping date ${date} for ${kitchenId} (Already Exts)`);
+      continue;
+    }
+
     const jobId = `menu-plan-create-${kitchenId}-${date}`;
 
     await menuPlanQueue.add(
@@ -102,13 +131,15 @@ export const createMenuPlanHandler = catchAsync(async (c: Context) => {
         },
         kitchenId,
         foodItemsIds: foodIdArray,
-        dates: date
+        dates: date,
       },
       {
         jobId,
         priority: getPriorityByDate(date),
         removeOnComplete: { age: 3600 * 24 * 7 },
-        removeOnFail: { age: 3600 * 24 * 7 }
+        removeOnFail: { age: 3600 * 24 * 7 },
+        attempts: 3,
+        backoff: { type: 'exponential', delay: 1000 }
       }
     );
 
@@ -117,7 +148,7 @@ export const createMenuPlanHandler = catchAsync(async (c: Context) => {
 
   return c.json(
     {
-      message: `Pembuatan menu plan untuk ${dateArray.length} tanggal telah dimulai`,
+      message: `Pembuatan menu plan telah dimulai. Total terjadwal: ${jobIds.length} dari ${dateArray.length} permintaan.`,
       jobIds,
       kitchenId,
       dates: dateArray
@@ -137,17 +168,31 @@ export const getMenuPlanByIdHandler = catchAsync(async (c: Context) => {
 
 export const updateMenuPlanHandler = catchAsync(async (c: Context) => {
   const { id } = c.req.param();
-  const body = await await c.req.parseBody() as unknown as UpdateMenuPlanSchemaType;
+  const body = c.get('validatedData')?.body as UpdateMenuPlanSchemaType;
   const audit = getAuditFields(c);
-  const foodIdArray = body.foodIds as unknown as string[] || (body as any)["foodIds[]"] || [];
+  const foodIdArray = body.foodIds || [];
 
-  const activeDrivers = await getActiveDriversByKitchen(audit.kitchenId);
+  const kitchenId = !isEmpty(body?.kitchenId) ? body?.kitchenId : audit.kitchenId?.[0] || null;
+
+  if (!kitchenId) {
+    return c.json({ message: "User tidak punya dapur" }, 400);
+  }
+
+  const activeDrivers = await getActiveDriversByKitchen([kitchenId]);
 
   if (activeDrivers.length < 2) {
     return c.json(
       {
         message: "Tidak dapat membuat rencana menu. Pastikan terdapat minimal 2 pengemudi aktif dengan kapasitas porsi lebih dari 0.",
       },
+      400
+    );
+  }
+
+  const activeBeneficiaries = await getActiveBeneficiariesByKitchen([kitchenId]);
+  if (activeBeneficiaries.length === 0) {
+    return c.json(
+      { message: "Tidak dapat memperbarui rencana menu. Dapur tidak memiliki target penerima yang aktif." },
       400
     );
   }
@@ -161,12 +206,12 @@ export const updateMenuPlanHandler = catchAsync(async (c: Context) => {
       menuPlanId: id,
       data: {
         ...body,
-        kitchenId: !isEmpty(body?.kitchenId) ? body?.kitchenId : audit.kitchenId?.[0] || null,
+        kitchenId: kitchenId,
         updatedBy: audit.updatedBy,
         planStartDate: body.planStartDate,
         planEndDate: body.planEndDate,
       },
-      kitchenId: !isEmpty(body?.kitchenId) ? body?.kitchenId : audit.kitchenId?.[0],
+      kitchenId: kitchenId,
       foodItemsIds: foodIdArray,
       updatedBy: audit.updatedBy,
       dates: body.planStartDate || new Date().toISOString().split("T")[0],
@@ -194,7 +239,7 @@ export const deleteMenuPlanHandler = catchAsync(async (c: Context) => {
 
 export const updateMenuPlanStatusHandler = catchAsync(async (c: Context) => {
   const { id } = c.req.param();
-  const { status } = await c.req.parseBody() as unknown as UpdateMenuPlanStatusSchemaType;
+  const { status } = c.get('validatedData')?.body as UpdateMenuPlanStatusSchemaType;
   const audit = getAuditFields(c);
 
   const updatedPlan = await updatePlanStatus(id, status, audit.updatedBy);
@@ -212,7 +257,7 @@ export const listFoodItemsInPlanHandler = catchAsync(async (c: Context) => {
 
 export const assignFoodToMenuPlanHandler = catchAsync(async (c: Context) => {
   const { id: menuFoodPlanId } = c.req.param();
-  const { foodItemId } = await c.req.parseBody() as unknown as AssignFoodToMenuPlanSchemaType;
+  const { foodItemId } = c.get('validatedData')?.body as AssignFoodToMenuPlanSchemaType;
   const audit = getAuditFields(c);
 
   const newAssignment = await assignFoodToMenuPlan({
@@ -242,7 +287,7 @@ export const listPlanDistributionHandler = catchAsync(async (c: Context) => {
 
 export const assignPlanDistributionHandler = catchAsync(async (c: Context) => {
   const { id: menuPlanId } = c.req.param();
-  const { beneficiaryId } = await c.req.parseBody() as unknown as AssignPlanDistributionSchemaType;
+  const { beneficiaryId } = c.get('validatedData')?.body as AssignPlanDistributionSchemaType;
   const audit = getAuditFields(c);
 
   const newDistribution = await assignPlanDistribution({
@@ -262,3 +307,41 @@ export const unassignPlanDistributionHandler = catchAsync(async (c: Context) => 
 
   return c.json({ message: "Remove plan from school ." }, 200);
 });
+
+import {
+  retryFailedMenuJobs,
+  fixBrokenMenuPlans,
+} from "@/services/repositories/web/v2/menu-plan/menu.plan.maintenance.service";
+
+import { resetMenuData } from "@/services/repositories/web/v2/menu-plan/menu.maintenance.service";
+
+
+export const retryFailedMenuJobsHandler = catchAsync(async (c: Context) => {
+  const result = await retryFailedMenuJobs();
+  return c.json({ data: result, message: "OK" }, 200);
+});
+
+export const fixBrokenMenuPlansHandler = catchAsync(async (c: Context) => {
+  const result = await fixBrokenMenuPlans();
+  return c.json({ data: result, message: "OK" }, 200);
+});
+
+export const resetMenuDataHandler = catchAsync(async (c: Context) => {
+  const menuPlanId = c.req.query("menuPlanId");
+  const result = await resetMenuData(menuPlanId);
+  return c.json(result, 200);
+});
+
+import { overrideDriverForBeneficiary } from "@/services/repositories/web/v2/delivery/delivery.manual.service";
+import { OverrideDriverSchemaType } from "@/validator/menu.plan.validator";
+
+export const overrideDriverHandler = catchAsync(async (c: Context) => {
+  const { id: menuPlanId, beneficiaryId } = c.req.param();
+  const { driverId, oldDriverUserId } = c.get("validatedData")?.body as OverrideDriverSchemaType;
+  const audit = getAuditFields(c);
+
+  await overrideDriverForBeneficiary(menuPlanId, beneficiaryId, driverId, audit.createdBy, oldDriverUserId);
+
+  return c.json({ message: "Driver updated and ETAs recalculated." }, 200);
+});
+

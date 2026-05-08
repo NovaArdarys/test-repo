@@ -16,6 +16,8 @@ import {
   unassignUserFromBeneficiaryHandler
 } from '@/controllers/public/school.controller';
 
+import { exportBeneficiariesHandler } from '@/controllers/public/school.export.controller';
+
 const app = new Hono();
 
 app.use(checkAccessToken);
@@ -34,6 +36,9 @@ app.post(
   createBeneficiaryHandler
 );
 
+// IMPORTANT: /export must be before /:id
+app.get('/export', exportBeneficiariesHandler);
+
 app.get(
   '/:id',
   // permission(),
@@ -44,7 +49,8 @@ app.get(
 app.put(
   '/:id',
   // permission(),
-  validate({ param: idParamSchema, body: CreateBeneficiarySchema }),
+  validate({ param: idParamSchema }),
+  validate({ body: CreateBeneficiarySchema }),
   updateBeneficiaryHandler
 );
 
@@ -58,7 +64,8 @@ app.delete(
 app.post(
   '/:id/users',
   // permission(),
-  validate({ param: idParamSchema, body: AssignUserToBeneficiarySchema }),
+  validate({ param: idParamSchema }),
+  validate({ body: AssignUserToBeneficiarySchema }),
   assignUserToBeneficiaryHandler
 );
 

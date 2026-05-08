@@ -6,6 +6,7 @@ import { updateStepReport } from "@/services/repositories/daily.report.service";
 import { resetQueuesIfDev, safeConsume } from "../utils/consumerHelper";
 import { handleMenuPlanCreated } from "@/services/repositories/web/v1/createReport/createReport";
 import { reportQueue } from "@/jobs/queue/report.queue";
+import { ReportQueueSchema } from "@/jobs/types/report.type";
 
 // ===== VALIDATORS =====
 const entityTypeValidator = z.enum(entityTypeEnum.enumValues);
@@ -134,6 +135,14 @@ export async function setupConsumer(channel: Channel) {
   channel.consume(
     menuPlanQueue.queue,
     safeConsume(async (data: any) => {
+      const allowedEventTypes = ["REPORT_CREATION", "MENU-CREATION"];
+      if (data.eventType && !allowedEventTypes.includes(data.eventType)) {
+        console.log(`[REPORT CONSUMER] Skipped eventType: ${data.eventType}`);
+        return;
+      }
+
+      console.log("[REPORT CONSUMER] Processing:", data.menuPlanId, data.eventType);
+
       await reportQueue.add(
         "report-create",
         {
@@ -147,14 +156,18 @@ export async function setupConsumer(channel: Channel) {
       );
       // handleMenuPlanCreated
     }, channel, {
-      serviceName: "report"
+      serviceName: "report",
+      getIdempotencyKey: (data: any) => `${data?.menuPlanId}:${data?.planStartDate}:${data?._meta?.eventId ?? `none:${Date.now()}`}`
     }),
     { noAck: false }
   );
 
   channel.consume(
     storageQueue.queue,
-    safeConsume(handleStorageEvent, channel),
+    safeConsume(handleStorageEvent, channel, {
+      serviceName: "report-storage",
+      getIdempotencyKey: (data: z.infer<typeof storageCommittedSchema>) => `${data.entityId}:${data?.storageId}:${data.entityType}:${(data as any)?._meta?.eventId ?? "none"}`
+    }),
     { noAck: false }
   );
 }

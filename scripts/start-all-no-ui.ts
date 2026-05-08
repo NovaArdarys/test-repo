@@ -45,7 +45,16 @@ services.forEach((name) => {
   });
 
   proc.stderr.on("data", (data) => {
-    process.stderr.write(colorize(`[${name} ERROR] ${data}`));
+    const message = data.toString();
+    // Ignore common non-error messages
+    if (
+      message.includes("bun run --hot") || 
+      message.includes("does not require a password, but a password was supplied")
+    ) {
+      process.stdout.write(`${prefix} ${message}`);
+      return;
+    }
+    process.stderr.write(colorize(`[${name} ERROR] ${message}`));
   });
 
   proc.on("exit", (code) => {

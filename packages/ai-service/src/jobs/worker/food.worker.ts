@@ -16,6 +16,7 @@ import {
   getAITypeFromStepOrder,
 } from '@/services/clients/ai.client.service';
 import { processStatus } from '@/messaging/publishers/notification.publisher';
+import { mapReport } from '@/services/mapper/daily.report.mapper';
 
 const SKIPPABLE_ERRORS = ["ECONNREFUSED", "ECONNRESET", "ETIMEDOUT"];
 
@@ -76,14 +77,27 @@ export const foodWorker = new Worker<z.infer<typeof stepCommittedSchema>>(
       const image = aiType !== "food" ? await compressImageToBase64(imageURL) : imageURL;
       let labels: { id: string; en: string; }[] = [];
 
+      // if (aiType === "food") {
+      //   labels = stepReport.dailyReport?.menuPlan?.menuFoodItem
+      //     ?.flatMap((item) =>
+      //       item.foodItem.ingredients?.map((ing) => ({
+      //         id: ing.name?.toLowerCase()?.trim() || "",
+      //         en: ing.nameEn?.toLowerCase()?.trim() || item.foodItem?.name?.toLowerCase()?.trim() || "",
+      //       })) ?? []
+      //     )
+      //     .filter((l) => l.id && l.en) ?? [];
+
+      //   if (!labels.length) {
+      //     throw new Error("No valid food labels found for AI request.");
+      //   }
+      // }
+
       if (aiType === "food") {
         labels = stepReport.dailyReport?.menuPlan?.menuFoodItem
-          ?.flatMap((item) =>
-            item.foodItem.ingredients?.map((ing) => ({
-              id: ing.name?.toLowerCase()?.trim() || "",
-              en: ing.nameEn?.toLowerCase()?.trim() || item.foodItem?.name?.toLowerCase()?.trim() || "",
-            })) ?? []
-          )
+          ?.map((item) => ({
+            id: item.foodItem?.name?.toLowerCase()?.trim() || "",
+            en: item.foodItem?.nameEn?.toLowerCase()?.trim() || item.foodItem?.name?.toLowerCase()?.trim() || "",
+          }))
           .filter((l) => l.id && l.en) ?? [];
 
         if (!labels.length) {
@@ -91,13 +105,15 @@ export const foodWorker = new Worker<z.infer<typeof stepCommittedSchema>>(
         }
       }
 
+      const stepMapped = mapReport(stepReport);
+
       const result = await detectAI(aiType, {
         analysis_type: aiType,
         image,
         image_url: imageURL,
         food_items: labels,
         labels,
-      });
+      }, stepMapped);
 
       const end = performance.now();
       const processingTime = (end - start) / 1000;
@@ -119,7 +135,6 @@ export const foodWorker = new Worker<z.infer<typeof stepCommittedSchema>>(
           timestamp: new Date().toISOString(),
         },
       });
-
 
       await job.updateData({
         ...job.data,
@@ -208,6 +223,7 @@ foodWorker.on("active", async (job) => {
 
     await processStatus.processing({
       ...base,
+      variant: "information",
       progress: 10,
       step: "Sedang menganalisa",
       title: "Laporan Sedang Diproses",
@@ -224,6 +240,7 @@ foodWorker.on("completed", async (job, result) => {
 
     await processStatus.completed({
       ...base,
+      variant: "information",
       progress: 100,
       step: "Selesai",
       title: "Laporan Siap",
@@ -241,6 +258,7 @@ foodWorker.on("failed", async (job, err) => {
 
     await processStatus.failed({
       ...base,
+      variant: "warning",
       step: "Gagal",
       title: "Pembuatan Laporan Gagal",
       message:

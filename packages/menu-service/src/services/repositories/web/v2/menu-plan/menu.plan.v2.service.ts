@@ -2,7 +2,7 @@ import createPlan from "./helpers/create/createPlan";
 import attachFoodItems from "./helpers/attach/attachFoodItems";
 import attachBeneficiaries from "./helpers/attach/attachBeneficiaries";
 import { db } from "@/db";
-import { and, eq } from "drizzle-orm";
+import { and, eq, or, isNull, sql } from "drizzle-orm";
 import {
   beneficiaries as beneficiariesTable,
   menuPlans,
@@ -95,8 +95,12 @@ export async function createMenuPlan(
         .where(
           and(
             eq(beneficiariesTable.kitchenId, kitchenId),
-            eq(beneficiariesTable.status, "AKTIF"),
-            eq(beneficiariesTable.isDeleted, false)
+            or(eq(beneficiariesTable.isDeleted, false), isNull(beneficiariesTable.isDeleted)),
+            or(
+              eq(sql`LOWER(${beneficiariesTable.status}::text)`, 'aktif'),
+              eq(sql`LOWER(${beneficiariesTable.status}::text)`, 'active'),
+              isNull(beneficiariesTable.status)
+            )
           )
         );
 
@@ -225,6 +229,7 @@ export async function createMenuPlan(
     beneficiaries.forEach(({ name, users }) => {
       users.forEach((userId) => {
         processStatus.completed({
+          variant: "information",
           status: "COMPLETED",
           entityType: "MENU_PLAN",
           entityId: createdPlans[0].id,
@@ -249,6 +254,7 @@ export async function createMenuPlan(
 
     kitchen?.users.forEach((userId) => {
       processStatus.completed({
+        variant: "success",
         status: "COMPLETED",
         entityType: "MENU_PLAN",
         entityId: createdPlans[0].id,
@@ -321,19 +327,29 @@ export async function createMenuPlan(
       // saga/menuPlanSaga.ts
       console.log(`[SAGA ${sagaId}] Jobs created for plan ${plan.id}`);
 
-      // ✅ ONE EVENT TO RULE THEM ALL
       await publishMenuEvent("menu-plan.created", {
         sagaId,
+        jobId: reportJob[0].id,
+        eventType: "REPORT_CREATION",
         menuPlanId: plan.id,
         kitchenId: plan.kitchenId!,
         planStartDate: plan.planStartDate,
-        beneficiaries: beneficiaries.map(b => ({
-          id: b.id,
-          name: b.name,
-        })),
+        beneficiaries: beneficiaries.map(b => ({ id: b.id, name: b.name })),
         createdBy: plan.createdBy,
-        jobId: reportJob[0].id,
-        eventType: "MENU-CREATION",
+        _meta: {
+          eventId: crypto.randomUUID(),
+          timestamp: new Date().toISOString(),
+        }
+      });
+
+      await publishMenuEvent("menu-plan.created", {
+        sagaId,
+        jobId: deliveryJob[0].id,
+        eventType: "DELIVERY_CREATION",
+        menuPlanId: plan.id,
+        kitchenId: plan.kitchenId!,
+        planStartDate: plan.planStartDate,
+        createdBy: plan.createdBy,
         _meta: {
           eventId: crypto.randomUUID(),
           timestamp: new Date().toISOString(),
@@ -341,44 +357,6 @@ export async function createMenuPlan(
       });
 
       console.log(`[SAGA ${sagaId}] Menu plan created event published for plan ${plan.id}`);
-
-      // console.log(`[SAGA ${sagaId}] Jobs created for plan ${plan.id}`);
-
-      // await publishMenuEvent("menu-plan.created", {
-      //   sagaId,
-      //   jobId: reportJob[0].id,
-      //   menuPlanId: plan.id,
-      //   kitchenId: plan.kitchenId!,
-      //   planStartDate: plan.planStartDate,
-      //   beneficiaries: beneficiaries.map(b => ({
-      //     id: b.id,
-      //     name: b.name,
-      //   })),
-      //   createdBy: plan.createdBy,
-      //   eventType: 'REPORT_CREATION',
-      //   _meta: {
-      //     eventId: crypto.randomUUID(),
-      //     timestamp: new Date().toISOString(),
-      //   }
-      // });
-
-      // console.log(`[SAGA ${sagaId}] Report event published for plan ${plan.id}`);
-
-      // await publishMenuEvent("menu-plan.created", {
-      //   sagaId,
-      //   jobId: deliveryJob[0].id,
-      //   menuPlanId: plan.id,
-      //   kitchenId: plan.kitchenId!,
-      //   planStartDate: plan.planStartDate,
-      //   createdBy: plan.createdBy,
-      //   eventType: 'DELIVERY_CREATION',
-      //   _meta: {
-      //     eventId: crypto.randomUUID(),
-      //     timestamp: new Date().toISOString(),
-      //   }
-      // });
-
-      // console.log(`[SAGA ${sagaId}] Delivery event published for plan ${plan.id}`);
     }
 
     console.log(`[SAGA ${sagaId}] All events published successfully`);

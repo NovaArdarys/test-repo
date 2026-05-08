@@ -11,8 +11,8 @@ export default async function insertDriverLocation(
   await trx.insert(driverLocations).values({
     driverId: args.driver.id,
     deliveryId: delivery.id,
-    lat: args.kitchen.lat?.toString() ?? "0",
-    lon: args.kitchen.lon?.toString() ?? "0",
+    lat: null,
+    lon: null,
     createdBy: args.driver.userId,
   });
 }

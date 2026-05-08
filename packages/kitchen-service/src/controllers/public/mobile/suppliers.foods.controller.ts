@@ -21,7 +21,7 @@ const getAuditFields = (c: Context) => ({
 
 
 export const updateSupplierFoods = catchAsync(async (c: Context) => {
-  const body = await c.req.parseBody() as unknown as UpdateSupplierFoodItemSchemaType;
+  const body = c.get('validatedData')?.body as unknown as UpdateSupplierFoodItemSchemaType;
   const id = c.req.param("id");
 
   const audit = getAuditFields(c);

@@ -1,0 +1,1 @@
+ALTER TABLE "notifications" ADD COLUMN "variant" text DEFAULT 'info' NOT NULL;

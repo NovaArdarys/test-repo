@@ -29,7 +29,6 @@ export default async function createBeneficiaryDailyReports(
     if ((b.smallPortion ?? 0) > 0) portions.push("SMALL");
     if ((b.largePortion ?? 0) > 0) portions.push("LARGE");
 
-    // default case
     if (!portions.length) portions.push("DEFAULT");
 
     for (const portion of portions) {
@@ -50,7 +49,7 @@ export default async function createBeneficiaryDailyReports(
         throw new Error("Failed to create beneficiary daily report");
       }
 
-      await createStepReports(trx, report.id, "beneficiary", plan.createdBy, []);
+      await createStepReports(trx, report.id, "beneficiary", plan.createdBy, ignoredStep);
 
       reports.push(report satisfies DailyReport);
     }

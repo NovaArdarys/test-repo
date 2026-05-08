@@ -119,12 +119,29 @@ export async function getAppLogsList({
     );
   }
 
-  const dataPromise = db.select()
-    .from(appLogs)
-    .where(and(...whereConditions))
-    .limit(limit)
-    .offset(offset)
-    .orderBy(desc(appLogs.createdAt));
+  const dataPromise = db.query.appLogs.findMany({
+    where: and(...whereConditions),
+    limit: limit,
+    offset: offset,
+    orderBy: desc(appLogs.createdAt),
+    with: {
+      user: {
+        columns: {
+          email: true,
+          id: true,
+        },
+        with: {
+          userDetails: {
+            columns: {
+              firstName: true,
+              lastName: true,
+              phoneNumber: true,
+            },
+          },
+        },
+      },
+    },
+  });
 
   const countPromise = db
     .select({ count: sql<number>`count(*)` })
@@ -135,7 +152,7 @@ export async function getAppLogsList({
   const total = Number(countResult[0].count);
 
   return {
-    data: data as AppLog[],
+    data: data as any[],
     meta: { page, limit, total, totalPages: Math.ceil(total / limit) }
   };
 }

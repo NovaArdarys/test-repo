@@ -14,7 +14,7 @@ const app = new Hono();
 app.use(checkAccessToken)
   .get('/profile',
     validate({
-      query: z.object()
+      query: z.object({})
     }),
     getUserProfile
   )

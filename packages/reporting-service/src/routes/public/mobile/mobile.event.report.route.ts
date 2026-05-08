@@ -45,19 +45,22 @@ app.post(
 
 app.post(
   "/delivery-confirmation/:id/beneficiary",
-  validate({ body: CreateDeliveryEventReportSchema, param: idParamSchema }),
+  validate({ param: idParamSchema }),
+  validate({ body: CreateDeliveryEventReportSchema }),
   createEventReportDeliveryBeneficiaryHandler
 );
 
 app.post(
   "/delivery-confirmation/:id/driver",
-  validate({ body: CreateDeliveryEventReportSchema, param: idParamSchema }),
+  validate({ param: idParamSchema }),
+  validate({ body: CreateDeliveryEventReportSchema }),
   createEventReportDeliveryDriverHandler
 );
 
 app.put(
   "/:id",
-  validate({ param: idParamSchema, body: UpdateEventReportSchema }),
+  validate({ param: idParamSchema }),
+  validate({ body: UpdateEventReportSchema }),
   updateEventReportHandler
 );
 

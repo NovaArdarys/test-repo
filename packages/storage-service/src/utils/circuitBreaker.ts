@@ -24,7 +24,7 @@ export async function callWithBreaker<T>(
   const now = Date.now();
   const openUntil = await redisShared.get(openKey);
   if (openUntil && now < Number(openUntil)) {
-    throw new Error(`Circuit open for ${serviceName}`);
+    throw new Error(`Terlalu banyak melakukan permintaan silahkan coba lagi beberapa menit`);
   }
 
   try {

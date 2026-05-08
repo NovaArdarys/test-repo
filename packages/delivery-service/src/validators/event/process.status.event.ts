@@ -10,6 +10,8 @@ export const processStatusSchema = z.object({
     "SYSTEM_REPORT",
     "AI_GENERATION",
   ]),
+  variant: z.enum(["information", "success", "warning"]).optional().default("information"),
+
   entityId: z.string().optional(),
   kitchenId: z.string().min(1),
   beneficiaryId: z.string().optional(),

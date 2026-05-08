@@ -6,11 +6,11 @@ import type { EmailJob } from '@/jobs/types/email.type';
 const transporter = nodemailer.createTransport(emailConfig);
 
 export const sendEmail = async ({ type, to, data }: EmailJob) => {
+  console.log(emailConfig, "=====smtp-config======");
+
   let subject = "";
   let html = "";
   let text = "";
-
-  console.log(to, "=====to=====");
 
   switch (type) {
 
@@ -40,7 +40,7 @@ export const sendEmail = async ({ type, to, data }: EmailJob) => {
   }
 
   const info = await transporter.sendMail({
-    from: '"Your App" <andani.kamia@multiintegra-digital.co.id>',
+    from: `"MBG" <${process.env.EMAIL_USER || 'your-email@example.com'}>`,
     to,
     subject,
     text,

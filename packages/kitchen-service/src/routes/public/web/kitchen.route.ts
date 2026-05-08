@@ -3,7 +3,7 @@ import { validate } from '@/middleware/validate.middleware';
 import { permission } from '@/middleware/permission.middleware';
 import { checkAccessToken } from '@/middleware/auth.middleware';
 
-import { idParamSchema, userIdParamSchema, createKitchenSchema, assignUserToKitchenSchema, listKitchensQuerySchema } from '@/validator';
+import { idParamSchema, userIdParamSchema, createKitchenSchema, assignUserToKitchenSchema, listKitchensQuerySchema, paginationSchema } from '@/validator';
 
 import {
   listKitchensHandler,
@@ -12,8 +12,11 @@ import {
   updateKitchenHandler,
   deleteKitchenHandler,
   assignUserToKitchenHandler,
-  unassignUserFromKitchenHandler
+  unassignUserFromKitchenHandler,
+  getKitchenDeliveriesHandler
 } from '@/controllers/public/web/kitchen.controller';
+
+import { exportKitchensHandler } from '@/controllers/public/web/kitchen.export.controller';
 
 const app = new Hono();
 
@@ -24,6 +27,9 @@ app.get(
   validate(listKitchensQuerySchema, 'query'),
   listKitchensHandler
 );
+
+// IMPORTANT: /export must be before /:id
+app.get('/export', exportKitchensHandler);
 
 app.post(
   '/',
@@ -37,6 +43,13 @@ app.get(
   // permission(),
   validate(idParamSchema, 'param'),
   getKitchenByIdHandler
+);
+
+app.get(
+  '/:id/deliveries',
+  validate(idParamSchema, 'param'),
+  validate(paginationSchema, 'query'),
+  getKitchenDeliveriesHandler
 );
 
 app.put(

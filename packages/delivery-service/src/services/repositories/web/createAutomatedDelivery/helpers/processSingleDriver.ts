@@ -7,9 +7,8 @@ import insertDeliveryDropoff from "./insert/insertDeliveryDropoff";
 import insertPickupDelivery from "./insert/insertDeliveryPickup";
 import insertDriverLocation from "./insert/insertDriverLocation";
 import insertDriverStepReports from "./insert/insertDriverStepReports";
+import calcPickupETAs from "../lib/calcPickupETAs";
 
-import { deliveries } from "@/db/schemas";
-import { eq } from "drizzle-orm";
 import generateDeliveryMarkdownFull, { MdDeliveryLog } from "../lib/testing-purpose/generateDeliveryMarkdownFull";
 import getDriverStepReportsByDailyReportId from "./fetcher/fetchDailyReport";
 import createDriverDeliveryStepReports from "./insert/insertDriverDeliveryStepReports";
@@ -22,13 +21,21 @@ export default async function processSingleDriver(
   const results: DeliveryResult[] = [];
   const dailyReportMap: Record<string, Record<string, string>> = {};
 
+  // Pre-compute chained PICKUP ETAs (dapur → A → B → C, 5 jam setelah dropoff pertama)
+  const pickupETAs = calcPickupETAs(args.units, {
+    pickupOffsetHours:     6,
+    speedKmPerHour:        30,
+    handlingMinutesPerStop: 15,
+  });
+
   for (let i = 0; i < args.units.length; i++) {
-    const unit = args.units[i];
+    const unit      = args.units[i];
+    const pickupETA = pickupETAs[i];
 
     //
     // PICKUP DELIVERY
     //
-    const pickup = await insertPickupDelivery(trx, args, unit);
+    const pickup = await insertPickupDelivery(trx, args, unit, pickupETA);
     await insertDriverLocation(trx, args, pickup);
 
     //
@@ -57,12 +64,7 @@ export default async function processSingleDriver(
       unit
     );
 
-    //
-    // ETA
-    //
-    await trx.update(deliveries)
-      .set({ estimatedDeliveryTime: unit.eta })
-      .where(eq(deliveries.id, delivery.id));
+    // ETA sudah di-set langsung di insertDeliveryDropoff (startTime & estimatedDeliveryTime = unit.eta)
 
     // Driver dengan 1 unit → 1 daily report + 1 step report
 

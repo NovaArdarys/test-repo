@@ -114,7 +114,11 @@ export async function setupConsumer(channel: Channel) {
 
   channel.consume(
     storageQueue.queue,
-    safeConsume(handleStorageEvent, channel),
+    safeConsume(handleStorageEvent, channel, {
+      serviceName: "school-storage",
+      getIdempotencyKey: (data: z.infer<typeof storageCommittedSchema>) => `${data.entityId}:${data?.storageId}:${data.entityType}:${(data as any)?._meta?.eventId ?? "none"}`
+    },),
+
     { noAck: false }
   );
 
@@ -155,7 +159,10 @@ export async function setupConsumer(channel: Channel) {
 
   channel.consume(
     userQueue.queue,
-    safeConsume(handleAssignToSchool, channel),
+    safeConsume(handleAssignToSchool, channel, {
+      serviceName: "school-assign-user",
+      getIdempotencyKey: (data: z.infer<typeof baseUserSchool>) => `${data.userId}:${data?.beneficiaryId}:${data.createdBy}:${(data as any)?._meta?.eventId ?? "none"}`
+    },),
     { noAck: false }
   );
 

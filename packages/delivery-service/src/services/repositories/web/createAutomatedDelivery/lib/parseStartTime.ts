@@ -2,20 +2,16 @@ import { DeliveryUnit } from "../types/domain";
 
 export default function parseStartTime(
   units: DeliveryUnit[],
+  baseDateStr: string,
   fallbackHour = 7
 ): Date {
 
-  if (!units.length) {
-    const d = new Date();
-    d.setHours(fallbackHour, 0, 0, 0);
-    return d;
-  }
+  const [year, month, day] = baseDateStr.split("-").map(n => parseInt(n));
 
   const first = units.find(u => u.deliveryTime);
 
   if (!first || !first.deliveryTime) {
-    const d = new Date();
-    d.setHours(fallbackHour, 0, 0, 0);
+    const d = new Date(year, month - 1, day, fallbackHour, 0, 0, 0);
     return d;
   }
 
@@ -25,8 +21,7 @@ export default function parseStartTime(
   const m = timeParts[1] ?? 0;
   const s = timeParts[2] ?? 0;
 
-  const d = new Date();
-  d.setHours(h, m, s, 0);
+  const d = new Date(year, month - 1, day, h, m, s, 0);
 
   return d;
 }

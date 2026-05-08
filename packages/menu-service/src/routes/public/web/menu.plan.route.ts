@@ -12,6 +12,9 @@ import {
   assignFoodToMenuPlanSchema,
   assignPlanDistributionSchema,
   unassignPlanDistributionQuerySchema,
+  retryFailedMenuJobsSchema,
+  fixBrokenMenuPlansSchema,
+  overrideDriverSchema
 } from '@/validator/menu.plan.validator';
 
 import {
@@ -28,12 +31,44 @@ import {
   // Distribution Handlers
   listPlanDistributionHandler,
   assignPlanDistributionHandler,
-  unassignPlanDistributionHandler
+  unassignPlanDistributionHandler,
+  retryFailedMenuJobsHandler,
+  fixBrokenMenuPlansHandler,
+  resetMenuDataHandler,
+  overrideDriverHandler
 } from '@/controllers/public/web/menu.plan.controller';
+
+
+import { 
+  exportFoodWasteHandler,
+  exportMenuPlansHandler 
+} from '@/controllers/public/web/menu.export.controller';
 
 const app = new Hono();
 
 app.use(checkAccessToken);
+
+app.post(
+  '/retry-failed-jobs',
+  validate({ body: retryFailedMenuJobsSchema }),
+  retryFailedMenuJobsHandler
+);
+
+app.post(
+  '/fix-broken-data',
+  validate({ body: fixBrokenMenuPlansSchema }),
+  fixBrokenMenuPlansHandler
+);
+
+app.post(
+  '/reset-data',
+  resetMenuDataHandler
+);
+
+
+// IMPORTANT: /export/food-waste must be before /:id
+app.get('/export/food-waste', exportFoodWasteHandler);
+app.get('/export', exportMenuPlansHandler);
 
 app.get(
   '/',
@@ -122,6 +157,13 @@ app.delete(
   validate(idParamSchema, 'param'),
   validate(unassignPlanDistributionQuerySchema, 'query'),
   unassignPlanDistributionHandler
+);
+
+app.put(
+  '/:id/beneficiaries/:beneficiaryId/driver',
+  validate(idParamSchema, 'param'),
+  validate({ body: overrideDriverSchema }),
+  overrideDriverHandler
 );
 
 export default app;

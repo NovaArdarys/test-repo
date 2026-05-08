@@ -80,6 +80,7 @@ app.get(
   }),
   getNotificationsByEntityHandler
 );
+app.patch("/read-all", markAllNotificationsAsReadHandler);
 app.patch(
   "/:id/read",
   validate({
@@ -87,7 +88,6 @@ app.patch(
   }),
   markNotificationAsReadHandler
 );
-app.patch("/read-all", markAllNotificationsAsReadHandler);
 app.delete(
   "/:id",
   validate({

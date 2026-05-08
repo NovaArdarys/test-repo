@@ -38,6 +38,7 @@ export const listUsersHandler = catchAsync(async (c) => {
   const isActive = query.isActive;
   const name = query.name;
   const role = query.role;
+  const kitchenId = query.kitchenId;
 
   const { page, limit, orderBy } = buildPaginationAndSort(
     query,
@@ -50,8 +51,9 @@ export const listUsersHandler = catchAsync(async (c) => {
   const result = await UserService.getUsersList({
     page,
     limit,
-    isActive,
+    isActive: isActive === "true" ? true : isActive === "false" ? false : undefined,
     role,
+    kitchenId,
     name,
     email: name,
     isAppManager: audit.isAppManager,
@@ -73,7 +75,7 @@ export const getUserProfile = catchAsync(async (c) => {
 });
 
 export const createUserHandler = catchAsync(async (c) => {
-  const data = await c.req.parseBody() as unknown as CreateUserInput;
+  const data = c.get('validatedData')?.body as unknown as CreateUserInput;
   const audit = getAuditFields(c);
 
   const newUser = await UserService.createUser({
@@ -95,21 +97,30 @@ export const getUserByIdHandler = catchAsync(async (c) => {
 
 export const updateUserHandler = catchAsync(async (c) => {
   const id = c.req.param('id');
-  const { email, password, driverCapacity, address, dateOfBirth, firstName, lastName, phoneNumber, roleId, isActive, domainId, createdBy } = await c.get("validatedData").body as unknown as registerSchemaType;
+  const body = await c.get("validatedData").body as any;
+  const { email, password, driverCapacity, address, dateOfBirth, phoneNumber, roleId, isActive, domainId, createdBy, fullName, imageURL, storageId } = body;
+  let { firstName, lastName } = body;
+
   const audit = getAuditFields(c);
 
-  console.log(c.get("validatedData").body, "=====test======");
+  if (fullName && (!firstName || !lastName)) {
+    const parts = fullName.trim().split(/\s+/);
+    if (!firstName) firstName = parts[0] || "";
+    if (!lastName) lastName = parts.slice(1).join(" ") || "";
+  }
 
   const result = await updateUserAll(id, {
     email,
-    password: "",
-    isActive
+    password: password || undefined,
+    isActive: isActive
   }, {
     address: address || "",
     dateOfBirth: dateOfBirth || new Date(),
     firstName: firstName || "",
     lastName: lastName || "",
     phoneNumber: phoneNumber || "",
+    imageURL,
+    storageId,
   }, roleId || "");
 
 
@@ -172,7 +183,7 @@ export const getUserDetailsHandler = catchAsync(async (c) => {
 
 
 export const updateUserDetailsHandler = catchAsync(async (c) => {
-  const data = await c.req.parseBody() as unknown as UpdateUserDetailInput;
+  const data = c.get('validatedData')?.body as unknown as UpdateUserDetailInput;
   const audit = getAuditFields(c);
 
   const user = await UserService.updateUser(audit.userId, { ...data, updated_by: audit.updatedBy });

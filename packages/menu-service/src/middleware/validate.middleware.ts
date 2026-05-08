@@ -71,12 +71,24 @@ export const validate = (
           case "query":
             data = c.req.query();
             break;
-          default:
-            const contentType = c.req.header?.("content-type") ?? "";
-            data = contentType.includes("application/json")
-              ? await c.req.json?.()
-              : await c.req.parseBody?.();
+          default: {
+            const contentType = c.req.header("content-type") ?? "";
+            if (contentType.includes("application/json")) {
+              data = await c.req.json?.();
+            } else {
+              const rawBody = await c.req.parseBody?.({ all: true }) || {};
+              data = {};
+              for (const [key, value] of Object.entries(rawBody)) {
+                // Normalisasi key[] -> key
+                const isArrayKey = key.endsWith("[]");
+                const cleanKey = isArrayKey ? key.slice(0, -2) : key;
+
+                // Pastikan jika key[] atau value aslinya array, tetap jadi array
+                data[cleanKey] = isArrayKey ? (Array.isArray(value) ? value : [value]) : value;
+              }
+            }
             break;
+          }
         }
 
         const parsed = schema.parse(data);

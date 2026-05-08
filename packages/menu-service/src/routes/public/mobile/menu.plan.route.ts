@@ -22,10 +22,11 @@ app.use(checkAccessToken);
 app.get(
   '/:entity',
   validate({
-    query: listMenuPlansQuerySchema, param: z.object({
+    param: z.object({
       entity: entityTypeEnum
     }),
   }),
+  validate({ query: listMenuPlansQuerySchema }),
   listMenuPlansHandler 
 );
 

@@ -9,6 +9,7 @@ export const processStatusSchema = z.object({
     "BENEFICIARY_REPORT",
     "SYSTEM_REPORT",
     "AI_GENERATION",
+    "QNA",
   ]),
   entityId: z.string().optional(),
   kitchenId: z.string().min(1),
@@ -26,6 +27,7 @@ export const processStatusSchema = z.object({
   title: z.string().min(1),
   message: z.string().optional(),
   timestamp: z.string().default(() => new Date().toISOString()),
+  variant: z.enum(["information", "success", "warning"]).optional().default("information"),
 
 });
 

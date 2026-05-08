@@ -13,6 +13,9 @@ import { getDriverDeliveries } from "@/services/repositories/daily.report.driver
 import { getDailyReportsListSPPG } from "@/services/repositories/daily.report.sppg.service";
 import { getDriverDeliveriesV2 } from "@/services/repositories/mobile/daily.report.driver.service";
 import { resolveEntityId } from "@/utils/resolveEntity";
+import { getListUsersByKitchen } from "@/services/repositories/additional/get.user.by.kitchen.service";
+import { resolveKitchenId } from "@/services/repositories/additional/get.kitchen.by.user.service";
+import { sendProcessStatusNotification } from "@/utils/notificationHelper";
 
 const getAuditFields = (c: Context) => ({
   createdBy: c.get('userId'),
@@ -33,7 +36,7 @@ export const listDailyReportsHandler = catchAsync(async (c: Context) => {
   const query = c.req.query();
   const audit = getAuditFields(c);
   const page = parseInt(query.page || '1');
-  const limit = parseInt(query.limit || '10');
+  let limit = parseInt(query.limit || '10');
   const search = query.search || '';
   const typeOfReport = query.typeOfReport || '';
 
@@ -49,6 +52,10 @@ export const listDailyReportsHandler = catchAsync(async (c: Context) => {
 
   if (isEmpty(entityId)) {
     return c.json({ message: "User belum punya lokasi penempatan" }, 400);
+  }
+
+  if (entity === "driver" && !query.limit) {
+    limit = 50;
   }
 
   if (entity === "driver") {
@@ -118,11 +125,88 @@ export const getDailyReportHandler = catchAsync(async (c: Context) => {
 export const updateStepReportHandler = catchAsync(async (c: Context) => {
   const id = c.req.param("id");
   const body = await c.get("validatedData").body;
+  const { createdBy, domain: actorDomain, driverId, kitchenId, beneficiaryId } = getAuditFields(c);
+
+  const entityId = resolveEntityId({
+    actorDomain,
+    kitchenId,
+    beneficiaryId,
+    driverId,
+  });
+
+  if (isEmpty(entityId)) {
+    return c.json({ message: "User belum punya lokasi penempatan" }, 400);
+  }
+
+  const kitchenByUser = await resolveKitchenId({
+    entityType: actorDomain,
+    entityId: entityId || "",
+  });
+
+
   const updated = await updateStepReport(id, { ...body, updatedBy: c.get("userId") });
   const report = await getDailyReportWithoutMaskById(updated.dailyReportId);
 
   if (report) {
     console.log("sending to publisher");
+
+    if (actorDomain === "beneficiary") {
+      const users = await getListUsersByKitchen({ kitchenId: kitchenByUser, entityTypes: ["kitchen", "driver"] });
+      users.forEach((userId) => {
+        sendProcessStatusNotification({
+          status: "COMPLETED",
+          basePayload: {
+            variant: "information",
+            entityType: "KITCHEN_REPORT",
+            entityId: updated.id,
+            kitchenId: kitchenByUser,
+            beneficiaryId: undefined,
+            relatedId: undefined,
+            relatedType: undefined,
+            jobId: undefined,
+            date: new Date().toISOString().split("T")[0],
+            progress: 100,
+            result: updated,
+            error: undefined,
+            userActorId: updated.updatedBy!,
+          },
+          config: {
+            step: "Berhasil Membuat Laporan Harian",
+            title: "Laporan Harian",
+            message: `Laporan ${updated.subDomain}`,
+          },
+          recipientUserIds: [userId],
+        });
+      });
+    } else {
+      const users = await getListUsersByKitchen({ kitchenId: kitchenByUser, entityTypes: ["kitchen", "driver"] });
+      users.forEach((userId) => {
+        sendProcessStatusNotification({
+          status: "COMPLETED",
+          basePayload: {
+            variant: "information",
+            entityType: "KITCHEN_REPORT",
+            entityId: updated.id,
+            kitchenId: kitchenByUser,
+            beneficiaryId: undefined,
+            relatedId: undefined,
+            relatedType: undefined,
+            jobId: undefined,
+            date: new Date().toISOString().split("T")[0],
+            progress: 100,
+            result: updated,
+            error: undefined,
+            userActorId: updated.updatedBy!,
+          },
+          config: {
+            step: "Berhasil Membuat Laporan Harian",
+            title: "Laporan Harian",
+            message: `Laporan ${updated.subDomain}`,
+          },
+          recipientUserIds: [userId],
+        });
+      });
+    }
 
     const allCompleted = every(report.steps, 'isCompleted');
     await publishStepUpdate({
@@ -136,3 +220,4 @@ export const updateStepReportHandler = catchAsync(async (c: Context) => {
 
   return c.json({ data: updated });
 });
+

@@ -39,11 +39,14 @@ export const listMenusHandler = catchAsync(async (c: Context) => {
 });
 
 export const createMenuHandler = catchAsync(async (c: Context) => {
-  const body = await c.req.parseBody() as unknown as CreateMenuSchemaType;
+  const body = c.get('validatedData')?.body as CreateMenuSchemaType;
   const audit = getAuditFields(c);
+
+  console.log(body, "=====body=====");
 
   const newMenu = await createMenu({
     ...body,
+    createdBy: audit.createdBy,
   });
 
   return c.json({ data: newMenu, message: "Menu created" }, 201);
@@ -59,13 +62,13 @@ export const getMenuByIdHandler = catchAsync(async (c: Context) => {
 
 export const updateMenuHandler = catchAsync(async (c: Context) => {
   const { id } = c.req.param();
-  const body = await c.req.parseBody() as unknown as UpdateMenuSchemaType;
+  const body = c.get('validatedData')?.body as UpdateMenuSchemaType;
   const audit = getAuditFields(c);
 
   const updatedMenu = await updateMenu(id, {
     ...body,
     foodItemId: body.foodItemId!,
-    menuFoodPlanId: body.menuFoodPlanId!
+    menuFoodPlanId: body.menuFoodPlanId!,
   });
 
   return c.json({ data: updatedMenu, message: "Menu updated" }, 200);

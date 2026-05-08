@@ -5,7 +5,8 @@ import calcETAs from "./calcETAs";
 export default function calcClusterETAs(
   units: DeliveryUnit[],
   speedKmPerHour: number,
-  handlingMinutesPerStop: number
+  handlingMinutesPerStop: number,
+  baseDate: string
 ) {
 
   const clusters = units.reduce<Record<number, DeliveryUnit[]>>((acc, u) => {
@@ -21,7 +22,7 @@ export default function calcClusterETAs(
     const etaUnits = calcETAs(clusters[clusterId], {
       speedKmPerHour,
       handlingMinutesPerStop,
-    });
+    }, baseDate);
 
     etaUnits.forEach(u => results.push(u));
   }

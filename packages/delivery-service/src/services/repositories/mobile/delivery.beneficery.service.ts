@@ -141,8 +141,8 @@ export async function getDeliveriesListBeneficiary({
           'lat', b.lat,
           'category', b.category,
           'imageURL', b.image_url,
-          'smallPortion', b.small_portion,
-          'largePortion', b.large_portion,
+          'smallPortion', CASE WHEN ${deliveries.portionType} = 'SMALL' THEN ${deliveries.targetPortion} ELSE 0 END,
+          'largePortion', CASE WHEN ${deliveries.portionType} = 'LARGE' THEN ${deliveries.targetPortion} ELSE 0 END,
           'status', b.status
         )
         FROM ${deliveryBeneficiaries} db
@@ -193,8 +193,8 @@ export async function getDeliveryBeneficiary(deliveryId: string) {
       beneficiaryId: deliveryBeneficiaries.beneficiaryId,
       menuPlanId: deliveryBeneficiaries.menuPlanId,
       beneficiaryName: beneficiaries.name,
-      smallPortion: beneficiaries.smallPortion,
-      largePortion: beneficiaries.largePortion,
+      smallPortion: sql<number>`CASE WHEN ${deliveries.portionType} = 'SMALL' THEN ${deliveries.targetPortion} ELSE 0 END`.as("small_portion"),
+      largePortion: sql<number>`CASE WHEN ${deliveries.portionType} = 'LARGE' THEN ${deliveries.targetPortion} ELSE 0 END`.as("large_portion"),
       lat: beneficiaries.lat,
       lon: beneficiaries.lon,
       menuPlanStart: menuPlans.planStartDate,
@@ -207,6 +207,10 @@ export async function getDeliveryBeneficiary(deliveryId: string) {
     .innerJoin(
       menuPlans,
       eq(menuPlans.id, deliveryBeneficiaries.menuPlanId)
+    )
+    .innerJoin(
+      deliveries,
+      eq(deliveries.id, deliveryBeneficiaries.deliveryId)
     )
     .where(eq(deliveryBeneficiaries.deliveryId, deliveryId))
     .limit(1);

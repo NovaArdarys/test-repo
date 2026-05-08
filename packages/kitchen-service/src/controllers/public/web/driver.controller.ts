@@ -42,7 +42,7 @@ export const listDriversHandler = catchAsync(async (c: Context) => {
 
 
 export const createDriverHandler = catchAsync(async (c: Context) => {
-  const body = await c.req.parseBody() as unknown as CreateDriverSchemaType;
+  const body = c.get('validatedData')?.body as unknown as CreateDriverSchemaType;
   const audit = getAuditFields(c);
 
   const existingDriver = await getDriverByUserId(body.userId);
@@ -74,7 +74,7 @@ export const getDriverByIdHandler = catchAsync(async (c: Context) => {
 
 export const updateDriverHandler = catchAsync(async (c: Context) => {
   const { id } = c.req.param();
-  const body = await c.req.parseBody();
+  const body = c.get('validatedData')?.body;
   const audit = getAuditFields(c);
 
   const updatedDriver = await updateDriver(id, {

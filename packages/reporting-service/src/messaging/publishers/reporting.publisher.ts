@@ -25,6 +25,19 @@ export interface EventReportCommit {
   storageIds: string[];
 }
 
+export interface StorageDeleteEvent {
+  storageIds: string[];
+  paths: string[];
+}
+
+export async function publishStorageDelete(data: StorageDeleteEvent) {
+  try {
+    await safePublish(EXCHANGES.STORAGE, "storage.delete", data);
+  } catch (err) {
+    console.error("[STORAGE DELETE PUBLISH ERROR]", err);
+  }
+}
+
 export async function publishEventReportCommit(data: EventReportCommit) {
   try {
     await safePublish(EXCHANGES.REPORT, "client.storage.commit", data);

@@ -101,7 +101,7 @@ export async function getDashboardData(params: DashboardParams) {
 
   const today = format(new Date(), "yyyy-MM-dd");
 
-  const [summary] = await db
+  const [summaryPorsi] = await db
     .select({
       totalPorsi: sql<number>`
       COALESCE(
@@ -112,33 +112,49 @@ export async function getDashboardData(params: DashboardParams) {
         0
       )
     `,
-      totalPenerima: sql<number>`COUNT(DISTINCT ${beneficiaries.id})`,
     })
-    .from(beneficiaries)
-    .leftJoin(
-      menuPlanBeneficiaries,
-      and(
-        eq(menuPlanBeneficiaries.beneficiaryId, beneficiaries.id),
-        eq(menuPlanBeneficiaries.isDeleted, false)
-      )
-    )
+    .from(menuPlanBeneficiaries)
     .leftJoin(
       menuPlans,
       and(
         eq(menuPlans.id, menuPlanBeneficiaries.menuPlanId),
-        eq(menuPlans.isDeleted, false),
-        lte(menuPlans.planStartDate, today),
-        lte(menuPlans.planEndDate, today),
-        scopeOrAll(menuPlans.kitchenId, audit.kitchenId),
-        startDate ? gte(menuPlans.planStartDate, startDate) : undefined,
-        endDate ? lte(menuPlans.planEndDate, endDate) : undefined
+        eq(menuPlans.isDeleted, false)
       )
+    )
+    .leftJoin(
+      beneficiaries,
+      eq(beneficiaries.id, menuPlanBeneficiaries.beneficiaryId)
     )
     .where(
       and(
-        audit.isAppManager ? sql`TRUE` : scopeOrAll(beneficiaries.kitchenId, audit.kitchenId),
-        startDate ? gte(beneficiaries.joinedDate, startOfDay(parseISO(startDate))) : undefined,
-        endDate ? lte(beneficiaries.joinedDate, startOfDay(parseISO(endDate))) : undefined
+        eq(menuPlanBeneficiaries.isDeleted, false),
+        lte(menuPlans.planStartDate, today),
+        lte(menuPlans.planEndDate, today),
+        audit.isAppManager ? undefined : scopeOrAll(menuPlans.kitchenId, audit.kitchenId),
+        startDate ? gte(menuPlans.planStartDate, startDate) : undefined,
+        endDate ? lte(menuPlans.planEndDate, endDate) : undefined,
+        activeRegionScope
+      )
+    );
+
+  const [summaryPenerima] = await db
+    .select({
+      totalPenerima: sql<number>`
+        COALESCE(
+          SUM(
+            COALESCE(${beneficiaries.smallPortion}, 0)
+          + COALESCE(${beneficiaries.largePortion}, 0)
+          ),
+          0
+        )
+      `,
+    })
+    .from(beneficiaries)
+    .where(
+      and(
+        eq(beneficiaries.isDeleted, false),
+        audit.isAppManager ? undefined : scopeOrAll(beneficiaries.kitchenId, audit.kitchenId),
+        activeRegionScope
       )
     );
 
@@ -377,11 +393,35 @@ export async function getDashboardData(params: DashboardParams) {
     .orderBy(desc(suppliers.createdAt))
     .limit(5);
 
+  const beneficiaryRows = await db
+    .select({
+      id: beneficiaries.id,
+      name: beneficiaries.name,
+      address: beneficiaries.address,
+      kitchen: kitchens.name,
+      totalPorsi: sql<number>`COALESCE(${beneficiaries.smallPortion}, 0) + COALESCE(${beneficiaries.largePortion}, 0)`,
+      status: beneficiaries.status,
+    })
+    .from(beneficiaries)
+    .leftJoin(
+      kitchens,
+      eq(kitchens.id, beneficiaries.kitchenId)
+    )
+    .where(
+      and(
+        eq(beneficiaries.isDeleted, false),
+        audit.isAppManager ? undefined : scopeOrAll(beneficiaries.kitchenId, audit.kitchenId),
+        activeRegionScope
+      )
+    )
+    .orderBy(desc(beneficiaries.createdAt))
+    .limit(5);
+
 
   return {
     summary: {
-      totalPorsi: Number(summary?.totalPorsi ?? 0),
-      totalPenerima: Number(summary?.totalPenerima ?? 0),
+      totalPorsi: Number(summaryPorsi?.totalPorsi ?? 0),
+      totalPenerima: Number(beneficiaryRows?.length ?? 0),
       totalLaporan: Number(totalLaporan?.count ?? 0),
     },
     charts: {
@@ -391,6 +431,7 @@ export async function getDashboardData(params: DashboardParams) {
     tables: {
       events: latestEvents,
       suppliers: supplierRows,
+      beneficiaries: beneficiaryRows,
     },
   };
 }

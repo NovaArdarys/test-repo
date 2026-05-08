@@ -113,7 +113,7 @@ export function catchAsync<
         stack
       );
 
-      throw new HTTPException(statusCode, { message });
+      throw error;
     }
   }) as typeof fn;
 }

@@ -1,3 +1,4 @@
+process.env.TZ = 'Asia/Jakarta';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { serveStatic } from 'hono/bun';
@@ -14,30 +15,37 @@ import { checkBroker } from './messaging/broker';
 import type { ServerWebSocket } from 'bun';
 import { handleUpgrade } from './websocket/handler';
 import { eventMonitorRoute } from './routes/event.monitor.route';
+import { ALLOWED_ORIGINS } from '@/constants/config';
 import { swaggerUI } from '@hono/swagger-ui';
 
+// ─── App Type ────────────────────────────────────────────────────────────────
 type Variables = JwtVariables;
 export const clients = new Set<ServerWebSocket<unknown>>();
 
-const app = new Hono<{ Variables: Variables; }>();
-
-app
+// ─── App Instance ─────────────────────────────────────────────────────────────
+// NOTE: Use a single chained constructor — splitting into two statements
+// (const app = new Hono(); app.use(...)) breaks Hono's generic type inference
+// and causes MiddlewareHandler<Env> incompatibility errors on .get() calls.
+const app = new Hono<{ Variables: Variables; }>()
   .use(logger())
   .use('/api', timeout(5000))
+  // CORS 
   .use(
     '/api/*',
     cors({
-      origin: ['localhost', 'https://sip-mbg.bappenas.go.id', 'http://localhost:5173', 'http://128.199.77.145:3001', 'https://dev-mbg.midigi.id'], allowHeaders: ['X-Custom-Header', 'Upgrade-Insecure-Requests', 'Authorization', 'Content-Type'],
+      origin: ALLOWED_ORIGINS,
+      allowHeaders: ['X-Custom-Header', 'Upgrade-Insecure-Requests', 'Authorization', 'Content-Type'],
       allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
       exposeHeaders: ['Content-Length', 'X-Kuma-Revision'],
       credentials: true,
       maxAge: 600,
     }),
   )
+  //JWT Guard (legacy fallback, HS256)
   .use(
     '/auth/*',
     jwt({
-      secret: 'it-is-very-secret',
+      secret: process.env.JWT_FALLBACK_SECRET || 'it-is-very-secret',
       alg: 'HS256',
     }),
   )
@@ -57,7 +65,8 @@ app
       },
     }),
   )
-  .get('/swagger', swaggerUI({ url: '/api/openapi.json' })).get('/api/health', async (c) => {
+  .get('/swagger', swaggerUI({ url: '/api/openapi.json' }) as any)
+  .get('/api/health', async (c) => {
     const dbStatus = await checkDatabase();
     const rabbitStatus = await checkBroker();
 
@@ -68,7 +77,8 @@ app
       broker: rabbitStatus,
     });
   })
-  .route("/api/events", eventMonitorRoute)
+  // ─── Routes ─────────────────────────────────────────────────────────────────
+  .route('/api/events', eventMonitorRoute)
   .onError(errorHandler);
 
 const port = Number(3002);

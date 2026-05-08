@@ -1,3 +1,4 @@
+process.env.TZ = 'Asia/Jakarta';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { serveStatic } from 'hono/bun';
@@ -14,7 +15,9 @@ import { initializeConsumers } from './messaging/consumers';
 import { eventMonitorRoute } from './routes/event.monitor.route';
 import { compressImageToBase64 } from './utils/imageCompress';
 import { swaggerUI } from '@hono/swagger-ui';
+import { ALLOWED_ORIGINS } from '@/constants/config';
 
+// ─── App Type ────────────────────────────────────────────────────────────────
 type Variables = JwtVariables;
 
 export const clients = new Set<WebSocket>();
@@ -22,20 +25,23 @@ export const clients = new Set<WebSocket>();
 const app = new Hono<{ Variables: Variables; }>()
   .use(logger())
   .use('/api', timeout(5000))
+  // CORS 
   .use(
     '/api/*',
     cors({
-      origin: ['localhost', 'https://sip-mbg.bappenas.go.id', 'http://localhost:5173', 'http://128.199.77.145:3001', 'https://dev-mbg.midigi.id'], allowHeaders: ['X-Custom-Header', 'Upgrade-Insecure-Requests', 'Authorization', 'Content-Type'],
+      origin: ALLOWED_ORIGINS,
+      allowHeaders: ['X-Custom-Header', 'Upgrade-Insecure-Requests', 'Authorization', 'Content-Type'],
       allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
       exposeHeaders: ['Content-Length', 'X-Kuma-Revision'],
       maxAge: 600,
       credentials: true,
     })
   )
+  //JWT Guard (legacy fallback, HS256)
   .use(
     '/auth/*',
     jwt({
-      secret: 'it-is-very-secret',
+      secret: process.env.JWT_FALLBACK_SECRET || 'it-is-very-secret',
       alg: 'HS256',
     })
   )
@@ -52,9 +58,6 @@ const app = new Hono<{ Variables: Variables; }>()
     rewriteRequestPath: (path) => {
 
       const filePath = path.replace('/file-data/', '');
-
-      console.log(filePath);
-
       return filePath;
     }
   }))

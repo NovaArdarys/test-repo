@@ -2,10 +2,8 @@ import apiAiAgent from "@/utils/apiAiAgent";
 import { AxiosError } from "axios";
 
 export interface ChatPayload {
-  user_id: string;
-  conversation_id: string;
   message: string;
-  context: {
+  context?: {
     chart_preference?: string;
     date_range?: {
       start: string;
@@ -18,10 +16,7 @@ export interface ChatPayload {
 
 export async function sendToAIAgent(payload: ChatPayload) {
   try {
-    const res = await apiAiAgent.post(
-      "/chat/",
-      payload
-    );
+    const res = await apiAiAgent.post("/prompt/", payload);
     return res.data;
   } catch (err) {
     const e = err as AxiosError;

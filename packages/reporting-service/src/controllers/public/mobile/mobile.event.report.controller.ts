@@ -6,6 +6,8 @@ import {
   getEventReports,
   updateEventReport,
   softDeleteEventReport,
+  linkStoragesToEventReport,
+  syncStoragesForEventReport,
 } from "@/services/repositories/event.report.service";
 
 import {
@@ -95,6 +97,15 @@ export const createEventReportHandler = catchAsync(async (c: Context) => {
     createdBy,
   });
 
+  if (newReport && body.storageIds?.length) {
+    const entityType = `incident_report_${actorDomain}`;
+    await linkStoragesToEventReport(body.storageIds, newReport.id, entityType);
+    await publishEventReportCommit({
+      entityId: newReport.id,
+      entityType: entityType ?? `incident_report_${actorDomain}`,
+      storageIds: body.storageIds,
+    });
+  }
 
   if (newReport) {
 
@@ -104,6 +115,7 @@ export const createEventReportHandler = catchAsync(async (c: Context) => {
         sendProcessStatusNotification({
           status: "COMPLETED",
           basePayload: {
+            variant: "warning",
             entityType: "KITCHEN_REPORT",
             entityId: newReport.id,
             kitchenId: kitchenByUser,
@@ -131,6 +143,7 @@ export const createEventReportHandler = catchAsync(async (c: Context) => {
         sendProcessStatusNotification({
           status: "COMPLETED",
           basePayload: {
+            variant: "warning",
             entityType: "KITCHEN_REPORT",
             entityId: newReport.id,
             kitchenId: kitchenByUser,
@@ -184,6 +197,18 @@ export const updateEventReportHandler = catchAsync(async (c: Context) => {
     updatedBy,
   });
 
+  if (updatedReport) {
+    const entityType = `incident_report_${domain}`;
+    await syncStoragesForEventReport(updatedReport.id, body.storageIds ?? [], entityType);
+    if (body.storageIds?.length) {
+      await publishEventReportCommit({
+        entityId: updatedReport.id,
+        entityType: entityType ?? `incident_report_${domain}`,
+        storageIds: body.storageIds,
+      });
+    }
+  }
+
   return c.json({ data: updatedReport, message: "Event report updated" }, 200);
 });
 
@@ -195,3 +220,5 @@ export const softDeleteEventReportHandler = catchAsync(async (c: Context) => {
 
   return c.json({ message: "Event report soft deleted" }, 200);
 });
+
+

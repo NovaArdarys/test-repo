@@ -66,6 +66,7 @@ export const menuPlanBeneficiaries = pgTable('menu_plan_beneficiaries', {
   createdBy: uuid('created_by'),
 });
 
+
 export const foodConsumptionItems = pgTable("food_consumption_items", {
   id: uuid("id").primaryKey().defaultRandom(),
 
@@ -115,5 +116,4 @@ export const foodConsumptionNotes = pgTable("food_consumption_notes", {
   updatedAt: timestamp("updated_at"),
   updatedBy: uuid("updated_by"),
 });
-
 

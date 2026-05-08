@@ -29,7 +29,13 @@ export const RegisterSchema = z.object({
   domainId: z.string().optional(),
 
   driverCapacity: z.coerce.number().optional(),
-  isActive: z.coerce.boolean().optional(),
+  isActive: z.preprocess((val) => {
+    if (typeof val === 'string') {
+      if (val.toLowerCase() === 'true') return true;
+      if (val.toLowerCase() === 'false') return false;
+    }
+    return val;
+  }, z.boolean()).optional(),
 
   ...UserDetailSchema.shape,
 });

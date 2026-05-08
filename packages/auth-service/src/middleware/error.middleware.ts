@@ -72,7 +72,7 @@ const handleDatabaseError = (error: DatabaseError) => {
 export const errorConverter = (
   error: any
 ): ApiError => {
-  if (error instanceof ApiError) return error;
+  if (error instanceof ApiError || (error && typeof error === 'object' && 'statusCode' in error && 'details' in error)) return error;
 
   if (isAxiosError(error)) {
     console.log("===== axios =====");
@@ -105,10 +105,9 @@ export const errorConverter = (
   }
 
   if (error instanceof HTTPException) {
-
-
     return new ApiError(error.status, {
       message: error.message,
+      details: (error as any).details || [],
       isOperational: true,
     });
   }

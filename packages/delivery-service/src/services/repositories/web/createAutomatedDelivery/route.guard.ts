@@ -5,6 +5,7 @@ import { purgeRoutingByMenuPlan } from "./purge.delivery.service";
 import { createAutoDelivery } from "./delivery.auto.v2.service";
 import { driverRoutingSensitiveDiff } from "./lib/driverDiff";
 import { db } from "@/db";
+import fetchBeneficiaries from "./helpers/fetcher/fetchBeneficiaries";
 
 export interface RegenerateRoutingInput {
   trx: Trx;
@@ -26,6 +27,13 @@ export async function safeRegenerateRouting(args: {
     .select()
     .from(menuPlans)
     .where(eq(menuPlans.id, args.menuPlanId));
+
+  const result = await db.transaction(async trx => {
+    const beneficiaries = await fetchBeneficiaries(trx, args.menuPlanId);
+    if (beneficiaries) { }
+
+  });
+
 
   if (!plan) return;
 

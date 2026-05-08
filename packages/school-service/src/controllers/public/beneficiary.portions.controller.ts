@@ -58,7 +58,7 @@ export const listBeneficiaryPortionsHandler = catchAsync(async (c: Context) => {
 });
 
 export const createBeneficiaryPortionsHandler = catchAsync(async (c: Context) => {
-  const body = (await c.req.parseBody()) as unknown as CreateBeneficiaryPortionsSchemaType;
+  const body = (c.get('validatedData')?.body) as unknown as CreateBeneficiaryPortionsSchemaType;
   const audit = getAuditFields(c);
 
   const newClassroom = await createBeneficiaryPortions({
@@ -85,7 +85,7 @@ export const getBeneficiaryPortionsByIdHandler = catchAsync(async (c: Context) =
 
 export const updateBeneficiaryPortionsHandler = catchAsync(async (c: Context) => {
   const { id } = c.req.param();
-  const body = (await c.req.parseBody()) as unknown as CreateBeneficiaryPortionsSchemaType;
+  const body = (c.get('validatedData')?.body) as unknown as CreateBeneficiaryPortionsSchemaType;
   const audit = getAuditFields(c);
 
   const existing = await getBeneficiaryPortionsById(id);
@@ -121,7 +121,7 @@ export const deleteBeneficiaryPortionsHandler = catchAsync(async (c: Context) =>
 });
 
 export const bulkUpdateTotalStudentsHandler = catchAsync(async (c: Context) => {
-  const body = (await c.req.parseBody()) as unknown as BulkUpdateTotalBeneficiarySchemaType;
+  const body = (c.get('validatedData')?.body) as unknown as BulkUpdateTotalBeneficiarySchemaType;
 
   if (!Array.isArray(body.items) || body.items.length === 0) {
     throw new ApiError(400, { message: "No update items provided." });

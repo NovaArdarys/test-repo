@@ -60,8 +60,8 @@ export const getUserRolePermissonsClientService = (data: { roleId: string; }) =>
   return requestWithRetry(
     "getUserRolePermissons",
     "getUserRolePermissons",
-    `/private/role/${data.roleId}/permissons`,
-    "POST",
+    `/private/role/${data.roleId}/permissions`,
+    "GET",
     data
   );
 };
@@ -76,7 +76,8 @@ export const startUserServiceRetryWorker = async (stopSignal?: () => boolean) =>
 
     switch (fn) {
       case "getUserRolePermissons":
-        path = `/private/role/${data.roleId}/permissons`;
+        path = `/private/role/${data.roleId}/permissions`;
+        method = "GET";
         break;
       default:
         console.error("[Retry] Unknown job function:", fn);

@@ -4,7 +4,15 @@ import { permission } from '@/middleware/permission.middleware'; // Asumsi middl
 
 import { idParamSchema, paginationSchema } from '@/validator/global.validator';
 import { CreateRoleSchema, UpdateRoleSchema } from '@/validator/role.permission.validator';
-import { createRoleHandler, deleteRoleHandler, getRoleByIdHandler, listRolesHandler, updateRoleHandler } from '@/controllers/public/role.permission.management.controller';
+import { 
+  createRoleHandler, 
+  deleteRoleHandler, 
+  getPermissionsByRoleIdHandler, 
+  getRoleByIdHandler, 
+  listRolesHandler, 
+  syncPermissionsToRoleHandler, 
+  updateRoleHandler 
+} from '@/controllers/public/role.permission.management.controller';
 import { checkAccessToken } from '@/middleware/auth.middleware';
 
 const app = new Hono();
@@ -35,6 +43,12 @@ app.use(checkAccessToken)
     // permission(),
     validate(idParamSchema, 'param'),
     deleteRoleHandler
+  )
+  .get('/:roleId/permissions',
+    getPermissionsByRoleIdHandler
+  )
+  .post('/:roleId/sync-permissions',
+    syncPermissionsToRoleHandler
   );
 
 export default app;

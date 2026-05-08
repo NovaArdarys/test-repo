@@ -65,6 +65,7 @@ export async function getUsersList({
   name,
   email,
   role,
+  kitchenId,
   isAppManager,
   author,
   orderBy = []
@@ -74,6 +75,7 @@ export async function getUsersList({
   isActive?: boolean;
   name?: string;
   role?: string;
+  kitchenId?: string;
   email?: string;
   isAppManager?: boolean;
   author?: string;
@@ -93,13 +95,27 @@ export async function getUsersList({
       )`
       : undefined;
 
+  const roleStr = typeof role === "string" ? role.toUpperCase() : "";
+  const isDriverFilter = roleStr === "DRIVER" ? sql` OR ${users.id} IN (SELECT user_id FROM drivers WHERE is_deleted = false)` : sql``;
+  const isKitchenFilter = roleStr === "KITCHEN" || roleStr === "DAPUR" ? sql` OR ${users.id} IN (SELECT user_id FROM user_kitchens WHERE is_deleted = false)` : sql``;
+  const isBeneficiaryFilter = roleStr === "BENEFICIARY" || roleStr === "SEKOLAH" ? sql` OR ${users.id} IN (SELECT user_id FROM user_beneficiaries WHERE is_deleted = false)` : sql``;
+
   const roleFilter = role
-    ? sql`${users.id} IN (
-      SELECT ur.user_id
-      FROM user_roles ur
-      JOIN roles r ON r.id = ur.role_id
-      WHERE r.id = ${role}
+    ? sql`(
+      ${users.id} IN (
+        SELECT ur.user_id
+        FROM user_roles ur
+        JOIN roles r ON r.id = ur.role_id
+        WHERE (r.name ILIKE ${`%${role}%`} OR CAST(r.id AS TEXT) = ${role})
+      )
+      ${isDriverFilter}
+      ${isKitchenFilter}
+      ${isBeneficiaryFilter}
     )`
+    : undefined;
+
+  const kitchenFilter = kitchenId
+    ? sql`(${users.id} IN (SELECT user_id FROM user_kitchens WHERE kitchen_id = ${kitchenId} AND is_deleted = false) OR ${users.id} IN (SELECT user_id FROM drivers WHERE kitchen_id = ${kitchenId} AND is_deleted = false))`
     : undefined;
 
   let emailOrName: SQL | undefined;
@@ -122,6 +138,7 @@ export async function getUsersList({
     extra: [
       emailOrName,
       roleFilter,
+      kitchenFilter,
       !isAppManager
         ? sql`
           (
@@ -158,6 +175,7 @@ export async function getUsersList({
     },
     with: {
       userDetails: true,
+      drivers: true,
       userRoles: {
         with: {
           role: true,
@@ -214,6 +232,7 @@ export async function getUserById(id: string) {
       fullName: sql<string>`CONCAT(${userDetails.firstName}, ' ', ${userDetails.lastName})`,
       imageURL: userDetails.imageURL,
       driverProfile: {
+        id: drivers.id,
         licenseNumber: drivers.licenseNumber,
         portionCapacity: drivers.portionCapacity
       },
@@ -244,8 +263,8 @@ export async function getUserById(id: string) {
     .from(users)
     .innerJoin(userDetails, eq(userDetails.userId, users.id))
 
-    .leftJoin(userKitchens, eq(userKitchens.userId, users.id))
-    .leftJoin(drivers, eq(drivers.userId, users.id))
+    .leftJoin(userKitchens, and(eq(userKitchens.userId, users.id), eq(userKitchens.isDeleted, false)))
+    .leftJoin(drivers, and(eq(drivers.userId, users.id), eq(drivers.isDeleted, false)))
 
     .leftJoin(
       kitchens,
@@ -253,10 +272,10 @@ export async function getUserById(id: string) {
     )
 
     .leftJoin(provinces, eq(provinces.id, kitchens.provinceId))
-    .leftJoin(userBeneficiaries, eq(userBeneficiaries.userId, users.id))
-    .leftJoin(beneficiaries, eq(beneficiaries.id, userBeneficiaries.beneficiaryId))
-    .leftJoin(userRoles, eq(userRoles.userId, users.id))
-    .leftJoin(roles, eq(roles.id, userRoles.roleId))
+    .leftJoin(userBeneficiaries, and(eq(userBeneficiaries.userId, users.id), eq(userBeneficiaries.isDeleted, false)))
+    .leftJoin(beneficiaries, and(eq(beneficiaries.id, userBeneficiaries.beneficiaryId), eq(beneficiaries.isDeleted, false)))
+    .leftJoin(userRoles, and(eq(userRoles.userId, users.id), eq(userRoles.isDeleted, false)))
+    .leftJoin(roles, and(eq(roles.id, userRoles.roleId), eq(roles.isDeleted, false)))
     .where(and(eq(users.id, id), eq(users.isDeleted, false)))
     .limit(1);
 

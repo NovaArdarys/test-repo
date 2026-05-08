@@ -55,7 +55,7 @@ export const getSupplierHandler = catchAsync(async (c: Context) => {
 });
 
 export const createSupplierHandler = catchAsync(async (c: Context) => {
-  const body = await c.req.parseBody() as unknown as CreateSupplierSchemaType;
+  const body = c.get('validatedData')?.body as unknown as CreateSupplierSchemaType;
   const { domain: actorDomain, driverId, kitchenId, beneficiaryId, ...audit } = getAuditFields(c);
 
   const foodIdArray = body.foodIds as unknown as string[] || (body as any)["foodIds[]"] || [];
@@ -89,7 +89,7 @@ export const createSupplierHandler = catchAsync(async (c: Context) => {
 
 export const updateSupplierHandler = catchAsync(async (c: Context) => {
   const id = c.req.param("id");
-  const body = await c.req.parseBody();
+  const body = c.get('validatedData')?.body;
   const foodIdArray = body.foodIds as unknown as string[] || (body as any)["foodIds[]"] || [];
 
   const data = await updateSupplier(id, body, foodIdArray);

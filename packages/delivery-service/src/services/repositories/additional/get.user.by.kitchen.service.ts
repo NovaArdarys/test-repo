@@ -1,4 +1,4 @@
-import { eq, and } from "drizzle-orm";
+import { eq, and, or, sql, isNull } from "drizzle-orm";
 import { db } from "@/db";
 import {
   drivers,
@@ -65,8 +65,12 @@ export async function getListUsersByKitchen(params: {
       .where(
         and(
           eq(userBeneficiaries.isDeleted, false),
-          eq(beneficiaries.isDeleted, false),
-          eq(beneficiaries.status, "ACTIVE")
+          or(eq(beneficiaries.isDeleted, false), isNull(beneficiaries.isDeleted)),
+          or(
+            eq(sql`LOWER(${beneficiaries.status}::text)`, 'active'),
+            eq(sql`LOWER(${beneficiaries.status}::text)`, 'aktif'),
+            isNull(beneficiaries.status)
+          )
         )
       );
 

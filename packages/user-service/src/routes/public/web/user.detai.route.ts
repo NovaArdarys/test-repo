@@ -1,11 +1,12 @@
 import { Hono } from 'hono';
-import { validate } from '@/middleware/validate.middleware'; // Asumsi middleware validasi
-import { permission } from '@/middleware/permission.middleware'; // Asumsi middleware permission // Skema Validasi
+import { validate } from '@/middleware/validate.middleware';
+import { permission } from '@/middleware/permission.middleware';
 import {
   listUsersHandler, createUserHandler, getUserByIdHandler, updateUserHandler, deleteUserHandler,
   getUserProfile,
   updateUserDetailsHandler
 } from '@/controllers/public/user.management.controller';
+import { exportUsersHandler } from '@/controllers/public/user.export.controller';
 import { UserListQuerySchema } from '@/validator/role.permission.validator';
 import { createUserSchema, registerSchema, userDetailSchema } from '@/validator/user.validator';
 import { idParamSchema } from '@/validator/global.validator';
@@ -26,13 +27,18 @@ app.use(checkAccessToken)
     validate(userDetailSchema),
     updateUserDetailsHandler
   )
+  // IMPORTANT: /export must be BEFORE /:id to avoid param capture
+  .get('/export',
+    exportUsersHandler
+  )
   .get('/:id',
     validate(idParamSchema, 'param'),
     getUserByIdHandler
   )
   .put('/:id',
     // permission(),
-    validate({ body: registerSchema, param: idParamSchema }),
+    validate({ param: idParamSchema }),
+    validate({ body: registerSchema }),
     updateUserHandler
   )
   .delete('/:id',

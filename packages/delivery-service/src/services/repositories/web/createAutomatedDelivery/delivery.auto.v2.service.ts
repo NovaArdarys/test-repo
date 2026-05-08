@@ -39,19 +39,26 @@ async function executeAutoDelivery(
     throw new Error("Tidak ada driver dengan kapasitas valid");
   }
 
+  console.log(`[AutoDelivery] Kitchen ${data.kitchenId} has ${drivers.length} valid drivers:`, 
+    drivers.map(d => ({ id: d.id, email: d.userId, cap: d.portionCapacity }))
+  );
+
   const units = expandUnits(beneficiaries, kitchen, menuPlan);
 
   const clustered = clusterUnits(units, 5);
 
   const flattenedCluster = clustered.flat();
 
-  const assignments = assignDriverUnitsWithRefill(flattenedCluster, drivers);
+  // ── Shuffle drivers for start-position fairness ────────────────────────
+  const shuffledDrivers = drivers.slice().sort(() => Math.random() - 0.5);
+
+  const assignments = assignDriverUnitsWithRefill(flattenedCluster, shuffledDrivers);
 
   const flattenedUnits: DeliveryUnit[] = Object.values(assignments)
     .flat()
-    .sort((a, b) => a.orderIndex! - b.orderIndex!);
+    .sort((a, b) => a.globalOrderIndex! - b.globalOrderIndex!);
 
-  const etaUnits = calcClusterETAs(flattenedUnits, 30, 15);
+  const etaUnits = calcClusterETAs(flattenedUnits, 30, 15, menuPlan.planStartDate);
 
   const results: DeliveryResult[] = [];
 

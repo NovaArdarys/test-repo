@@ -133,7 +133,7 @@ export async function moveFileFromTmp(
     `/${tmpBucket}/${sourceObject}`
   );
 
-  await minioClient.removeObject(tmpBucket, sourceObject);
+  // await minioClient.removeObject(tmpBucket, sourceObject);
 
   const newUrl = `${process.env.MINIO_PUBLIC_URL}/${targetBucket}/${targetObject}`;
   return {
@@ -142,6 +142,17 @@ export async function moveFileFromTmp(
     fileUrl: newUrl,
     bucket: targetBucket,
   };
+}
+
+export async function deleteFileFromMinio(path: string): Promise<void> {
+  try {
+    const [bucket, ...rest] = path.split("/");
+    const objectName = rest.join("/");
+    if (!bucket || !objectName) return;
+    await minioClient.removeObject(bucket, objectName);
+  } catch (err) {
+    console.error(`[MinIO] Failed to delete ${path}:`, err);
+  }
 }
 
 export async function getImageBuffer(

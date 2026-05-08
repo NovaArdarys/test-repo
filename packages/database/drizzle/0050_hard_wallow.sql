@@ -1,1 +1,0 @@
-ALTER TABLE "food_items" DROP CONSTRAINT "food_items_name_unique";

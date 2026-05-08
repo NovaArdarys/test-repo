@@ -1,13 +1,15 @@
 import { deliveries } from "@/db/schemas";
 import { ProcessSingleDriverArgs } from "../../types/autoDelivery";
-import { DeliveryUnit } from "../../types/domain";
+import { ETAUnit } from "../../types/autoDelivery";
 import { generateDeliveryCode } from "../../lib/generateDeliveryCode";
 import { sql } from "drizzle-orm";
+import type { PickupETA } from "../../lib/calcPickupETAs";
 
 export default async function insertPickupDelivery(
   trx: any,
   args: ProcessSingleDriverArgs,
-  unit: DeliveryUnit
+  unit: ETAUnit,
+  pickupETA: PickupETA  // pre-computed chained ETA dari calcPickupETAs
 ) {
 
   const now = new Date();
@@ -27,11 +29,11 @@ export default async function insertPickupDelivery(
       driverId: args.driver.id,
       driverCapacity: args.driver.portionCapacity,
       deliveryDate: args.menuPlan.planStartDate,
-      startTime: now,
+      startTime: pickupETA.startTime,       // kapan driver BERANGKAT untuk ambil tray (chained)
       endTime: sql`NULL`,
-      estimatedDeliveryTime: sql`NULL`,
+      estimatedDeliveryTime: pickupETA.eta, // kapan driver TIBA untuk ambil tray (chained)
 
-      notes: `PICKUP | ${args.menuPlan.name} | portion: ${unit.portion}-${unit.type}`,
+      notes: `Pengambilan Tray: ${args.menuPlan.name} (${unit.portion} Porsi ${unit.type === 'SMALL' ? 'Kecil' : 'Besar'})`,
       deliveryCode: deliveryCode,
 
       status: "PENDING",

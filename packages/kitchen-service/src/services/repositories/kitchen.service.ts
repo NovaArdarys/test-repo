@@ -1,6 +1,6 @@
 import { db } from "@/db";
-import { kitchens, } from "@/db/schemas";
-import { eq, InferSelectModel, InferInsertModel, SQLWrapper, sql, and, inArray, ilike } from "drizzle-orm";
+import { kitchens, deliveries } from "@/db/schemas";
+import { eq, InferSelectModel, InferInsertModel, SQLWrapper, sql, and, inArray, ilike, desc } from "drizzle-orm";
 import { compact } from "lodash";
 
 export type Kitchen = InferSelectModel<typeof kitchens>;
@@ -19,7 +19,7 @@ export async function getKitchenById(id: string): Promise<Kitchen | null> {
           userDetails: true
         }
       },
-      deliveries: true,
+
       userKitchens: {
         where: (u, { eq, and }) => and(
           eq(u.isDeleted, false)
@@ -201,4 +201,42 @@ export async function softDeleteKitchen(id: string, updatedBy: string): Promise<
     .returning();
 
   return deletedKitchen ?? null;
+}
+
+export async function getPaginatedDeliveriesByKitchenId(
+  kitchenId: string,
+  page: number,
+  limit: number
+) {
+  const offset = (page - 1) * limit;
+
+  const data = await db.query.deliveries.findMany({
+    where: (d, { eq, and }) => and(
+      eq(d.kitchenId, kitchenId),
+      eq(d.isDeleted, false)
+    ),
+    orderBy: [desc(deliveries.createdAt)],
+    limit,
+    offset,
+  });
+
+  const countResult = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(deliveries)
+    .where(and(
+      eq(deliveries.kitchenId, kitchenId),
+      eq(deliveries.isDeleted, false)
+    ));
+
+  const total = Number(countResult[0]?.count || 0);
+
+  return {
+    data,
+    meta: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+    },
+  };
 }

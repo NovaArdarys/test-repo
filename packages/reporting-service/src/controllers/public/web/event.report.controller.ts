@@ -60,7 +60,7 @@ export const listEventReportsHandler = catchAsync(async (c: Context) => {
 });
 
 export const createEventReportHandler = catchAsync(async (c: Context) => {
-  const body = await c.req.parseBody() as unknown as CreateEventReportSchemaType;
+  const body = c.get('validatedData')?.body as unknown as CreateEventReportSchemaType;
   const { createdBy, domain, driverId, kitchenId, beneficiaryId } = getAuditFields(c);
 
   const entityId = resolveEntityId({
@@ -101,7 +101,7 @@ export const getEventReportByIdHandler = catchAsync(async (c: Context) => {
 
 export const updateEventReportHandler = catchAsync(async (c: Context) => {
   const { id } = c.req.param();
-  const body = await c.req.parseBody() as unknown as UpdateEventReportSchemaType;
+  const body = c.get('validatedData')?.body as unknown as UpdateEventReportSchemaType;
   const { updatedBy } = getAuditFields(c);
 
   const updatedReport = await updateEventReport(id, {
@@ -120,3 +120,5 @@ export const softDeleteEventReportHandler = catchAsync(async (c: Context) => {
 
   return c.json({ message: "Event report soft deleted" }, 200);
 });
+
+

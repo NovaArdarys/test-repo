@@ -41,17 +41,20 @@ app.post(
 app.get(
   '/:entity',
   validate({
-    query: ListDeliveriesQuerySchema,
     param: z.object({
       entity: entityTypeEnum
     })
+  }),
+  validate({
+    query: ListDeliveriesQuerySchema,
   }),
   listDeliveriesHandler
 );
 
 app.put(
   '/:id/status',
-  validate({ body: UpdateDeliveryStatusSchema, param: idParamSchema }),
+  validate({ param: idParamSchema }),
+  validate({ body: UpdateDeliveryStatusSchema }),
   updateDeliveryStatusHandler
 );
 

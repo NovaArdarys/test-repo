@@ -42,7 +42,6 @@ export const menuPlanWorker = new Worker(
     } catch (error: any) {
 
       if (error?.code === "23505" || error?.message?.includes("duplicate key")) {
-        await job.remove();
         return { skipped: true };
       }
 

@@ -20,7 +20,7 @@ export const forgotPasswordHandler = catchAsync(async (c) => {
   const resetToken = await generateResetToken({ email: findUser.email, id: findUser.id });
   const resetLink = `${process.env.FRONTEND_URL}/auth/reset-password/${resetToken}`;
 
-  await emailQueue.add(
+  const res = await emailQueue.add(
     "send-email", {
     type: "forgot-password",
     to: findUser.email,
@@ -29,9 +29,11 @@ export const forgotPasswordHandler = catchAsync(async (c) => {
     },
   },
     {
-      jobId: `email:${"forgot-password"}:${findUser.email}`
+      // jobId: `email-forgot-password-${findUser.email}-${Date.now()}`
+      // jobId: `email:forgot-password:${findUser.email}:${Date.now()}`
     }
   );
+
 
   return c.json({
     status: "success",
@@ -41,7 +43,7 @@ export const forgotPasswordHandler = catchAsync(async (c) => {
 
 
 export const resetPasswordHandler = catchAsync(async (c) => {
-  const { token, password, confirmPassword }: ResetPasswordSchemaType = await c.req.parseBody();
+  const { token, password, confirmPassword }: ResetPasswordSchemaType = c.get('validatedData')?.body;
 
   if (password !== confirmPassword) {
     throw new ApiError(HttpStatus.default.BAD_REQUEST, { message: "Password and confirmation do not match" });

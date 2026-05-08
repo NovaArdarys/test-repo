@@ -115,7 +115,7 @@ export const updateDeliveryStatusHandler = catchAsync(async (c: Context) => {
     updatedBy,
   });
 
-  if (updatedDelivery.deliveryOrder) {
+  if (updatedDelivery.deliveryOrder !== null && updatedDelivery.deliveryOrder !== undefined) {
     const kitchenByUser = await resolveKitchenId({
       entityType: actorDomain,
       entityId: entityId || "",
@@ -130,7 +130,7 @@ export const updateDeliveryStatusHandler = catchAsync(async (c: Context) => {
     const otherDeliveries = allDeliveries.filter(d => d.id !== deliveryId);
     const expectedOrder = otherDeliveries.length > 0
       ? Math.max(...otherDeliveries.map(d => d.deliveryOrder ?? 0)) + 1
-      : 1;
+      : 0;
 
     if (updatedDelivery.deliveryOrder !== expectedOrder) {
 
@@ -148,6 +148,7 @@ export const updateDeliveryStatusHandler = catchAsync(async (c: Context) => {
       await sendProcessStatusNotification({
         status: "FAILED",
         basePayload: {
+          variant: "warning",
           entityType: "DELIVERY",
           entityId: updatedDelivery.id,
           kitchenId: updatedDelivery.kitchenId,
@@ -203,6 +204,9 @@ export const updateDeliveryStatusHandler = catchAsync(async (c: Context) => {
     await sendProcessStatusNotification({
       status: "COMPLETED",
       basePayload: {
+        variant: status === "DELIVERED" ? "success" :
+          status === "IN_PROGRESS" ? "information" :
+            status === "PENDING" ? "information" : "warning",
         entityType: "DELIVERY",
         entityId: updatedDelivery.id,
         kitchenId: updatedDelivery.kitchenId,

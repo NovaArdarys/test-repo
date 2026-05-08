@@ -2,7 +2,7 @@ import { boolean, date, index, integer, pgTable, text, timestamp, uniqueIndex, u
 import { deliveryStatusEnum } from "./enums/enums";
 import { users } from "./user.schema";
 import { storage } from "./storage.schema";
-import { stepReports } from "./reporting.Schema";
+import { stepReports } from "./report.schema";
 
 export const deliveries = pgTable('deliveries', {
   id: uuid('id').primaryKey().defaultRandom(),

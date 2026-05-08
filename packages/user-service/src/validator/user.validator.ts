@@ -34,8 +34,8 @@ export const userDetailSchema = z
     address: z.string().optional(),
     dateOfBirth: z.string().pipe(z.coerce.date()).optional(),
     email: z.string().optional(),
-    storageId: z.string().optional(),
-    imageURL: z.string().optional(),
+    storageId: z.string().optional().nullable(),
+    imageURL: z.string().optional().nullable(),
 
     password: z.string().optional().nullable(),
     confirmationPassword: z.string().optional().nullable(),
@@ -77,7 +77,13 @@ export const registerSchema = userDetailSchema.safeExtend({
   email: z.string({ message: "Email wajib diisi" }),
   roleId: z.string().optional(),
   domainId: z.string().optional(),
-  isActive: z.coerce.boolean().optional(),
+  isActive: z.preprocess((val) => {
+    if (typeof val === 'string') {
+      if (val.toLowerCase() === 'true') return true;
+      if (val.toLowerCase() === 'false') return false;
+    }
+    return val;
+  }, z.boolean()).optional(),
   createdBy: z.string().optional(),
   driverCapacity: z.coerce.number().optional(),
 });
@@ -105,3 +111,10 @@ export const UpdateUserSchemaType = createUserSchema.partial().extend({
 });
 
 export type UpdateUserSchemaType = z.infer<typeof UpdateUserSchemaType>;
+
+export const updatePasswordSchema = z.object({
+  id: z.string().min(1, "ID is required"),
+  password: z.string().min(8, "Password must be at least 8 characters long"),
+});
+
+export type updatePasswordSchemaType = z.infer<typeof updatePasswordSchema>;

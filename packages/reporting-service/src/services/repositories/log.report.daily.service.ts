@@ -59,6 +59,29 @@ export async function getStepReportsWithFilter({
   else if (startDate) conditions.push(gte(dailyReports.date, startDate));
   else if (endDate) conditions.push(lte(dailyReports.date, endDate));
 
+  if (search) {
+    const like = `%${search}%`;
+    const searchLower = search.toLowerCase();
+    const orConditions = [
+      ilike(masterSteps.stepName, like),
+      ilike(userDetails.firstName, like),
+      ilike(sql`cast(${dailyReports.entityType} as text)`, like),
+      ilike(dailyReports.portionType, like),
+    ];
+
+    if (searchLower.includes("besar") || searchLower.includes("kecil")) {
+      orConditions.push(ilike(dailyReports.portionType, "DEFAULT"));
+    }
+    if (searchLower.includes("kecil")) {
+      orConditions.push(ilike(dailyReports.portionType, "SMALL"));
+    }
+    if (searchLower.includes("besar")) {
+      orConditions.push(ilike(dailyReports.portionType, "LARGE"));
+    }
+
+    conditions.push(or(...orConditions));
+  }
+
 
   const kitchenIdsNormalized = castArray(kitchenIds).filter(Boolean);
 

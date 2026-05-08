@@ -64,13 +64,40 @@ export async function getStepReportDetail(entityId?: string) {
       dailyReportId: true,
       subDomain: true,
       imageURL: true,
-      storageId: true
+      storageId: true,
+      updatedAt: true,
     },
     with: {
+      storage: {
+        columns: {
+          meta: true
+        }
+      },
+      updatedByUser: {
+        columns: {
+          email: true,
+        },
+        with: {
+          userDetails: {
+            columns: {
+              firstName: true,
+              lastName: true,
+            }
+          }
+        }
+      },
       dailyReport: {
         with: {
           menuPlan: {
             with: {
+              menuPlankitchen: {
+                columns: {
+                  name: true,
+                  lon: true,
+                  lat: true,
+                  address: true
+                }
+              },
               menuFoodItem: {
                 with: {
                   foodItem: {

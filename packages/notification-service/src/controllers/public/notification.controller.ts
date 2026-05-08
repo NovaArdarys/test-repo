@@ -11,7 +11,7 @@ export const listNotificationsHandler = catchAsync(async (c: Context) => {
   const data =
     await notificationService.getNotificationsByUserId({
       userId,
-      isRead: query?.isRead ?? false,
+      isRead: query?.isRead,
       limit: query?.limit ?? 10,
       page: query.page
     });

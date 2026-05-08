@@ -5,6 +5,7 @@ import { catchAsync } from "@/utils/catchAsync";
 import { Context } from "hono";
 import { foodQueue } from "@/jobs/queue/food.queue";
 import { getStorageByEntityIds, getStorageById } from "@/services/repositories/storage.service";
+import { mapReport } from "@/services/mapper/daily.report.mapper";
 
 export const analyzeData = catchAsync(async (c: Context) => {
   const body = await c.req.json();
@@ -66,19 +67,21 @@ export const analyzeData = catchAsync(async (c: Context) => {
 
 export const analyzeDataOld = catchAsync(async (c: Context) => {
   const body = await c.req.json();
-
   const { entityId, entityType, url, storageId } = body;
-
   const start = performance.now();
+
   let labels: any[] = [];
   let aiType: any = null;
   let stepStorages: any[] = [];
+  let stepReport: any = null;
+  let stepMapped: any = null;
+
   if (!url) {
     return c.json({ error: "image url required" }, 400);
   }
 
   if (entityId) {
-    const stepReport = await getStepReportDetail(entityId);
+    stepReport = await getStepReportDetail(entityId);
     stepStorages = await getStorageByEntityIds([entityId]);
 
     if (stepReport?.storageId) {
@@ -93,7 +96,7 @@ export const analyzeDataOld = catchAsync(async (c: Context) => {
     aiType = getAITypeFromStepOrder(
       stepReport.step.stepOrder,
       entityType,
-      stepReport.step.analysisType ?? undefined
+      stepReport.step.analysisType ?? undefined,
     );
 
     if (!aiType) {
@@ -103,19 +106,20 @@ export const analyzeDataOld = catchAsync(async (c: Context) => {
     labels =
       aiType === "food"
         ? stepReport?.dailyReport?.menuPlan?.menuFoodItem
-          .flatMap((item) =>
-            (item.foodItem.ingredients || []).map((ing) => ({
+          .flatMap((item: any) =>
+            (item.foodItem.ingredients || []).map((ing: any) => ({
               id: ing.name?.trim() || "",
               en: ing.nameEn?.trim() || item.foodItem?.name?.trim() || "",
-            }))
+            })),
           )
-          .filter((l) => l.id && l.en)
+          .filter((l: any) => l.id && l.en)
         : [];
-    console.log(labels, "=====labels=====", stepStorages);
 
     if (aiType === "food" && labels.length === 0) {
       return c.json({ error: "No valid food labels found for AI request" }, 400);
     }
+
+    stepMapped = mapReport(stepReport);
   }
 
   if (!entityId) {
@@ -125,13 +129,17 @@ export const analyzeDataOld = catchAsync(async (c: Context) => {
 
   const image = await compressImageToBase64(url);
 
-  const result = await detectAI(aiType!, {
-    image,
-    labels: labels.map((l) => ({
-      id: l.id || "",
-      en: l.en || "",
-    })),
-  });
+  const result = await detectAI(
+    aiType!,
+    {
+      image,
+      labels: labels.map((l) => ({
+        id: l.id || "",
+        en: l.en || "",
+      })),
+    },
+    stepMapped,
+  );
 
   const end = performance.now();
   const processingTime = (end - start) / 1000;

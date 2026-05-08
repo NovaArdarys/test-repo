@@ -1,20 +1,20 @@
 import calcDistance from "../lib/calcDistanc";
 import {
   DeliveryUnit,
-  MenuPlanBeneficiariesRow,
+  BeneficiaryDeliveryRow,
   MenuPlanRow,
   KitchenRow
 } from "../types/domain";
 
 export default function expandUnits(
-  menuPlanBeneficiariesRow: MenuPlanBeneficiariesRow[],
+  beneficiaryRows: BeneficiaryDeliveryRow[],
   kitchen: KitchenRow,
   menuPlan: MenuPlanRow
 ): DeliveryUnit[] {
 
   const units: DeliveryUnit[] = [];
 
-  for (const b of menuPlanBeneficiariesRow) {
+  for (const b of beneficiaryRows) {
 
     if (b.smallPortion && b.smallPortion > 0) {
       units.push({
@@ -23,7 +23,8 @@ export default function expandUnits(
         menuPlanId: menuPlan.id,
         portion: b.smallPortion,
         type: "SMALL",
-        deliveryTime: b.smallDeliveryTime ?? "07:00",
+        deliveryDate: menuPlan.planStartDate,
+        deliveryTime: b.smallDeliveryTime ?? "08:00",
         distance: calcDistance(kitchen.lat, kitchen.lon, b.lat, b.lon),
         lat: b.lat,
         lon: b.lon,
@@ -40,7 +41,8 @@ export default function expandUnits(
         menuPlanId: menuPlan.id,
         portion: b.largePortion,
         type: "LARGE",
-        deliveryTime: b.largeDeliveryTime ?? "09:00",
+        deliveryDate: menuPlan.planStartDate,
+        deliveryTime: b.largeDeliveryTime ?? "10:00",
         distance: calcDistance(kitchen.lat, kitchen.lon, b.lat, b.lon),
         lat: b.lat,
         lon: b.lon,

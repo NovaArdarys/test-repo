@@ -1,13 +1,12 @@
 import axios from 'axios';
 
-const AI_URL = 'https://dev-mbg-be-ai-agent.midigi.id';
+const AI_URL = 'https://sip-mbg-api.bappenas.go.id/mbg-ai-analytic/api/v1';
 const API_KEY = 'food_detection_user_2024_secure';
 
 const apiAiAgent = axios.create({
   baseURL: AI_URL,
   headers: {
     'accept': 'application/json',
-    'X-API-Key': API_KEY,
     'Content-Type': 'application/json'
   },
   timeout: 20000000

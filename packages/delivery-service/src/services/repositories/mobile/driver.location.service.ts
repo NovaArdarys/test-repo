@@ -1,6 +1,7 @@
 import { db } from "@/db";
 import { driverLocations } from "@/db/schemas";
 import { eq, and, desc, sql, InferInsertModel, InferSelectModel } from "drizzle-orm";
+import redis from "@/constants/redis";
 
 export type DriverLocation = InferSelectModel<typeof driverLocations>;
 
@@ -25,6 +26,16 @@ export async function createDriverLocationService(data: NewDriverLocation): Prom
       createdBy: data.createdBy,
     })
     .returning();
+
+  if (newLocation) {
+    const payload = JSON.stringify(newLocation);
+    const deliveryId = newLocation.deliveryId;
+
+    await redis.publish("delivery_tracking", payload);
+
+    await redis.set(`delivery:latest_location:${deliveryId}`, payload, "EX", 1800);
+  }
+
   return newLocation;
 }
 
@@ -66,6 +77,16 @@ export async function createBulkDriverLocationsService(
       }))
     )
     .returning();
+
+  if (inserted.length > 0) {
+    // Publish only the latest coordinate in the bulk batch
+    const latest = inserted[inserted.length - 1];
+    const payload = JSON.stringify(latest);
+    const deliveryId = latest.deliveryId;
+
+    await redis.publish("delivery_tracking", payload);
+    await redis.set(`delivery:latest_location:${deliveryId}`, payload, "EX", 1800);
+  }
 
   return inserted;
 }
